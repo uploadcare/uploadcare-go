@@ -1,2 +1,2 @@
 # uploadcare-go
-Go client for uploadcare API https://uploadcare.com/
+Go library for accessing uploadcard API https://uploadcare.com/
