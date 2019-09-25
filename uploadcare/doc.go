@@ -22,15 +22,16 @@ access different parts of the Uploadcare API. For example:
 	}
 
 	list, err := file.NewService(client).ListOfFiles()
+	...
 
 Authentication
 
 To authenticate your account, every request made MUST be signed.
 There are two available auth functions for that:
-- SimpleAuth
-- SignBasedAuth
+	SimpleAuth (default)
+	SignBasedAuth
 
-NOTE: by default SimpleAuth is used, if you want to use SignBasedAuth
-you need to enable it in the Uploadcare dashboard first.
+NOTE: If you want to use SignBasedAuth you need to enable it in the Uploadcare
+dashboard first.
 */
 package uploadcare

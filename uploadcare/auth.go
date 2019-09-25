@@ -38,11 +38,11 @@ func SimpleAuth(creds APICreds, req *http.Request) {
 
 // SignBasedAuth provides SHA1 signature based authentication scheme where
 // your secret API key is used to derive signature but is not included in
-// request itself. Authorization header looks like this:
+// the request itself. Authorization header looks like this:
 //
 //	Authorization: Uploadcare public_key:signature
 //
-// For more info on how signature is constructed see
+// For more info on how SHA1 signature is constructed see
 // https://uploadcare.com/docs/api_reference/rest/requests_auth/
 func SignBasedAuth(creds APICreds, req *http.Request) {
 	authParam := signBasedAuthParam(creds, req, time.Now())
