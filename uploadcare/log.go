@@ -1,38 +1,18 @@
 package uploadcare
 
 import (
-	"os"
-
-	"github.com/btcsuite/btclog"
+	"github.com/uploadcare/uploadcare-go/uclog"
 )
 
-var log btclog.Logger
+var log uclog.Logger
 
-// Level is the level at which a logger is configured.
-// All messages sent to a level which is below the current level are filtered.
-type LogLevel uint32
-
-// LogLevel constants.
-const (
-	LogLevelDebug LogLevel = iota
-	LogLevelInfo
-	LogLevelWarn
-	LogLevelError
-
-	subsystemTag = "UCRE"
-)
+const subsystemTag = "UCRE"
 
 func init() { DisableLog() }
 
-func DisableLog() { log = btclog.Disabled }
+func DisableLog() { log = uclog.Disabled }
 
-// UseLogger is used to enable logging in the context of the package
-func EnableLog(lvl LogLevel) {
-	// we don't care much about the log backend for now
-	logBackend := btclog.NewBackend(os.Stderr)
-
-	logger := logBackend.Logger(subsystemTag)
-	logger.SetLevel(btclog.Level(lvl))
-
-	log = logger
+func EnableLog(lvl uclog.Level) {
+	log = uclog.Backend.Logger(subsystemTag)
+	log.SetLevel(lvl)
 }
