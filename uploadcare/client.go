@@ -23,7 +23,9 @@ type APICreds struct {
 	PublicKey string
 }
 
-type optFunc func(*client)
+type optFunc func(*client) error
+
+var ErrInvalidCreds = errors.New("invalid api credentials")
 
 // NewClient returns new API client with provided project credentials.
 // Client is responsible for the underlying API calls.
@@ -32,7 +34,7 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 	log.Infof("creating new uploadcare client with creds: %+v", creds)
 
 	if creds.SecretKey == "" || creds.PublicKey == "" {
-		return nil, errors.New("invalid creds provided")
+		return nil, ErrInvalidCreds
 	}
 
 	c := client{
@@ -44,7 +46,10 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 	}
 
 	for _, o := range opts {
-		o(&c)
+		err := o(&c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &c, nil
@@ -53,7 +58,13 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 // WithHTTPClient is used to provide your custom http client to the Client.
 // Use it if you need custom transport configuration etc.
 func WithHTTPClient(conn *http.Client) optFunc {
-	return func(client *client) { client.conn = conn }
+	return func(client *client) (err error) {
+		if conn == nil {
+			err = errors.New("nil http client provided")
+		}
+		client.conn = conn
+		return
+	}
 }
 
 // WithAPIVersion is used if you want to use version of the Uploadcare REST API
@@ -62,7 +73,14 @@ func WithHTTPClient(conn *http.Client) optFunc {
 // If you're using functionality that is not supported by the selected
 // version API you'll get ErrInvalidVersion.
 func WithAPIVersion(version RESTAPIVersion) optFunc {
-	return func(client *client) { client.apiVersion = version }
+	return func(client *client) (err error) {
+		if _, ok := supportedVersions[version]; !ok {
+			err = errors.New("unsupported API version provided")
+		}
+		client.apiVersion = version
+		return
+	}
+
 }
 
 // WithAuthentication is used to change authentication mechanism.
@@ -70,5 +88,11 @@ func WithAPIVersion(version RESTAPIVersion) optFunc {
 // If you're using SignatureBasedAuth you need to enable it first in
 // the Uploadcare dashboard
 func WithAuthentication(authFunc authFunc) optFunc {
-	return func(client *client) { client.authFunc = authFunc }
+	return func(client *client) (err error) {
+		if authFunc == nil {
+			err = errors.New("nil auth function provided")
+		}
+		client.authFunc = authFunc
+		return
+	}
 }

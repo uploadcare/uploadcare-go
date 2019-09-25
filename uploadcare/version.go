@@ -7,4 +7,11 @@ const (
 	APIV06 RESTAPIVersion = "v0.6"
 )
 
-var DefaultAPIVersion = APIv05
+var (
+	supportedVersions = map[RESTAPIVersion]bool{
+		APIv05: true,
+		APIV06: true,
+	}
+
+	DefaultAPIVersion = APIv05
+)
