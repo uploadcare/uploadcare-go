@@ -6,7 +6,7 @@ import (
 )
 
 type RequestEncoder interface {
-	EncodeRequest(*http.Request) error
+	EncodeRequest(*http.Request)
 }
 
 type RespBodyDecoder interface {
