@@ -10,5 +10,5 @@ type RequestEncoder interface {
 }
 
 type RespBodyDecoder interface {
-	DecodeRespBody(io.ReadCloser) error
+	DecodeRespBody(io.Reader) error
 }

@@ -1,6 +1,7 @@
 package uploadcare
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -40,15 +41,6 @@ type APICreds struct {
 
 type optFunc func(*client) error
 
-var (
-	ErrInvalidCreds = errors.New("Invalid API credentials")
-
-	ErrAuthForbidden = errors.New("Simple authentication over HTTP is " +
-		"forbidden. Please, use HTTPS or signed requests instead")
-	ErrInvalidAuthCreds = errors.New("Incorrect authentication credentials")
-	ErrInvalidVersion   = errors.New("Could not satisfy the request Accept header")
-)
-
 // NewClient returns new API client with provided project credentials.
 // Client is responsible for the underlying API calls.
 // Opts are used for client configration.
@@ -56,7 +48,7 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 	log.Infof("creating new uploadcare client with creds: %+v", creds)
 
 	if creds.SecretKey == "" || creds.PublicKey == "" {
-		return nil, ErrInvalidCreds
+		return nil, ErrInvalidAuthCreds
 	}
 
 	c := client{
@@ -115,16 +107,25 @@ func (c *client) Do(req *http.Request, data RespBodyDecoder) error {
 	tries := 0
 try:
 	tries += 1
+
+	log.Debugf("making %d request: %+v", tries, req)
+
 	resp, err := c.conn.Do(req)
 	if err != nil {
 		return err
 	}
 
+	log.Debugf("received response: %+v", resp)
+
 	switch resp.StatusCode {
 	case 400:
 		return ErrAuthForbidden
 	case 401:
-		return ErrInvalidAuthCreds
+		var err AuthErr
+		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
+			return e
+		}
+		return err
 	case 406:
 		return ErrInvalidVersion
 	case 429:
@@ -132,7 +133,7 @@ try:
 			resp.Header.Get("Retry-After"),
 		)
 		if err != nil {
-			return fmt.Errorf("parse Retry-After: %w", err)
+			return fmt.Errorf("invalid Retry-After: %w", err)
 		}
 
 		if tries > maxThrottleRetries {
