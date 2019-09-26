@@ -10,6 +10,8 @@ const (
 	userAgentPrefix = "UploadcareGo"
 
 	acceptHeaderFormat = "application/vnd.uploadcare-%s+json"
+
+	maxThrottleRetries = 3
 )
 
 var (

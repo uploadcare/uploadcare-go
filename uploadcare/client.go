@@ -112,6 +112,9 @@ func (c *client) NewRequest(
 }
 
 func (c *client) Do(req *http.Request, data RespBodyDecoder) error {
+	tries := 0
+try:
+	tries += 1
 	resp, err := c.conn.Do(req)
 	if err != nil {
 		return err
@@ -132,9 +135,12 @@ func (c *client) Do(req *http.Request, data RespBodyDecoder) error {
 			return fmt.Errorf("parse Retry-After: %w", err)
 		}
 
-		// TODO: handle few retries
+		if tries > maxThrottleRetries {
+			return ThrottleErr{retryAfter}
+		}
 
-		return ThrottleErr{retryAfter}
+		time.Sleep(time.Duration(retryAfter) * time.Second)
+		goto try
 	}
 
 	err = data.DecodeRespBody(resp.Body)
