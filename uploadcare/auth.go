@@ -45,7 +45,7 @@ func SimpleAuth(creds APICreds, req *http.Request) {
 // For more info on how SHA1 signature is constructed see
 // https://uploadcare.com/docs/api_reference/rest/requests_auth/
 func SignBasedAuth(creds APICreds, req *http.Request) {
-	authParam := signBasedAuthParam(creds, req, time.Now())
+	authParam := signBasedAuthParam(creds, req)
 	setHeader(req, authHeaderKey, authParam)
 }
 
@@ -62,7 +62,7 @@ func simpleAuthParam(creds APICreds) string {
 	return val
 }
 
-func signBasedAuthParam(creds APICreds, req *http.Request, t time.Time) string {
+func signBasedAuthParam(creds APICreds, req *http.Request) string {
 	bodyData := new(bytes.Buffer)
 	var bodyReader io.Reader
 	bodyReader = req.Body
@@ -84,7 +84,7 @@ func signBasedAuthParam(creds APICreds, req *http.Request, t time.Time) string {
 	signData.WriteRune('\n')
 	signData.WriteString(req.Header.Get("Content-Type"))
 	signData.WriteRune('\n')
-	signData.WriteString(t.In(dateHeaderLocation).Format(dateHeaderFormat))
+	signData.WriteString(req.Header.Get("Date"))
 	signData.WriteRune('\n')
 	signData.WriteString(uri)
 
