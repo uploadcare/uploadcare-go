@@ -1,4 +1,4 @@
-// Package uclog holds basic leveled logging primitives. Basically, it just makes
+// Package uclog holds basic leveled logging primitives. Basically, it makes
 // dependancy tree cleaner
 package uclog
 
