@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -95,10 +96,7 @@ func (c *client) NewRequest(
 		return nil, err
 	}
 
-	err = data.EncodeRequest(req)
-	if err != nil {
-		return nil, err
-	}
+	data.EncodeRequest(req)
 
 	date := time.Now().In(dateHeaderLocation).Format(dateHeaderFormat)
 
@@ -188,4 +186,16 @@ func WithAuthentication(authFunc authFunc) optFunc {
 		client.setAuthHeader = authFunc
 		return
 	}
+}
+
+func SingleSlashJoin(a, b string) string {
+	aslash := strings.HasSuffix(a, "/")
+	bslash := strings.HasPrefix(b, "/")
+	switch {
+	case aslash && bslash:
+		return a + b[1:]
+	case !aslash && !bslash:
+		return a + "/" + b
+	}
+	return a + b
 }
