@@ -36,7 +36,7 @@ func (t *Time) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), "\"")
 	if s == "null" {
 		t = nil
-		return nil
+		return
 	}
 	// time is returned in a different format every time
 	// so we need to normalize it in order to parse it
@@ -45,5 +45,5 @@ func (t *Time) UnmarshalJSON(b []byte) (err error) {
 		s = s[:dotInd]
 	}
 	t.Time, err = time.Parse(ucTimeLayout, s)
-	return err
+	return
 }
