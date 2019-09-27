@@ -1,6 +1,7 @@
 package ucare
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,8 +18,13 @@ const (
 
 // Client describes API client behaviour
 type Client interface {
-	NewRequest(method, url string, data RequestEncoder) (*http.Request, error)
-	Do(req *http.Request, data interface{}) error
+	NewRequest(
+		ctx context.Context,
+		method string,
+		url string,
+		data RequestEncoder,
+	) (*http.Request, error)
+	Do(req *http.Request, resdata interface{}) error
 }
 
 type client struct {
@@ -78,7 +84,15 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 	return &c, nil
 }
 
+// RequestEncoder exists to encode data into prepared request.
+// It may encode part of the data to the query string and other
+// part into the request body
+type RequestEncoder interface {
+	EncodeRequest(*http.Request)
+}
+
 func (c *client) NewRequest(
+	ctx context.Context,
 	method string,
 	fullpath string,
 	data RequestEncoder,
@@ -88,6 +102,7 @@ func (c *client) NewRequest(
 		return nil, err
 	}
 
+	req = req.WithContext(ctx)
 	data.EncodeRequest(req)
 
 	date := time.Now().In(dateHeaderLocation).Format(dateHeaderFormat)
@@ -103,7 +118,7 @@ func (c *client) NewRequest(
 	return req, nil
 }
 
-func (c *client) Do(req *http.Request, data interface{}) error {
+func (c *client) Do(req *http.Request, resdata interface{}) error {
 	tries := 0
 try:
 	tries += 1
@@ -144,7 +159,7 @@ try:
 		goto try
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(&data)
+	err = json.NewDecoder(resp.Body).Decode(&resdata)
 	if err != nil {
 		return err
 	}

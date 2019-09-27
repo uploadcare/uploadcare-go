@@ -2,11 +2,13 @@ package file
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
 
+	"github.com/uploadcare/uploadcare-go/internal/codec"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
@@ -60,12 +62,27 @@ func (d *ListParams) EncodeRequest(req *http.Request) {
 }
 
 // FileList is a paginated list of files
-type FileList struct {
-	NextPage string     `json:"next"`
-	PrevPage string     `json:"previous"`
-	Total    int64      `json:"total"`
-	PerPage  int64      `json:"per_page"`
-	Results  []FileInfo `json:"results"`
+type FileList struct{ codec.NextRawResulter }
+
+// ReadResult returns next FileInfo value. If no results are left to read it
+// returns ucare.ErrEndOfResults.
+// Example usage:
+//	for fileList.Next() {
+//		info, err := fileList.ReadResult()
+//		...
+//	}
+func (v *FileList) ReadResult() (*FileInfo, error) {
+	raw, err := v.ReadRawResult()
+	if err != nil {
+		return nil, err
+	}
+
+	var fi FileInfo
+	err = json.Unmarshal(raw, &fi)
+
+	log.Debugf("reading file list result: %+v", fi)
+
+	return &fi, err
 }
 
 // ListFiles returns a paginated list of files
@@ -77,25 +94,28 @@ func (s service) ListFiles(
 		params = &ListParams{}
 	}
 
+	method := http.MethodGet
 	url := ucare.SingleSlashJoin(
 		ucare.RESTAPIEndpoint,
 		listFilesPathFormat,
 	)
 
-	req, err := s.client.NewRequest(http.MethodGet, url, params)
+	req, err := s.client.NewRequest(ctx, method, url, params)
 	if err != nil {
 		return nil, err
 	}
 
-	var flist FileList
-	err = s.client.Do(req, &flist)
+	resbuf := &codec.ResultBuf{
+		Ctx:       ctx,
+		ReqMethod: method,
+		Client:    s.client,
+	}
+	err = s.client.Do(req, &resbuf)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("received file list: %+v", flist)
-
-	return &flist, nil
+	return &FileList{resbuf}, nil
 }
 
 type FileInfo struct {
