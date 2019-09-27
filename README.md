@@ -38,8 +38,7 @@ func main() {
 		PublicKey: "your-project-public-key",
 	}
 
-	// creating underlying client which is responsible for
-	// actual API calls and authentication
+	// creating underlying client for API calls and authentication
 	client, err := ucare.NewClient(
 		creds,
 		WithAuthentication(ucare.WithSignBasedAuth),
@@ -48,7 +47,7 @@ func main() {
 		log.Fatal("creating uploadcare API client: %s", err)
 	}
 
-	// creating a service that performs file operations 
+	// creating a file operations service
 	fileSvc := file.New(client) 
 
 	listParams := &file.ListFilesParams{
@@ -61,7 +60,7 @@ func main() {
 		// handle error
 	}
 			
-	// getting file IDs for the first 100 files (ordered by size)
+	// getting IDs for the first 100 files
 	ids := make([]string, 0, 100)
 	for fileList.Next() {
 		finfo, err :=  fileList.ReadResult()
