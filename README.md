@@ -63,11 +63,15 @@ func main() {
 			
 	// getting file IDs for the first 100 files (ordered by size)
 	ids := make([]string, 0, 100)
-	for fileList.HasNext() && fileList.Count() <= 100 {
-		id := fileList.Next().ID
-		ids = append(ids, id)
-	}
+	for fileList.Next() {
+		finfo, err :=  fileList.ReadResult()
+		if err != nil {
+			// handle error
+		}
 
+		ids = append(ids, finfo.ID)
+	}
+	
 	...
 }
 ```

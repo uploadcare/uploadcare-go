@@ -103,7 +103,9 @@ func (c *client) NewRequest(
 	}
 
 	req = req.WithContext(ctx)
-	data.EncodeRequest(req)
+	if data != nil {
+		data.EncodeRequest(req)
+	}
 
 	date := time.Now().In(dateHeaderLocation).Format(dateHeaderFormat)
 
