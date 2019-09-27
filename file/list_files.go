@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/uploadcare/uploadcare-go/internal/codec"
 	"github.com/uploadcare/uploadcare-go/ucare"
@@ -95,7 +96,7 @@ func (s service) ListFiles(
 	}
 
 	method := http.MethodGet
-	url := ucare.SingleSlashJoin(
+	url := singleSlashJoin(
 		ucare.RESTAPIEndpoint,
 		listFilesPathFormat,
 	)
@@ -206,4 +207,16 @@ type ImageInfo struct {
 type Location struct {
 	Latitude  int64 `json:"latitude"`
 	Longitude int64 `json:"longitude"`
+}
+
+func singleSlashJoin(a, b string) string {
+	aslash := strings.HasSuffix(a, "/")
+	bslash := strings.HasPrefix(b, "/")
+	switch {
+	case aslash && bslash:
+		return a + b[1:]
+	case !aslash && !bslash:
+		return a + "/" + b
+	}
+	return a + b
 }
