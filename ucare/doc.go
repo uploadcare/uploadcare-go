@@ -1,22 +1,22 @@
 /*
-Package uploadcare provides a client for using the Uploadcare API.
+Package ucare provides a client for using the Uploadcare API.
 
 Usage:
 
 	import (
-		"github.com/uploadcare/uploadcare-go/uploadcare"
+		"github.com/uploadcare/uploadcare-go/ucare"
 		"github.com/uploadcare/uploadcare-go/file"
 	)
 
 Construct a new Uploadcare client, then use the various services to
 access different parts of the Uploadcare API. For example:
 
-	creds := uploadcare.APICreds{
+	creds := ucare.APICreds{
 		SecretKey: "your_secret_key",
 		PublicKey: "your_public_key",
 	}
 
-	client, err := uploadcare.NewClient(creds)
+	client, err := ucare.NewClient(creds)
 	if err != nil {
 		// handle error
 	}
@@ -34,4 +34,4 @@ There are two available auth functions for that:
 NOTE: If you want to use SignBasedAuth you need to enable it in the Uploadcare
 dashboard first.
 */
-package uploadcare
+package ucare

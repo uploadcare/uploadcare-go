@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/uploadcare/uploadcare-go/uploadcare"
+	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // ListParams holds all possible params to for the ListFiles method
@@ -34,7 +34,7 @@ type ListParams struct {
 	From *string `form:"from"`
 }
 
-// EncodeRequest implements uploadcare.RequestEncoder
+// EncodeRequest implements ucare.RequestEncoder
 func (d *ListParams) EncodeRequest(req *http.Request) {
 	t, v := reflect.TypeOf(d).Elem(), reflect.ValueOf(d).Elem()
 	q := req.URL.Query()
@@ -47,11 +47,11 @@ func (d *ListParams) EncodeRequest(req *http.Request) {
 		var val string
 		switch valc := f.Interface().(type) {
 		case *string:
-			val = uploadcare.StringVal(valc)
+			val = ucare.StringVal(valc)
 		case *int64:
-			val = strconv.FormatInt(uploadcare.Int64Val(valc), 10)
+			val = strconv.FormatInt(ucare.Int64Val(valc), 10)
 		case *bool:
-			val = fmt.Sprintf("%t", uploadcare.BoolVal(valc))
+			val = fmt.Sprintf("%t", ucare.BoolVal(valc))
 		}
 
 		q.Set(t.Field(i).Tag.Get("form"), val)
@@ -77,8 +77,8 @@ func (s service) ListFiles(
 		params = &ListParams{}
 	}
 
-	url := uploadcare.SingleSlashJoin(
-		uploadcare.RESTAPIEndpoint,
+	url := ucare.SingleSlashJoin(
+		ucare.RESTAPIEndpoint,
 		listFilesPathFormat,
 	)
 
@@ -100,13 +100,13 @@ func (s service) ListFiles(
 
 type FileInfo struct {
 	// RemovedAt is date and time when a file was removed, if any
-	RemovedAt *uploadcare.Time `json:"datetime_removed"`
+	RemovedAt *ucare.Time `json:"datetime_removed"`
 
 	// StoredAt is date and time of the last store request, if any
-	StoredAt *uploadcare.Time `json:"datetime_stored"`
+	StoredAt *ucare.Time `json:"datetime_stored"`
 
 	// UploadedAt is a date and time when a file was uploaded
-	UploadedAt *uploadcare.Time `json:"datetime_uploaded"`
+	UploadedAt *ucare.Time `json:"datetime_uploaded"`
 
 	// ImageInfo holds image metadata
 	ImageInfo *ImageInfo `json:"image_info"`
@@ -177,7 +177,7 @@ type ImageInfo struct {
 	GeoLocation *Location `json:"geo_location"`
 
 	// DateTimeOriginal is image date and time from EXIF
-	DateTimeOriginal *uploadcare.Time `json:"datetime_original"`
+	DateTimeOriginal *ucare.Time `json:"datetime_original"`
 
 	// Sequence denotes if image is sequence image (GIF for example)
 	Sequence bool `json:"sequence"`

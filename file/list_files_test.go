@@ -7,7 +7,7 @@ import (
 
 	assert "github.com/stretchr/testify/require"
 	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/uploadcare"
+	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 func TestListParamsEncodeRequest(t *testing.T) {
@@ -21,10 +21,10 @@ func TestListParamsEncodeRequest(t *testing.T) {
 	}{{
 		test: "full list of params",
 		params: &file.ListParams{
-			Removed:  uploadcare.Bool(true),
-			Stored:   uploadcare.Bool(false),
-			Limit:    uploadcare.Int64(500),
-			Ordering: uploadcare.String(file.OrderBySizeAsc),
+			Removed:  ucare.Bool(true),
+			Stored:   ucare.Bool(false),
+			Limit:    ucare.Int64(500),
+			Ordering: ucare.String(file.OrderBySizeAsc),
 		},
 		expectedQuery: url.Values{
 			"removed":  []string{"true"},
@@ -39,8 +39,8 @@ func TestListParamsEncodeRequest(t *testing.T) {
 	}, {
 		test: "part of the params are filled",
 		params: &file.ListParams{
-			Stored:   uploadcare.Bool(false),
-			Ordering: uploadcare.String(file.OrderByUploadedAtDesc),
+			Stored:   ucare.Bool(false),
+			Ordering: ucare.String(file.OrderByUploadedAtDesc),
 		},
 		expectedQuery: url.Values{
 			"stored":   []string{"false"},

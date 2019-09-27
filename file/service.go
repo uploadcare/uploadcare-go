@@ -4,7 +4,7 @@ package file
 import (
 	"context"
 
-	"github.com/uploadcare/uploadcare-go/uploadcare"
+	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // Service describes all file related API
@@ -16,7 +16,7 @@ type Service interface {
 }
 
 type service struct {
-	client uploadcare.Client
+	client ucare.Client
 }
 
 const (
@@ -27,7 +27,7 @@ const (
 )
 
 // New return new instance of the Service
-func New(client uploadcare.Client) Service { return service{client} }
+func New(client ucare.Client) Service { return service{client} }
 
 const (
 	OrderByUploadedAtAsc  = "datetime_uploaded"

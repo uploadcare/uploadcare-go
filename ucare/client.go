@@ -1,4 +1,4 @@
-package uploadcare
+package ucare
 
 import (
 	"encoding/json"

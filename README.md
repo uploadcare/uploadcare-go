@@ -26,23 +26,23 @@ Getting a paginated list of files:
 
 ```go
 import(
-	"github.com/uploadcare/uploadcare-go/uploadcare"
+	"github.com/uploadcare/uploadcare-go/ucare"
 	"github.com/uploadcare/uploadcare-go/file"
 	...
 )
 
 func main() {
 	// your project credentials
-	creds := uploadcare.APICreds{
+	creds := ucare.APICreds{
 		SecretKey: "your-project-secret-key",
 		PublicKey: "your-project-public-key",
 	}
 
 	// creating underlying client which is responsible for
 	// actual API calls and authentication
-	client, err := uploadcare.NewClient(
+	client, err := ucare.NewClient(
 		creds,
-		WithAuthentication(uploadcare.WithSignBasedAuth),
+		WithAuthentication(ucare.WithSignBasedAuth),
 	)
 	if err != nil {
 		log.Fatal("creating uploadcare API client: %s", err)
@@ -52,8 +52,8 @@ func main() {
 	fileSvc := file.New(client) 
 
 	listParams := &file.ListFilesParams{
-		Stored: uploadcare.String(true),
-		Ordering: uploadcare.String(file.OrderBySizeAsc),
+		Stored:   ucare.String(true),
+		Ordering: ucare.String(file.OrderBySizeAsc),
 	}
 	
 	fileList, err := fileSvc.ListFiles(context.Background(), listParams)
