@@ -122,8 +122,12 @@ Getting a list of groups:
 
 	// getting group IDs
 	groupIDs = make([]string, 0, groupList.Total)
-	for groupList.HasNext() {
-		groupIDs = append(groupIDs, groupList.Next().ID)
+	for groupList.Next() {
+		glist, err := groupList.ReadResult()
+		if err != nil {
+			// handle error
+		}
+		groupIDs = append(groupIDs, glist.ID)
 	}
 
 ```
