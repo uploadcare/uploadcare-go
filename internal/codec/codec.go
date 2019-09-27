@@ -31,7 +31,7 @@ type ResultBuf struct {
 	ReqMethod string
 	Client    ucare.Client
 
-	sync.Mutex         // gards everything below
+	sync.Mutex         // guards everything below
 	NextPage   *string `json:"next"`
 	Vals       []Raw   `json:"results"`
 	at         int     // index to read from the buffer
