@@ -1,4 +1,4 @@
-## uploadcare-go
+# uploadcare-go
 
 Go library for accessing Uploadcard API https://uploadcare.com/
 
