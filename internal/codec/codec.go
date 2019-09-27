@@ -34,7 +34,7 @@ type ResultBuf struct {
 	sync.Mutex         // guards everything below
 	NextPage   *string `json:"next"`
 	Vals       []Raw   `json:"results"`
-	at         int     // index to read from the buffer
+	at         int     // index to read from the Vals
 }
 
 // Next indicates if there is a result to read
