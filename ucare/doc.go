@@ -21,7 +21,7 @@ access different parts of the Uploadcare API. For example:
 		// handle error
 	}
 
-	list, err := file.NewService(client).ListOfFiles()
+	list, err := file.NewService(client).ListFiles()
 	...
 
 Authentication
