@@ -18,7 +18,7 @@ const (
 // Client describes API client behaviour
 type Client interface {
 	NewRequest(method, url string, data RequestEncoder) (*http.Request, error)
-	Do(req *http.Request, data RespBodyDecoder) error
+	Do(req *http.Request, data interface{}) error
 }
 
 type client struct {
@@ -103,7 +103,7 @@ func (c *client) NewRequest(
 	return req, nil
 }
 
-func (c *client) Do(req *http.Request, data RespBodyDecoder) error {
+func (c *client) Do(req *http.Request, data interface{}) error {
 	tries := 0
 try:
 	tries += 1
@@ -144,7 +144,7 @@ try:
 		goto try
 	}
 
-	err = data.DecodeRespBody(resp.Body)
+	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return err
 	}

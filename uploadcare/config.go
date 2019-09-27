@@ -1,5 +1,10 @@
 package uploadcare
 
+import (
+	"strings"
+	"time"
+)
+
 type RESTAPIVersion string
 
 const (
@@ -12,6 +17,8 @@ const (
 	acceptHeaderFormat = "application/vnd.uploadcare-%s+json"
 
 	maxThrottleRetries = 3
+
+	ucTimeLayout = "2006-01-02T15:04:05"
 )
 
 var (
@@ -22,3 +29,21 @@ var (
 
 	DefaultAPIVersion = APIv05
 )
+
+type Time struct{ time.Time }
+
+func (t *Time) UnmarshalJSON(b []byte) (err error) {
+	s := strings.Trim(string(b), "\"")
+	if s == "null" {
+		t = nil
+		return nil
+	}
+	// time is returned in a different format every time
+	// so we need to normalize it in order to parse it
+	dotInd := strings.Index(s, ".")
+	if dotInd > -1 {
+		s = s[:dotInd]
+	}
+	t.Time, err = time.Parse(ucTimeLayout, s)
+	return err
+}
