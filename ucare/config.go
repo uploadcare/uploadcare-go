@@ -8,6 +8,9 @@ import (
 type RESTAPIVersion string
 
 const (
+	RESTAPIEndpoint   = "https://api.uploadcare.com/"
+	UploadAPIEndpoint = "https://upload.uploadcare.com/"
+
 	APIv05 RESTAPIVersion = "v0.5"
 	APIv06 RESTAPIVersion = "v0.6"
 

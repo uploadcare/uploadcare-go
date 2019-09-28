@@ -10,11 +10,6 @@ import (
 	"time"
 )
 
-const (
-	RESTAPIEndpoint   = "https://api.uploadcare.com/"
-	UploadAPIEndpoint = "https://upload.uploadcare.com/"
-)
-
 // Client describes API client behaviour
 type Client interface {
 	NewRequest(
