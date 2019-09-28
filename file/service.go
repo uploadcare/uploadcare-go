@@ -1,4 +1,11 @@
-// Package file holds all primitives and logic around file entity
+// Package file holds all primitives and logic around the file resource.
+//
+// The file resource is intended to handle user-uploaded files and
+// is the main Uploadcare resource.
+//
+// Each of uploaded files has an ID (UUID) that is assigned once and never
+// changes later. That means it is safe to store file IDs in your database
+// or even your Moleskine.
 package file
 
 import (
