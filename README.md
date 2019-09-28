@@ -29,10 +29,7 @@ go get -u -v github.com/uploadcare/uploadcare-go/...
 
 For details on all the functionality in this library, see the
 [GoDoc](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
-documentation.
-
-Below are a few examples:
-
+documentation. Below are a few usage examples.
 
 ```go
 import(
@@ -97,67 +94,5 @@ Acquiring file-specific info:
 		h := file.ImageInfo.Height
 		w := file.ImageInfo.Width
 		fmt.Printf("image size: %dx%d\n", h, w)
-	}
-```
-
-Deleting a file:
-
-```go
-	_, err := fileSvc.Delete(context.Background(), fileID)
-	if err != nil {
-		// handle error
-	}
-```
-
-Storing a single file by ID:
-
-```go
-	_, err := fileSvc.Store(context.Background(), fileID)
-	if err != nil {
-		// handle error
-	}
-```
-
-Getting a list of groups:
-
-```go
-	groupSvc := group.New(client)
-	
-	groupList, err := groupSvc.List()
-	if err != nil {
-		// handle error
-	}
-
-	// getting group IDs
-	groupIDs = make([]string, 0, groupList.Total)
-	for groupList.Next() {
-		glist, err := groupList.ReadResult()
-		if err != nil {
-			// handle error
-		}
-		groupIDs = append(groupIDs, glist.ID)
-	}
-
-```
-
-Getting a file group by ID:
-
-```go
-	groupID := groupIDs[0]
-	group, err := groupSvc.Info(context.Background(), groupID)
-	if err != nil {
-		// handle error
-	}
-
-	fmt.Printf("group %s contains %d files\n", group.ID, group.FileCount)
-
-```
-
-Marking all files in a group as stored:
-
-```go
-	_, err := groupSvc.Store(context.Background(), groupID)
-	if err != nil {
-		// handle error
 	}
 ```
