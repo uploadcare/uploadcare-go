@@ -26,8 +26,8 @@ const (
 	storePathFormat  = "/files/%s/storage/"
 )
 
-// New return new instance of the Service
-func New(client ucare.Client) Service { return service{client} }
+// NewService return new instance of the Service
+func NewService(client ucare.Client) Service { return service{client} }
 
 // OrderBy predefined constants to be used in request params
 const (
