@@ -6,25 +6,25 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/internal/config"
 )
 
-// FileInfo acquires some file-specific info
-func (s service) FileInfo(ctx context.Context, fileID string) (FileInfo, error) {
+// Info acquires some file-specific info
+func (s service) Info(ctx context.Context, fileID string) (Info, error) {
 	if fileID == "" {
-		return FileInfo{}, errors.New("empty file id provided")
+		return Info{}, errors.New("empty file id provided")
 	}
 
 	method := http.MethodGet
-	path := fmt.Sprintf(fileInfoPathFormat, fileID)
-	url := ucare.RESTAPIEndpoint + path
+	path := fmt.Sprintf(infoPathFormat, fileID)
+	url := config.RESTAPIEndpoint + path
 
 	req, err := s.client.NewRequest(ctx, method, url, nil)
 	if err != nil {
-		return FileInfo{}, err
+		return Info{}, err
 	}
 
-	var finfo FileInfo
+	var finfo Info
 	err = s.client.Do(req, &finfo)
 
 	log.Debugf("received file info: %+v", finfo)
@@ -32,15 +32,16 @@ func (s service) FileInfo(ctx context.Context, fileID string) (FileInfo, error) 
 	return finfo, err
 }
 
-type FileInfo struct {
+// Info holds file specific information
+type Info struct {
 	// RemovedAt is date and time when a file was removed, if any
-	RemovedAt *ucare.Time `json:"datetime_removed"`
+	RemovedAt *config.Time `json:"datetime_removed"`
 
 	// StoredAt is date and time of the last store request, if any
-	StoredAt *ucare.Time `json:"datetime_stored"`
+	StoredAt *config.Time `json:"datetime_stored"`
 
 	// UploadedAt is a date and time when a file was uploaded
-	UploadedAt *ucare.Time `json:"datetime_uploaded"`
+	UploadedAt *config.Time `json:"datetime_uploaded"`
 
 	// ImageInfo holds image metadata
 	ImageInfo *ImageInfo `json:"image_info"`
@@ -88,6 +89,7 @@ const (
 	ImageColorModeLAB   = "LAB"
 )
 
+// ImageInfo holds image-specific information
 type ImageInfo struct {
 	// ColorMode is image color mode
 	ColorMode string `json:"color_mode"`
@@ -111,12 +113,13 @@ type ImageInfo struct {
 	GeoLocation *Location `json:"geo_location"`
 
 	// DateTimeOriginal is image date and time from EXIF
-	DateTimeOriginal *ucare.Time `json:"datetime_original"`
+	DateTimeOriginal *config.Time `json:"datetime_original"`
 
 	// Sequence denotes if image is sequence image (GIF for example)
 	Sequence bool `json:"sequence"`
 }
 
+// Location holds location coordinates
 type Location struct {
 	Latitude  int64 `json:"latitude"`
 	Longitude int64 `json:"longitude"`

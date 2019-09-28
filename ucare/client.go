@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/uploadcare/uploadcare-go/internal/config"
 )
 
 // Client describes API client behaviour
@@ -23,7 +25,7 @@ type Client interface {
 
 type client struct {
 	creds      APICreds
-	apiVersion RESTAPIVersion
+	apiVersion string
 
 	userAgent     string
 	acceptHeader  string
@@ -32,19 +34,20 @@ type client struct {
 	conn *http.Client
 }
 
-// API Creds holds per project API credentials.
+// APICreds holds per project API credentials.
 // You can find your credentials on the uploadcare dashboard.
 type APICreds struct {
 	SecretKey string
 	PublicKey string
 }
 
-type optFunc func(*client) error
+// OptFunc is a function that does some configuration on the passed client
+type OptFunc func(*client) error
 
 // NewClient returns new API client with provided project credentials.
 // Client is responsible for the underlying API calls.
 // Opts are used for client configration.
-func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
+func NewClient(creds APICreds, opts ...OptFunc) (Client, error) {
 	log.Infof("creating new uploadcare client with creds: %+v", creds)
 
 	if creds.SecretKey == "" || creds.PublicKey == "" {
@@ -53,7 +56,7 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 
 	c := client{
 		creds:      creds,
-		apiVersion: DefaultAPIVersion,
+		apiVersion: defaultAPIVersion,
 
 		setAuthHeader: SimpleAuth,
 
@@ -67,11 +70,11 @@ func NewClient(creds APICreds, opts ...optFunc) (*client, error) {
 		}
 	}
 
-	c.acceptHeader = fmt.Sprintf(acceptHeaderFormat, c.apiVersion)
+	c.acceptHeader = fmt.Sprintf(config.AcceptHeaderFormat, c.apiVersion)
 	c.userAgent = fmt.Sprintf(
 		"%s/%s/%s",
-		userAgentPrefix,
-		clientVersion,
+		config.UserAgentPrefix,
+		config.ClientVersion,
 		creds.PublicKey,
 	)
 
@@ -117,7 +120,7 @@ func (c *client) NewRequest(
 func (c *client) Do(req *http.Request, resdata interface{}) error {
 	tries := 0
 try:
-	tries += 1
+	tries++
 
 	log.Debugf("making %d request: %+v", tries, req)
 
@@ -132,7 +135,7 @@ try:
 	case 400:
 		return ErrAuthForbidden
 	case 401:
-		var err AuthErr
+		var err authErr
 		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
 			return e
 		}
@@ -147,8 +150,8 @@ try:
 			return fmt.Errorf("invalid Retry-After: %w", err)
 		}
 
-		if tries > maxThrottleRetries {
-			return ThrottleErr{retryAfter}
+		if tries > config.MaxThrottleRetries {
+			return throttleErr{retryAfter}
 		}
 
 		time.Sleep(time.Duration(retryAfter) * time.Second)
@@ -166,7 +169,7 @@ try:
 
 // WithHTTPClient is used to provide your custom http client to the Client.
 // Use it if you need custom transport configuration etc.
-func WithHTTPClient(conn *http.Client) optFunc {
+func WithHTTPClient(conn *http.Client) OptFunc {
 	return func(client *client) (err error) {
 		if conn == nil {
 			err = errors.New("nil http client provided")
@@ -181,7 +184,7 @@ func WithHTTPClient(conn *http.Client) optFunc {
 //
 // If you're using functionality that is not supported by the selected
 // version API you'll get ErrInvalidVersion.
-func WithAPIVersion(version RESTAPIVersion) optFunc {
+func WithAPIVersion(version string) OptFunc {
 	return func(client *client) (err error) {
 		if _, ok := supportedVersions[version]; !ok {
 			err = errors.New("unsupported API version provided")
@@ -196,7 +199,7 @@ func WithAPIVersion(version RESTAPIVersion) optFunc {
 //
 // If you're using SignatureBasedAuth you need to enable it first in
 // the Uploadcare dashboard
-func WithAuthentication(authFunc authFunc) optFunc {
+func WithAuthentication(authFunc authFunc) OptFunc {
 	return func(client *client) (err error) {
 		if authFunc == nil {
 			err = errors.New("nil auth function provided")

@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// API response errors
 var (
 	ErrInvalidAuthCreds = errors.New("Incorrect authentication credentials")
 	ErrAuthForbidden    = errors.New("Simple authentication over HTTP is " +
@@ -13,21 +14,22 @@ var (
 		"Accept header")
 )
 
-type RespErr struct {
+type respErr struct {
 	Details string `json:"detail"`
 }
 
-func (e RespErr) Error() string {
+// Error implements error interface
+func (e respErr) Error() string {
 	return e.Details
 }
 
-type AuthErr struct{ RespErr }
+type authErr struct{ respErr }
 
-type ThrottleErr struct {
+type throttleErr struct {
 	RetryAfter int
 }
 
-func (e ThrottleErr) Error() string {
+func (e throttleErr) Error() string {
 	return fmt.Sprintf(
 		"Request was throttled. Expected available in %d second",
 		e.RetryAfter,

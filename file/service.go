@@ -9,10 +9,10 @@ import (
 
 // Service describes all file related API
 type Service interface {
-	ListFiles(context.Context, *ListParams) (*FileList, error)
-	FileInfo(ctx context.Context, id string) (FileInfo, error)
-	//DeleteFile(context.Context, ID) (FileInfo, error)
-	//StoreFile(context.Context, ID) (FileInfo, error)
+	List(context.Context, *ListParams) (*List, error)
+	Info(ctx context.Context, id string) (Info, error)
+	//Delete(context.Context, ID) (Info, error)
+	//Store(context.Context, ID) (Info, error)
 }
 
 type service struct {
@@ -20,15 +20,16 @@ type service struct {
 }
 
 const (
-	listFilesPathFormat  = "/files/"
-	fileInfoPathFormat   = "/files/%s/"
-	deleteFilePathFormat = "/files/%s/"
-	storeFilePathFormat  = "/files/%s/storage/"
+	listPathFormat   = "/files/"
+	infoPathFormat   = "/files/%s/"
+	deletePathFormat = "/files/%s/"
+	storePathFormat  = "/files/%s/storage/"
 )
 
 // New return new instance of the Service
 func New(client ucare.Client) Service { return service{client} }
 
+// OrderBy predefined constants to be used in request params
 const (
 	OrderByUploadedAtAsc  = "datetime_uploaded"
 	OrderByUploadedAtDesc = "-datetime_uploaded"

@@ -9,10 +9,11 @@ import (
 	"strconv"
 
 	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/internal/config"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
-// ListParams holds all possible params to for the ListFiles method
+// ListParams holds all possible params to for the List method
 type ListParams struct {
 	// Removed is set to true if only include removed files in the response,
 	// otherwise existing files are included. Defaults to false.
@@ -61,23 +62,23 @@ func (d *ListParams) EncodeRequest(req *http.Request) {
 	req.URL.RawQuery = q.Encode()
 }
 
-// FileList is a paginated list of files
-type FileList struct{ codec.NextRawResulter }
+// List is a paginated list of files
+type List struct{ codec.NextRawResulter }
 
-// ReadResult returns next FileInfo value. If no results are left to read it
+// ReadResult returns next Info value. If no results are left to read it
 // returns ucare.ErrEndOfResults.
 // Example usage:
 //	for fileList.Next() {
 //		info, err := fileList.ReadResult()
 //		...
 //	}
-func (v *FileList) ReadResult() (*FileInfo, error) {
+func (v *List) ReadResult() (*Info, error) {
 	raw, err := v.ReadRawResult()
 	if err != nil {
 		return nil, err
 	}
 
-	var fi FileInfo
+	var fi Info
 	err = json.Unmarshal(raw, &fi)
 
 	log.Debugf("reading file list result: %+v", fi)
@@ -85,17 +86,17 @@ func (v *FileList) ReadResult() (*FileInfo, error) {
 	return &fi, err
 }
 
-// ListFiles returns a paginated list of files
-func (s service) ListFiles(
+// List returns a paginated list of files
+func (s service) List(
 	ctx context.Context,
 	params *ListParams,
-) (*FileList, error) {
+) (*List, error) {
 	if params == nil {
 		params = &ListParams{}
 	}
 
 	method := http.MethodGet
-	url := ucare.RESTAPIEndpoint + listFilesPathFormat
+	url := config.RESTAPIEndpoint + listPathFormat
 
 	req, err := s.client.NewRequest(ctx, method, url, params)
 	if err != nil {
@@ -112,5 +113,5 @@ func (s service) ListFiles(
 		return nil, err
 	}
 
-	return &FileList{resbuf}, nil
+	return &List{resbuf}, nil
 }

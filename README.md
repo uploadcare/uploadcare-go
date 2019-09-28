@@ -55,12 +55,12 @@ func main() {
 	// creating a file operations service
 	fileSvc := file.New(client) 
 
-	listParams := &file.ListFilesParams{
+	listParams := &file.ListParams{
 		Stored:   ucare.String(true),
 		Ordering: ucare.String(file.OrderBySizeAsc),
 	}
 	
-	fileList, err := fileSvc.ListFiles(context.Background(), listParams)
+	fileList, err := fileSvc.List(context.Background(), listParams)
 	if err != nil {
 		// handle error
 	}
@@ -84,7 +84,7 @@ Acquiring file-specific info:
 
 ```go
 	fileID := ids[0]
-	file, err := fileSvc.FileInfo(context.Background(), fileID)
+	file, err := fileSvc.Info(context.Background(), fileID)
 	if err != nil {
 		// handle error
 	}
@@ -99,7 +99,7 @@ Acquiring file-specific info:
 Deleting a file:
 
 ```go
-	_, err := fileSvc.DeleteFile(context.Background(), fileID)
+	_, err := fileSvc.Delete(context.Background(), fileID)
 	if err != nil {
 		// handle error
 	}
@@ -108,7 +108,7 @@ Deleting a file:
 Storing a single file by ID:
 
 ```go
-	_, err := fileSvc.StoreFile(context.Background(), fileID)
+	_, err := fileSvc.Store(context.Background(), fileID)
 	if err != nil {
 		// handle error
 	}
@@ -119,7 +119,7 @@ Getting a list of groups:
 ```go
 	groupSvc := group.New(client)
 	
-	groupList, err := groupSvc.ListGroups()
+	groupList, err := groupSvc.List()
 	if err != nil {
 		// handle error
 	}
@@ -140,7 +140,7 @@ Getting a file group by ID:
 
 ```go
 	groupID := groupIDs[0]
-	group, err := groupSvc.GroupInfo(context.Background(), groupID)
+	group, err := groupSvc.Info(context.Background(), groupID)
 	if err != nil {
 		// handle error
 	}
@@ -152,7 +152,7 @@ Getting a file group by ID:
 Marking all files in a group as stored:
 
 ```go
-	_, err := groupSvc.StoreGroup(context.Background(), groupID)
+	_, err := groupSvc.Store(context.Background(), groupID)
 	if err != nil {
 		// handle error
 	}

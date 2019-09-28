@@ -1,52 +1,16 @@
 package ucare
 
-import (
-	"strings"
-	"time"
-)
-
-type RESTAPIVersion string
-
+// Public configuration constants
 const (
-	RESTAPIEndpoint   = "https://api.uploadcare.com"
-	UploadAPIEndpoint = "https://upload.uploadcare.com"
-
-	APIv05 RESTAPIVersion = "v0.5"
-	APIv06 RESTAPIVersion = "v0.6"
-
-	clientVersion   = "0.1.0"
-	userAgentPrefix = "UploadcareGo"
-
-	acceptHeaderFormat = "application/vnd.uploadcare-%s+json"
-
-	maxThrottleRetries = 3
-
-	ucTimeLayout = "2006-01-02T15:04:05"
+	APIv05 = "v0.5"
+	APIv06 = "v0.6"
 )
 
 var (
-	supportedVersions = map[RESTAPIVersion]bool{
+	supportedVersions = map[string]bool{
 		APIv05: true,
 		APIv06: true,
 	}
 
-	DefaultAPIVersion = APIv05
+	defaultAPIVersion = APIv05
 )
-
-type Time struct{ time.Time }
-
-func (t *Time) UnmarshalJSON(b []byte) (err error) {
-	s := strings.Trim(string(b), "\"")
-	if s == "null" {
-		t = nil
-		return
-	}
-	// time is returned in a different format every time
-	// so we need to normalize it in order to parse it
-	dotInd := strings.Index(s, ".")
-	if dotInd > -1 {
-		s = s[:dotInd]
-	}
-	t.Time, err = time.Parse(ucTimeLayout, s)
-	return
-}
