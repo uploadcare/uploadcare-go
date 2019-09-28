@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"strings"
 
 	"github.com/uploadcare/uploadcare-go/internal/codec"
 	"github.com/uploadcare/uploadcare-go/ucare"
@@ -96,10 +95,7 @@ func (s service) ListFiles(
 	}
 
 	method := http.MethodGet
-	url := singleSlashJoin(
-		ucare.RESTAPIEndpoint,
-		listFilesPathFormat,
-	)
+	url := ucare.RESTAPIEndpoint + listFilesPathFormat
 
 	req, err := s.client.NewRequest(ctx, method, url, params)
 	if err != nil {
@@ -117,106 +113,4 @@ func (s service) ListFiles(
 	}
 
 	return &FileList{resbuf}, nil
-}
-
-type FileInfo struct {
-	// RemovedAt is date and time when a file was removed, if any
-	RemovedAt *ucare.Time `json:"datetime_removed"`
-
-	// StoredAt is date and time of the last store request, if any
-	StoredAt *ucare.Time `json:"datetime_stored"`
-
-	// UploadedAt is a date and time when a file was uploaded
-	UploadedAt *ucare.Time `json:"datetime_uploaded"`
-
-	// ImageInfo holds image metadata
-	ImageInfo *ImageInfo `json:"image_info"`
-
-	// MimeType specifies file MIME-type
-	MimeType string `json:"mime_type"`
-
-	// OriginalFileURL is a publicly available file CDN URL.
-	// Available if a file is not deleted
-	OriginalFileURL string `json:"original_file_url"`
-
-	// OriginalFileName is a file name taken from uploaded file
-	OriginalFileName string `json:"original_filename"`
-
-	// URI is a API resource URL for a file
-	URI string `json:"uri"`
-
-	// ID is a file unique id (UUID)
-	ID string `json:"uuid"`
-
-	// Size denotes file size in bytes
-	Size int64 `json:"size"`
-
-	// IsImage denotes if a file is an image
-	IsImage bool `json:"is_image"`
-
-	// IsReady denotes if file is ready to be used after upload
-	IsReady bool `json:"is_ready"`
-}
-
-// Image color mode contants
-const (
-	ImageColorModeRGB   = "RGB"
-	ImageColorModeRGBA  = "RGBA"
-	ImageColorModeRGBa  = "RGBa"
-	ImageColorModeRGBX  = "RGBX"
-	ImageColorModeL     = "L"
-	ImageColorModeLA    = "LA"
-	ImageColorModeLa    = "La"
-	ImageColorModeP     = "P"
-	ImageColorModePA    = "PA"
-	ImageColorModeCMYK  = "CMYK"
-	ImageColorModeYCbCr = "YCbCr"
-	ImageColorModeHSV   = "HSV"
-	ImageColorModeLAB   = "LAB"
-)
-
-type ImageInfo struct {
-	// ColorMode is image color mode
-	ColorMode string `json:"color_mode"`
-
-	// Format specifies image format
-	Format string `json:"format"`
-
-	// Hight is image height in pixels
-	Hight int64 `json:"height"`
-
-	// Width is image width in pixels
-	Width int64 `json:"width"`
-
-	// Orientation is image orientation from EXIF
-	Orientation *int64 `json:"orientation"`
-
-	// DPI specifies image DPI for two dimensions
-	DPI []int64 `json:"dpi"`
-
-	// GeoLocation is geo-location of image from EXIF
-	GeoLocation *Location `json:"geo_location"`
-
-	// DateTimeOriginal is image date and time from EXIF
-	DateTimeOriginal *ucare.Time `json:"datetime_original"`
-
-	// Sequence denotes if image is sequence image (GIF for example)
-	Sequence bool `json:"sequence"`
-}
-
-type Location struct {
-	Latitude  int64 `json:"latitude"`
-	Longitude int64 `json:"longitude"`
-}
-
-func singleSlashJoin(a, b string) string {
-	aslash := strings.HasSuffix(a, "/")
-	bslash := strings.HasPrefix(b, "/")
-	switch {
-	case aslash && bslash:
-		return a + b[1:]
-	case !aslash && !bslash:
-		return a + "/" + b
-	}
-	return a + b
 }

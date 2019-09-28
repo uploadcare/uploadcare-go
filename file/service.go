@@ -10,7 +10,7 @@ import (
 // Service describes all file related API
 type Service interface {
 	ListFiles(context.Context, *ListParams) (*FileList, error)
-	//FileInfo(context.Context, ID) (FileInfo, error)
+	FileInfo(ctx context.Context, id string) (FileInfo, error)
 	//DeleteFile(context.Context, ID) (FileInfo, error)
 	//StoreFile(context.Context, ID) (FileInfo, error)
 }
