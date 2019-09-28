@@ -11,7 +11,7 @@ This release is still in progress.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Usage examples](#usage-examples)
+- [Documentation](#documentation)
 
 ### Requirements
 
@@ -25,18 +25,25 @@ To install the library simply run:
 go get -u -v github.com/uploadcare/uploadcare-go/...
 ```
 
-### Usage examples
+### Documentation
 
-Getting a paginated list of files:
+For details on all the functionality in this library, see the
+[GoDoc](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
+documentation.
+
+Below are a few examples:
+
 
 ```go
 import(
 	"github.com/uploadcare/uploadcare-go/ucare"
 	"github.com/uploadcare/uploadcare-go/file"
-	...
 )
+```
 
-func main() {
+Getting a paginated list of files:
+
+```go
 	// your project credentials
 	creds := ucare.APICreds{
 		SecretKey: "your-project-secret-key",
@@ -75,9 +82,6 @@ func main() {
 
 		ids = append(ids, finfo.ID)
 	}
-	
-	...
-}
 ```
 
 Acquiring file-specific info:

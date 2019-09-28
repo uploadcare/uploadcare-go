@@ -1,5 +1,5 @@
 /*
-Package ucare provides a client for using the Uploadcare API.
+Package ucare provides the binding for the Uploadcare API.
 
 Usage:
 
