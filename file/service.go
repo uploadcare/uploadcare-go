@@ -11,8 +11,8 @@ import (
 type Service interface {
 	List(context.Context, *ListParams) (*List, error)
 	Info(ctx context.Context, id string) (Info, error)
-	//Delete(context.Context, ID) (Info, error)
-	//Store(context.Context, ID) (Info, error)
+	Delete(ctx context.Context, id string) (Info, error)
+	Store(ctx context.Context, id string) (Info, error)
 }
 
 type service struct {

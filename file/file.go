@@ -9,15 +9,52 @@ import (
 	"github.com/uploadcare/uploadcare-go/internal/config"
 )
 
+var errEmptyFileID = errors.New("empty file id")
+
 // Info acquires some file-specific info
 func (s service) Info(ctx context.Context, fileID string) (Info, error) {
+	return s.fileOp(
+		ctx,
+		http.MethodGet,
+		infoPathFormat,
+		fileID,
+	)
+}
+
+// Store a single file by its id
+func (s service) Store(ctx context.Context, fileID string) (Info, error) {
+	return s.fileOp(
+		ctx,
+		http.MethodPut,
+		storePathFormat,
+		fileID,
+	)
+}
+
+// Delete removes file by its id
+func (s service) Delete(ctx context.Context, fileID string) (Info, error) {
+	return s.fileOp(
+		ctx,
+		http.MethodDelete,
+		deletePathFormat,
+		fileID,
+	)
+}
+
+func (s service) fileOp(
+	ctx context.Context,
+	method string,
+	pathFormat string,
+	fileID string,
+) (Info, error) {
 	if fileID == "" {
-		return Info{}, errors.New("empty file id provided")
+		return Info{}, errEmptyFileID
 	}
 
-	method := http.MethodGet
-	path := fmt.Sprintf(infoPathFormat, fileID)
+	path := fmt.Sprintf(pathFormat, fileID)
 	url := config.RESTAPIEndpoint + path
+
+	log.Infof("requesting: %s %s", method, url)
 
 	req, err := s.client.NewRequest(ctx, method, url, nil)
 	if err != nil {
@@ -29,7 +66,7 @@ func (s service) Info(ctx context.Context, fileID string) (Info, error) {
 
 	log.Debugf("received file info: %+v", finfo)
 
-	return finfo, err
+	return finfo, nil
 }
 
 // Info holds file specific information
