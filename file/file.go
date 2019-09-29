@@ -2,71 +2,54 @@ package file
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/internal/config"
 )
 
-var errEmptyFileID = errors.New("empty file id")
-
 // Info acquires some file-specific info
-func (s service) Info(ctx context.Context, fileID string) (Info, error) {
-	return s.fileOp(
+func (s service) Info(
+	ctx context.Context,
+	fileID string,
+) (data Info, err error) {
+	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
 		infoPathFormat,
 		fileID,
+		&data,
 	)
+	return
 }
 
 // Store a single file by its id
-func (s service) Store(ctx context.Context, fileID string) (Info, error) {
-	return s.fileOp(
+func (s service) Store(
+	ctx context.Context,
+	fileID string,
+) (data Info, err error) {
+	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPut,
 		storePathFormat,
 		fileID,
+		&data,
 	)
+	return
 }
 
 // Delete removes file by its id
-func (s service) Delete(ctx context.Context, fileID string) (Info, error) {
-	return s.fileOp(
+func (s service) Delete(
+	ctx context.Context,
+	fileID string,
+) (data Info, err error) {
+	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodDelete,
 		deletePathFormat,
 		fileID,
+		&data,
 	)
-}
-
-func (s service) fileOp(
-	ctx context.Context,
-	method string,
-	pathFormat string,
-	fileID string,
-) (Info, error) {
-	if fileID == "" {
-		return Info{}, errEmptyFileID
-	}
-
-	path := fmt.Sprintf(pathFormat, fileID)
-	url := config.RESTAPIEndpoint + path
-
-	log.Infof("requesting: %s %s", method, url)
-
-	req, err := s.client.NewRequest(ctx, method, url, nil)
-	if err != nil {
-		return Info{}, err
-	}
-
-	var finfo Info
-	err = s.client.Do(req, &finfo)
-
-	log.Debugf("received file info: %+v", finfo)
-
-	return finfo, nil
+	return
 }
 
 // Info holds file specific information

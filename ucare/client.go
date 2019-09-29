@@ -18,7 +18,7 @@ type Client interface {
 		ctx context.Context,
 		method string,
 		url string,
-		data RequestEncoder,
+		data ReqEncoder,
 	) (*http.Request, error)
 	Do(req *http.Request, resdata interface{}) error
 }
@@ -81,18 +81,18 @@ func NewClient(creds APICreds, opts ...OptFunc) (Client, error) {
 	return &c, nil
 }
 
-// RequestEncoder exists to encode data into prepared request.
+// ReqEncoder exists to encode data into prepared request.
 // It may encode part of the data to the query string and other
 // part into the request body
-type RequestEncoder interface {
-	EncodeRequest(*http.Request)
+type ReqEncoder interface {
+	EncodeReq(*http.Request)
 }
 
 func (c *client) NewRequest(
 	ctx context.Context,
 	method string,
 	fullpath string,
-	data RequestEncoder,
+	data ReqEncoder,
 ) (*http.Request, error) {
 	req, err := http.NewRequest(method, fullpath, nil)
 	if err != nil {
@@ -101,7 +101,7 @@ func (c *client) NewRequest(
 
 	req = req.WithContext(ctx)
 	if data != nil {
-		data.EncodeRequest(req)
+		data.EncodeReq(req)
 	}
 
 	date := time.Now().In(dateHeaderLocation).Format(dateHeaderFormat)

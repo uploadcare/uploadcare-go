@@ -1,5 +1,7 @@
 package ucare
 
+import "time"
+
 // String returns a pointer to the string value passed in
 func String(v string) *string { return &v }
 
@@ -12,12 +14,12 @@ func StringVal(v *string) string {
 	return ""
 }
 
-// Int64 returns a pointer to the int value passed in
-func Int64(v int64) *int64 { return &v }
+// Uint64 returns a pointer to the int value passed in
+func Uint64(v uint64) *uint64 { return &v }
 
-// Int64Val returns the value of the int pointer passed in or
+// Uint64Val returns the value of the int pointer passed in or
 // 0 if the pointer is nil.
-func Int64Val(v *int64) int64 {
+func Uint64Val(v *uint64) uint64 {
 	if v != nil {
 		return *v
 	}
@@ -37,3 +39,6 @@ func BoolVal(v *bool) bool {
 	}
 	return false
 }
+
+// Time returns a pointer to the time.Time value passed it
+func Time(t time.Time) *time.Time { return &t }

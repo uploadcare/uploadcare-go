@@ -17,13 +17,13 @@ const (
 	AcceptHeaderFormat = "application/vnd.uploadcare-%s+json"
 
 	MaxThrottleRetries = 3
+
+	UCTimeLayout = "2006-01-02T15:04:05"
 )
 
 // Time is needed just to parse custom formated time string
 // returned from the Uploadcare API
 type Time struct{ time.Time }
-
-const ucTimeLayout = "2006-01-02T15:04:05"
 
 // UnmarshalJSON implements json.Unmarshaler
 func (t *Time) UnmarshalJSON(b []byte) (err error) {
@@ -38,6 +38,6 @@ func (t *Time) UnmarshalJSON(b []byte) (err error) {
 	if dotInd > -1 {
 		s = s[:dotInd]
 	}
-	t.Time, err = time.Parse(ucTimeLayout, s)
+	t.Time, err = time.Parse(UCTimeLayout, s)
 	return
 }

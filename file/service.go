@@ -4,13 +4,13 @@
 // is the main Uploadcare resource.
 //
 // Each of uploaded files has an ID (UUID) that is assigned once and never
-// changes later. That means it is safe to store file IDs in your database
-// or even your Moleskine.
+// changes later.
 package file
 
 import (
 	"context"
 
+	"github.com/uploadcare/uploadcare-go/internal/svc"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
@@ -23,7 +23,7 @@ type Service interface {
 }
 
 type service struct {
-	client ucare.Client
+	svc svc.Service
 }
 
 const (
@@ -31,15 +31,15 @@ const (
 	infoPathFormat   = "/files/%s/"
 	deletePathFormat = "/files/%s/"
 	storePathFormat  = "/files/%s/storage/"
-)
 
-// NewService return new instance of the Service
-func NewService(client ucare.Client) Service { return service{client} }
-
-// OrderBy predefined constants to be used in request params
-const (
+	// OrderBy predefined constants to be used in request params
 	OrderByUploadedAtAsc  = "datetime_uploaded"
 	OrderByUploadedAtDesc = "-datetime_uploaded"
 	OrderBySizeAsc        = "size"
 	OrderBySizeDesc       = "-size"
 )
+
+// NewService return new instance of the Service
+func NewService(client ucare.Client) Service {
+	return service{svc.New(client, log)}
+}

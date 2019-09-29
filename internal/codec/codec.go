@@ -8,8 +8,14 @@ package codec
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"reflect"
+	"strconv"
 	"sync"
+	"time"
 
+	"github.com/uploadcare/uploadcare-go/internal/config"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
@@ -87,4 +93,38 @@ func (b *ResultBuf) ReadRawResult() (Raw, error) {
 	b.at++
 
 	return res, nil
+}
+
+// EncodeReqQuery encodes data passed as an http.Request query string.
+// NOTE: data must be a pointer to a struct type.
+func EncodeReqQuery(data interface{}, req *http.Request) {
+	if reflect.TypeOf(data).Kind() != reflect.Ptr {
+		return
+	}
+	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
+	if t.Kind() != reflect.Struct {
+		return
+	}
+	q := req.URL.Query()
+	for i := 0; i < t.NumField(); i++ {
+		f := v.Field(i)
+		if f.IsNil() {
+			continue
+		}
+
+		var val string
+		switch valc := f.Interface().(type) {
+		case *string:
+			val = ucare.StringVal(valc)
+		case *uint64:
+			val = strconv.FormatUint(ucare.Uint64Val(valc), 10)
+		case *bool:
+			val = fmt.Sprintf("%t", ucare.BoolVal(valc))
+		case *time.Time:
+			val = valc.Format(config.UCTimeLayout)
+		}
+
+		q.Set(t.Field(i).Tag.Get("form"), val)
+	}
+	req.URL.RawQuery = q.Encode()
 }
