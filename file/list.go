@@ -38,7 +38,7 @@ func (d *ListParams) EncodeReq(req *http.Request) {
 	codec.EncodeReqQuery(d, req)
 }
 
-// List is a paginated list of files
+// List holds a list of files
 type List struct {
 	raw codec.NextRawResulter
 }
