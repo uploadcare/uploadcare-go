@@ -100,7 +100,7 @@ type Info struct {
 	ID string `json:"uuid"`
 
 	// Size denotes file size in bytes
-	Size int64 `json:"size"`
+	Size uint64 `json:"size"`
 
 	// IsImage denotes if a file is an image
 	IsImage bool `json:"is_image"`
@@ -135,10 +135,10 @@ type ImageInfo struct {
 	Format string `json:"format"`
 
 	// Height is image height in pixels
-	Height int64 `json:"height"`
+	Height uint64 `json:"height"`
 
 	// Width is image width in pixels
-	Width int64 `json:"width"`
+	Width uint64 `json:"width"`
 
 	// Orientation is image orientation from EXIF
 	Orientation *int64 `json:"orientation"`
