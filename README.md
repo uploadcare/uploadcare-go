@@ -61,7 +61,7 @@ Getting a paginated list of files:
 
 	listParams := &file.ListParams{
 		Stored:   ucare.String(true),
-		Ordering: ucare.String(file.OrderBySizeAsc),
+		OrderBy: ucare.String(file.OrderBySizeAsc),
 	}
 	
 	fileList, err := fileSvc.List(context.Background(), listParams)
