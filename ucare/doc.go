@@ -35,7 +35,7 @@ Getting a paginated list of files:
 
 	listParams := &file.ListParams{
 		Stored:   ucare.String(true),
-		Ordering: ucare.String(file.OrderBySizeAsc),
+		OrderBy: ucare.String(file.OrderBySizeAsc),
 	}
 
 	fileList, err := fileSvc.List(context.Background(), listParams)
@@ -86,19 +86,24 @@ Getting a list of groups:
 
 	groupSvc := group.New(client)
 
-	groupList, err := groupSvc.List()
+	listParams := &file.ListParams{
+		OrderBy:      ucare.String(group.OrderByCreatedAtAsc),
+		Limit:        ucare.String(20),
+	}
+
+	groupList, err := groupSvc.List(context.Backgroud(), listParams)
 	if err != nil {
 		// handle error
 	}
 
 	// getting group IDs
-	groupIDs = make([]string, 0, groupList.Total)
+	groupIDs = make([]string, 0, 100)
 	for groupList.Next() {
-		glist, err := groupList.ReadResult()
+		groupList, err := groupList.ReadResult()
 		if err != nil {
 			// handle error
 		}
-		groupIDs = append(groupIDs, glist.ID)
+		groupIDs = append(groupIDs, groupList.ID)
 	}
 
 Getting a file group by ID:
