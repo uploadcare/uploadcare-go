@@ -1,8 +1,5 @@
 // Package codec holds everything related to decoding paginated response
 // and making subsequent pages calls
-//
-// WIP.
-// TODO: add tests
 package codec
 
 import (
