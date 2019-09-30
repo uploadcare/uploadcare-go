@@ -9,7 +9,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/internal/codec"
 )
 
-// ListParams holds all possible params to for the List method
+// ListParams holds all possible params for the List method
 type ListParams struct {
 	// Limit specifies preferred amount of groups in a list for a single
 	// response. Defaults to 100, while the maximum is 1000

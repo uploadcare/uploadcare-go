@@ -9,7 +9,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/internal/codec"
 )
 
-// ListParams holds all possible params to for the List method
+// ListParams holds all possible params for for the List method
 type ListParams struct {
 	// Removed is set to true if only include removed files in the response,
 	// otherwise existing files are included. Defaults to false.
