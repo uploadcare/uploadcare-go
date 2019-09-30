@@ -43,7 +43,7 @@ const (
 	OrderByCreatedAtDesc = "-datetime_created"
 )
 
-// NewService return new instance of the Service
+// NewService returns new instance of the Service
 func NewService(client ucare.Client) Service {
 	return service{svc.New(client, log)}
 }
