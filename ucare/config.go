@@ -1,9 +1,18 @@
 package ucare
 
+import (
+	"net/http"
+	"time"
+)
+
 // Public configuration constants
 const (
 	APIv05 = "v0.5"
 	APIv06 = "v0.6"
+
+	simpleAuthScheme    = "Uploadcare.Simple"
+	signBasedAuthScheme = "Uploadcare"
+	dateHeaderFormat    = time.RFC1123
 )
 
 var (
@@ -13,4 +22,7 @@ var (
 	}
 
 	defaultAPIVersion = APIv05
+
+	authHeaderKey      = http.CanonicalHeaderKey("Authorization")
+	dateHeaderLocation = time.FixedZone("GMT", 0)
 )

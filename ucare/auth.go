@@ -10,23 +10,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type authFunc func(APICreds, *http.Request)
-
-const (
-	simpleAuthScheme    = "Uploadcare.Simple"
-	signBasedAuthScheme = "Uploadcare"
-
-	dateHeaderFormat = time.RFC1123
-)
-
-var (
-	authHeaderKey = http.CanonicalHeaderKey("Authorization")
-
-	dateHeaderLocation = time.FixedZone("GMT", 0)
-)
 
 // SimpleAuth provides simple authentication scheme where your
 // secret API key MUST be specified in every request's Authorization header:
