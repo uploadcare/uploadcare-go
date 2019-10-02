@@ -36,7 +36,6 @@ type authParams struct {
 // EncodeReq implementes ucare.ReqEncoder
 func (d *FileParams) EncodeReq(req *http.Request) error {
 	authFuncI := req.Context().Value(config.CtxAuthFuncKey)
-	//authFunc, ok := authFuncI.(func() (string, *string, *int64))
 	authFunc, ok := authFuncI.(ucare.UploadAPIAuthFunc)
 	if !ok {
 		return errors.New("auth func has a wrong signature")
