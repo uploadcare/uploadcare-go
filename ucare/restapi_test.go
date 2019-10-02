@@ -24,18 +24,17 @@ func (t testReqEncoder) EncodeReq(r *http.Request) error {
 	return nil
 }
 
-func TestClientNewRequest(t *testing.T) {
-	t.Parallel()
-
-	creds := APICreds{
+func testCreds() APICreds {
+	return APICreds{
 		SecretKey: "testsecretkey",
 		PublicKey: "testpublickey",
 	}
+}
 
-	client, err := NewClient(creds, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestRESTAPIClient(t *testing.T) {
+	t.Parallel()
+
+	client := newRESTAPIClient(testCreds(), resolveConfig(nil))
 
 	cases := []struct {
 		test string
@@ -47,7 +46,7 @@ func TestClientNewRequest(t *testing.T) {
 
 		checkReq func(*http.Request) error
 	}{{
-		test:     "rest api",
+		test:     "simple case",
 		endpoint: config.RESTAPIEndpoint,
 		method:   http.MethodGet,
 		requrl:   "/files/",
@@ -74,27 +73,6 @@ func TestClientNewRequest(t *testing.T) {
 			}
 			return nil
 		},
-	}, {
-		test:     "upload api get",
-		endpoint: config.UploadAPIEndpoint,
-		method:   http.MethodGet,
-		requrl:   "/base/",
-		data: testReqEncoder{
-			body:  "formkey=formvalue",
-			query: "qparam1=qparamvalue1&qparam2=qparamvalue2",
-		},
-		checkReq: func(r *http.Request) error {
-			// check only data in this test case
-			data, _ := ioutil.ReadAll(r.Body)
-			if string(data) != "formkey=formvalue" {
-				return errors.New("invalid req body data")
-			}
-			qr := r.URL.RawQuery
-			if qr != "qparam1=qparamvalue1&qparam2=qparamvalue2" {
-				return errors.New("invlid req query")
-			}
-			return nil
-		},
 	}}
 
 	for _, c := range cases {
@@ -113,5 +91,4 @@ func TestClientNewRequest(t *testing.T) {
 			assert.Equal(t, nil, c.checkReq(req))
 		})
 	}
-
 }

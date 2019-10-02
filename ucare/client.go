@@ -66,7 +66,7 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 	c := client{
 		backends: map[config.Endpoint]Client{
 			config.RESTAPIEndpoint:   newRESTAPIClient(creds, conf),
-			config.UploadAPIEndpoint: newUploadClient(creds, conf),
+			config.UploadAPIEndpoint: newUploadAPIClient(creds, conf),
 		},
 	}
 

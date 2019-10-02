@@ -11,14 +11,14 @@ import (
 	"github.com/uploadcare/uploadcare-go/internal/config"
 )
 
-type uploadClient struct {
+type uploadAPIClient struct {
 	authFunc UploadAPIAuthFunc
 
 	conn *http.Client
 }
 
-func newUploadClient(creds APICreds, conf *Config) Client {
-	c := uploadClient{
+func newUploadAPIClient(creds APICreds, conf *Config) Client {
+	c := uploadAPIClient{
 		authFunc: simpleUploadAPIAuthFunc(creds),
 		conn:     conf.HTTPClient,
 	}
@@ -30,7 +30,7 @@ func newUploadClient(creds APICreds, conf *Config) Client {
 	return &c
 }
 
-func (c *uploadClient) NewRequest(
+func (c *uploadAPIClient) NewRequest(
 	ctx context.Context,
 	endpoint config.Endpoint,
 	method string,
@@ -65,7 +65,7 @@ func (c *uploadClient) NewRequest(
 	return req, nil
 }
 
-func (c *uploadClient) Do(
+func (c *uploadAPIClient) Do(
 	req *http.Request,
 	resdata interface{},
 ) error {
