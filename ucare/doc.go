@@ -132,7 +132,8 @@ Uploading a file
 	}
 
 	fileParams := &upload.FileParams{
-		File: file,
+		Data: fiile,
+		Name: file.Name(),
 		ToStore: ucare.String(upload.ToStoreTrue),
 	}
 
