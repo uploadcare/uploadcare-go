@@ -24,6 +24,8 @@ func New(client ucare.Client, log uclog.Logger) Service {
 	return Service{client, log}
 }
 
+var ErrNilParams = errors.New("nil params passed")
+
 // List returns a list of raw results, *codec.ResultBuf later must be wrapped
 // with somem concrete service type.
 func (s Service) List(
@@ -32,13 +34,13 @@ func (s Service) List(
 	params ucare.ReqEncoder,
 ) (*codec.ResultBuf, error) {
 	if params == nil {
-		return nil, errors.New("nil params passed")
+		return nil, ErrNilParams
 	}
 
+	endpoint := config.RESTAPIEndpoint
 	method := http.MethodGet
-	url := config.RESTAPIEndpoint + path
 
-	req, err := s.client.NewRequest(ctx, method, url, params)
+	req, err := s.client.NewRequest(ctx, endpoint, method, path, params)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +73,12 @@ func (s Service) ResourceOp(
 		return errEmptyFileID
 	}
 
-	path := fmt.Sprintf(pathFormat, resourceID)
-	url := config.RESTAPIEndpoint + path
+	endpoint := config.RESTAPIEndpoint
+	requrl := fmt.Sprintf(pathFormat, resourceID)
 
-	s.log.Infof("requesting: %s %s", method, url)
+	s.log.Infof("requesting: %s %s", method, requrl)
 
-	req, err := s.client.NewRequest(ctx, method, url, nil)
+	req, err := s.client.NewRequest(ctx, endpoint, method, requrl, nil)
 	if err != nil {
 		return err
 	}
