@@ -9,35 +9,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type authFunc func(APICreds, *http.Request)
+type restAPIAuthFunc func(APICreds, *http.Request)
 
-// SimpleAuth provides simple authentication scheme where your
-// secret API key MUST be specified in every request's Authorization header:
-//
-//	Authorization: Uploadcare.Simple public_key:secret_key
-func SimpleAuth(creds APICreds, req *http.Request) {
-	setHeader(req, authHeaderKey, simpleAuthParam(creds))
+func simpleRESTAPIAuth(creds APICreds, req *http.Request) {
+	setHeader(req, authHeaderKey, simpleRESTAPIAuthParam(creds))
 }
 
-// SignBasedAuth provides SHA1 signature based authentication scheme where
-// your secret API key is used to derive signature but is not included in
-// the request itself. Authorization header looks like this:
-//
-//	Authorization: Uploadcare public_key:signature
-//
-// For more info on how SHA1 signature is constructed see
-// https://uploadcare.com/docs/api_reference/rest/requests_auth/
-func SignBasedAuth(creds APICreds, req *http.Request) {
-	authParam := signBasedAuthParam(creds, req)
+func signBasedRESTAPIAuth(creds APICreds, req *http.Request) {
+	authParam := signBasedRESTAPIAuthParam(creds, req)
 	setHeader(req, authHeaderKey, authParam)
 }
 
 func setHeader(req *http.Request, key, val string) { req.Header.Set(key, val) }
 
-func simpleAuthParam(creds APICreds) string {
+func simpleRESTAPIAuthParam(creds APICreds) string {
 	val := fmt.Sprintf(
 		"%s %s:%s",
 		simpleAuthScheme,
@@ -48,7 +38,7 @@ func simpleAuthParam(creds APICreds) string {
 	return val
 }
 
-func signBasedAuthParam(creds APICreds, req *http.Request) string {
+func signBasedRESTAPIAuthParam(creds APICreds, req *http.Request) string {
 	bodyData := new(bytes.Buffer)
 	var bodyReader io.Reader
 	bodyReader = req.Body
@@ -87,4 +77,27 @@ func signBasedAuthParam(creds APICreds, req *http.Request) string {
 
 	log.Debugf("preparing sign based auth param: %s", val)
 	return val
+}
+
+// UploadAPIAuthFunc is for internal use and should not be used by the users
+type UploadAPIAuthFunc func() (pubkey string, sign *string, exp *int64)
+
+func simpleUploadAPIAuthFunc(creds APICreds) UploadAPIAuthFunc {
+	return func() (string, *string, *int64) {
+		return creds.PublicKey, nil, nil
+	}
+}
+
+func signBasedUploadAPIAuthFunc(creds APICreds) UploadAPIAuthFunc {
+	return func() (string, *string, *int64) {
+		exp := time.Now().Add(30 * time.Minute).Unix()
+		sign := signBasedUploadAPIAuthParam(creds.SecretKey, exp)
+		return creds.PublicKey, &sign, &exp
+	}
+}
+
+func signBasedUploadAPIAuthParam(secret string, exp int64) string {
+	h := md5.New()
+	h.Write([]byte(secret + strconv.FormatInt(exp, 10)))
+	return hex.EncodeToString(h.Sum(nil))
 }

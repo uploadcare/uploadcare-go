@@ -24,5 +24,7 @@ var (
 	defaultAPIVersion = APIv05
 
 	authHeaderKey      = http.CanonicalHeaderKey("Authorization")
+	userAgentHeaderKey = http.CanonicalHeaderKey("X-UC-User-Agent")
+
 	dateHeaderLocation = time.FixedZone("GMT", 0)
 )

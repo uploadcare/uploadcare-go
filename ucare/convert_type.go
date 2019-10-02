@@ -14,6 +14,18 @@ func StringVal(v *string) string {
 	return ""
 }
 
+// Int64 returns a pointer to the int value passed in
+func Int64(v int64) *int64 { return &v }
+
+// Int64Val returns the value of the int pointer passed in or
+// 0 if the pointer is nil.
+func Int64Val(v *int64) int64 {
+	if v != nil {
+		return *v
+	}
+	return 0
+}
+
 // Uint64 returns a pointer to the int value passed in
 func Uint64(v uint64) *uint64 { return &v }
 

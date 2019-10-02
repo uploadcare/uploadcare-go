@@ -12,6 +12,8 @@ var (
 		"forbidden. Please, use HTTPS or signed requests instead")
 	ErrInvalidVersion = errors.New("Could not satisfy the request " +
 		"Accept header")
+	ErrFileTooLarge = errors.New("Direct uploads only support " +
+		"files smaller than 100MB")
 )
 
 type respErr struct {
@@ -30,8 +32,19 @@ type throttleErr struct {
 }
 
 func (e throttleErr) Error() string {
+	if e.RetryAfter == 0 {
+		return "Request was throttled."
+	}
 	return fmt.Sprintf(
 		"Request was throttled. Expected available in %d second",
 		e.RetryAfter,
 	)
 }
+
+type reqValidationErr struct{ respErr }
+
+func (e reqValidationErr) Error() string {
+	return fmt.Sprintf("Request parameters validation error: %s", e.Details)
+}
+
+type reqForbiddenErr struct{ respErr }

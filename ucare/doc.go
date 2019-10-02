@@ -14,7 +14,11 @@ access different parts of the Uploadcare API:
 		PublicKey: "your_public_key",
 	}
 
-	client, err := ucare.NewClient(creds)
+	conf := ucare.Config{
+		SignBasedAuth: true,
+	}
+
+	client, err := ucare.NewClient(creds, &conf)
 	if err != nil {
 		// handle error
 	}

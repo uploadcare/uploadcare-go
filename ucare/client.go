@@ -2,12 +2,8 @@ package ucare
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/uploadcare/uploadcare-go/internal/config"
 )
@@ -16,22 +12,12 @@ import (
 type Client interface {
 	NewRequest(
 		ctx context.Context,
+		endpoint config.Endpoint,
 		method string,
-		url string,
+		requrl string,
 		data ReqEncoder,
 	) (*http.Request, error)
 	Do(req *http.Request, resdata interface{}) error
-}
-
-type client struct {
-	creds      APICreds
-	apiVersion string
-
-	userAgent     string
-	acceptHeader  string
-	setAuthHeader func(APICreds, *http.Request)
-
-	conn *http.Client
 }
 
 // APICreds holds per project API credentials.
@@ -41,170 +27,88 @@ type APICreds struct {
 	PublicKey string
 }
 
-// OptFunc is a function that does some configuration on the passed client
-type OptFunc func(*client) error
+// Config holds configuration for the client
+type Config struct {
+	// HTTPClient allowes you to set custom http client for the calls
+	HTTPClient *http.Client
+	// APIVersion specifies REST API version to be used
+	APIVersion string
+	// SignBasedAuthentication should be true if you want to use
+	// signed uploads and signature based authentication for the
+	// REST API calls.
+	// NOTE: In order to use it you need to switch it on in your project’s
+	// settings via the dashboard.
+	SignBasedAuthentication bool
+}
 
-// NewClient returns new API client with provided project credentials.
-// Client is responsible for the underlying API calls.
-// Opts are used for client configration.
-func NewClient(creds APICreds, opts ...OptFunc) (Client, error) {
-	log.Infof("creating new uploadcare client with creds: %+v", creds)
+// ReqEncoder exists to encode data into the prepared request.
+// It may encode part of the data to the query string and other
+// part into the request body. It may also set request headers for some
+// payload types (multipart/form-data).
+type ReqEncoder interface {
+	EncodeReq(*http.Request) error
+}
+
+type client struct {
+	backends map[config.Endpoint]Client
+}
+
+// NewClient initializes and configures new client for the high level API.
+func NewClient(creds APICreds, conf *Config) (Client, error) {
+	log.Infof("creating new client: %+v, %+v", creds, conf)
 
 	if creds.SecretKey == "" || creds.PublicKey == "" {
-		return nil, ErrInvalidAuthCreds
+		return nil, errors.New("uploadcare: invalid api creds provided")
 	}
+
+	conf = resolveConfig(conf)
 
 	c := client{
-		creds:      creds,
-		apiVersion: defaultAPIVersion,
-
-		setAuthHeader: SimpleAuth,
-
-		conn: http.DefaultClient,
+		backends: map[config.Endpoint]Client{
+			config.RESTAPIEndpoint:   newRESTAPIClient(creds, conf),
+			config.UploadAPIEndpoint: newUploadClient(creds, conf),
+		},
 	}
-
-	for _, o := range opts {
-		err := o(&c)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	c.acceptHeader = fmt.Sprintf(config.AcceptHeaderFormat, c.apiVersion)
-	c.userAgent = fmt.Sprintf(
-		"%s/%s/%s",
-		config.UserAgentPrefix,
-		config.ClientVersion,
-		creds.PublicKey,
-	)
 
 	return &c, nil
 }
 
-// ReqEncoder exists to encode data into prepared request.
-// It may encode part of the data to the query string and other
-// part into the request body
-type ReqEncoder interface {
-	EncodeReq(*http.Request)
-}
+var errNoClient = errors.New("no client for such endpoint")
 
+// NewRequests constructs new http request.
 func (c *client) NewRequest(
 	ctx context.Context,
+	endpoint config.Endpoint,
 	method string,
-	fullpath string,
+	requrl string,
 	data ReqEncoder,
 ) (*http.Request, error) {
-	req, err := http.NewRequest(method, fullpath, nil)
-	if err != nil {
-		return nil, err
+	b, ok := c.backends[endpoint]
+	if !ok {
+		return nil, errNoClient
 	}
 
-	req = req.WithContext(ctx)
-	if data != nil {
-		data.EncodeReq(req)
-	}
-
-	date := time.Now().In(dateHeaderLocation).Format(dateHeaderFormat)
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", c.acceptHeader)
-	req.Header.Set("User-Agent", c.userAgent)
-	req.Header.Set("Date", date)
-
-	c.setAuthHeader(c.creds, req)
-
-	log.Debugf("created new request: %+v", req)
-	return req, nil
+	return b.NewRequest(ctx, endpoint, method, requrl, data)
 }
 
+// Do performs the actual backend API call.
 func (c *client) Do(req *http.Request, resdata interface{}) error {
-	tries := 0
-try:
-	tries++
-
-	log.Debugf("making %d request: %+v", tries, req)
-
-	resp, err := c.conn.Do(req)
-	if err != nil {
-		return err
+	b, ok := c.backends[config.Endpoint(req.URL.Host)]
+	if !ok {
+		return errNoClient
 	}
-
-	log.Debugf("received response: %+v", resp)
-
-	switch resp.StatusCode {
-	case 400:
-		return ErrAuthForbidden
-	case 401:
-		var err authErr
-		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
-			return e
-		}
-		return err
-	case 406:
-		return ErrInvalidVersion
-	case 429:
-		retryAfter, err := strconv.Atoi(
-			resp.Header.Get("Retry-After"),
-		)
-		if err != nil {
-			return fmt.Errorf("invalid Retry-After: %w", err)
-		}
-
-		if tries > config.MaxThrottleRetries {
-			return throttleErr{retryAfter}
-		}
-
-		time.Sleep(time.Duration(retryAfter) * time.Second)
-		goto try
-	}
-
-	err = json.NewDecoder(resp.Body).Decode(&resdata)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	return nil
+	return b.Do(req, resdata)
 }
 
-// WithHTTPClient is used to provide your custom http client to the Client.
-// Use it if you need custom transport configuration etc.
-func WithHTTPClient(conn *http.Client) OptFunc {
-	return func(client *client) (err error) {
-		if conn == nil {
-			err = errors.New("nil http client provided")
-		}
-		client.conn = conn
-		return
+func resolveConfig(conf *Config) *Config {
+	if conf == nil {
+		conf = &Config{}
 	}
-}
-
-// WithAPIVersion is used if you want to use version of the Uploadcare REST API
-// different from the DefaultAPIVersion.
-//
-// If you're using functionality that is not supported by the selected
-// version API you'll get ErrInvalidVersion.
-func WithAPIVersion(version string) OptFunc {
-	return func(client *client) (err error) {
-		if _, ok := supportedVersions[version]; !ok {
-			err = errors.New("unsupported API version provided")
-		}
-		client.apiVersion = version
-		return
+	if conf.APIVersion == "" {
+		conf.APIVersion = defaultAPIVersion
 	}
-
-}
-
-// WithAuthentication is used to change authentication mechanism.
-//
-// If you're using SignatureBasedAuth you need to enable it first in
-// the Uploadcare dashboard
-func WithAuthentication(authFunc authFunc) OptFunc {
-	return func(client *client) (err error) {
-		if authFunc == nil {
-			err = errors.New("nil auth function provided")
-		}
-		client.setAuthHeader = authFunc
-		return
+	if conf.HTTPClient == nil {
+		conf.HTTPClient = http.DefaultClient
 	}
+	return conf
 }

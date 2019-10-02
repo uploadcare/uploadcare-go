@@ -10,6 +10,7 @@ import (
 	"time"
 
 	assert "github.com/stretchr/testify/require"
+	"github.com/uploadcare/uploadcare-go/internal/config"
 )
 
 type testReqEncoder struct {
@@ -30,37 +31,36 @@ func TestClientNewRequest(t *testing.T) {
 		PublicKey: "testpublickey",
 	}
 
-	testurl := "http:/test.com/api/"
-	ci, err := NewClient(creds)
+	client, err := NewClient(creds, nil)
 	if err != nil {
 		t.Fatal(err)
-	}
-	client, ok := ci.(*client)
-	if !ok {
-		t.Fatal("client had invalid underlying type")
-	}
-	if client.acceptHeader != "application/vnd.uploadcare-v0.5+json" {
-		t.Fatal("accept header is wrong")
-	}
-	if client.userAgent != "UploadcareGo/0.1.0/testpublickey" {
-		t.Fatal("user agent header is wrong")
 	}
 
 	cases := []struct {
 		test string
 
+		endpoint config.Endpoint
 		method   string
-		fullpath string
+		requrl   string
 		data     ReqEncoder
 
 		checkReq func(*http.Request) error
 	}{{
-		test:     "simple case with no data",
+		test:     "rest api",
+		endpoint: config.RESTAPIEndpoint,
 		method:   http.MethodGet,
-		fullpath: testurl,
+		requrl:   "/files/",
 		data:     nil,
 		checkReq: func(r *http.Request) error {
 			h := r.Header
+			if h.Get("Accept") !=
+				"application/vnd.uploadcare-v0.5+json" {
+				return errors.New("wrong accept header")
+			}
+			if h.Get("User-Agent") !=
+				"UploadcareGo/0.1.0/testpublickey" {
+				return errors.New("wrong user-agent header")
+			}
 			if h.Get("Content-Type") != "application/json" {
 				return errors.New("wrong content-type header")
 			}
@@ -74,9 +74,10 @@ func TestClientNewRequest(t *testing.T) {
 			return nil
 		},
 	}, {
-		test:     "simple case with data",
+		test:     "upload api get",
+		endpoint: config.UploadAPIEndpoint,
 		method:   http.MethodGet,
-		fullpath: testurl,
+		requrl:   "/base/",
 		data: testReqEncoder{
 			body:  "formkey=formvalue",
 			query: "qparam1=qparamvalue1&qparam2=qparamvalue2",
@@ -102,8 +103,9 @@ func TestClientNewRequest(t *testing.T) {
 
 			req, err := client.NewRequest(
 				context.Background(),
+				c.endpoint,
 				c.method,
-				c.fullpath,
+				c.requrl,
 				c.data,
 			)
 			assert.Equal(t, nil, err)
