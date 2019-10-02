@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
 
 	"github.com/uploadcare/uploadcare-go/internal/codec"
 	"github.com/uploadcare/uploadcare-go/internal/config"
@@ -17,11 +17,15 @@ import (
 type FileParams struct {
 	authParams
 
-	// File holds the file to be uploaded. It must be smaller than 100MB.
+	// Data (required) holds the data to be uploaded.
+	//
+	// It must be smaller than 100MB.
 	// An attempt of reading a larger file raises a 413 error with the
 	// respective description. If you want to upload larger files, please
 	// use multipart upload API methods.
-	File *os.File `form:"file"`
+	Data io.Reader `form:"file"`
+	// Name (required) holds uploaded file name
+	Name string
 
 	// ToStore sets the file storing behaviour
 	ToStore *string `form:"UPLOADCARE_STORE"`

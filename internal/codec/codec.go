@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"reflect"
 	"strconv"
 	"sync"
@@ -137,7 +136,8 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 		tf, vf := t.Field(i), v.Field(i)
 
 		// file has been already written
-		if tf.Name == config.FileFieldName {
+		if tf.Name == config.FileFieldName ||
+			tf.Name == config.FilenameFieldName {
 			continue
 		}
 
@@ -167,29 +167,41 @@ func writeFormFile(
 	w *multipart.Writer,
 	data interface{},
 ) error {
-	fileField, ok := reflect.
-		TypeOf(data).
-		Elem().
-		FieldByName(config.FileFieldName)
-	if ok {
-		f, ok := reflect.
-			ValueOf(data).
-			Elem().
-			FieldByName(config.FileFieldName).
-			Interface().(*os.File)
-		if !ok {
-			return errors.New("File must be of type *os.File")
-		}
+	dataType := reflect.TypeOf(data).Elem()
 
-		formFieldName := fileField.Tag.Get("form")
-		part, err := w.CreateFormFile(formFieldName, f.Name())
-		if err != nil {
-			return err
-		}
+	fileField, ok := dataType.FieldByName(config.FileFieldName)
+	if !ok {
+		return nil
+	}
 
-		if _, err = io.Copy(part, f); err != nil {
-			return err
-		}
+	dataVal := reflect.ValueOf(data).Elem()
+
+	f, ok := dataVal.
+		FieldByName(config.FileFieldName).
+		Interface().(io.Reader)
+	if !ok {
+		return errors.New("File must be of type io.Reader")
+	}
+
+	formFieldName := fileField.Tag.Get("form")
+
+	fileName, ok := dataVal.
+		FieldByName(config.FilenameFieldName).
+		Interface().(string)
+	if !ok {
+		return errors.New("File name must be of type string")
+	}
+	if fileName == "" {
+		return errors.New("File name can't be empty string")
+	}
+
+	part, err := w.CreateFormFile(formFieldName, fileName)
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(part, f); err != nil {
+		return err
 	}
 
 	return nil

@@ -22,11 +22,12 @@ const (
 	MaxThrottleRetries = 3
 
 	UCTimeLayout = "2006-01-02T15:04:05"
+)
 
-	// FileFieldName is a field name  used for writing a file into
-	// multipart/form-data request payload type.
-	// For reflection based encoding purpose.
-	FileFieldName = "File"
+// For reflection based payload encoding purpose.
+const (
+	FileFieldName     = "Data"
+	FilenameFieldName = "Name"
 )
 
 // Time is needed just to parse custom formated time string
