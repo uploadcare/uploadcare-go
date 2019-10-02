@@ -2,25 +2,55 @@ package upload
 
 import (
 	"context"
-	"io"
+	"errors"
+	"fmt"
 	"net/http"
+	"os"
+
+	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/internal/svc"
+	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // FileParams holds all possible params for the file upload
 type FileParams struct {
-	// File reads a file to be uploaded
-	File io.Reader `form:"file"`
+	authParams
+
+	// File holds the file to be uploaded. It must be smaller than 100MB.
+	// An attempt of reading a larger file raises a 413 error with the
+	// respective description. If you want to upload larger files, please
+	// use multipart upload API methods.
+	File *os.File `form:"file"`
 
 	// ToStore sets the file storing behaviour
 	ToStore *string `form:"UPLOADCARE_STORE"`
 }
 
-func (d *FileParams) EncodeReq(req *http.Request) {
-	// TODO: encode to body
-	// - d itself
-	// - UPLOADCARE_PUB_KEY
-	// - signature
-	// - expire
+type authParams struct {
+	PubKey    string  `form:"UPLOADCARE_PUB_KEY"`
+	Signature *string `form:"signature"`
+	ExpiresAt *int64  `form:"expire"`
+}
+
+// EncodeReq implementes ucare.ReqEncoder
+func (d *FileParams) EncodeReq(req *http.Request) error {
+	authFuncI := req.Context().Value(config.CtxAuthFuncKey)
+	//authFunc, ok := authFuncI.(func() (string, *string, *int64))
+	authFunc, ok := authFuncI.(ucare.UploadAPIAuthFunc)
+	if !ok {
+		return errors.New("auth func has a wrong signature")
+	}
+	d.PubKey, d.Signature, d.ExpiresAt = authFunc()
+
+	formReader, contentType, err := codec.EncodeReqFormData(d)
+	if err != nil {
+		return fmt.Errorf("creating req form body: %w", err)
+	}
+	req.Header.Set("Content-Type", contentType)
+	req.Body = formReader
+
+	return nil
 }
 
 // UploadFile uploads a file and return its unique id (uuid).
@@ -29,5 +59,25 @@ func (s service) UploadFile(
 	ctx context.Context,
 	params *FileParams,
 ) (string, error) {
-	panic("not implemented")
+	if params == nil {
+		return "", svc.ErrNilParams
+	}
+
+	endpoint := config.UploadAPIEndpoint
+	method := http.MethodPost
+	requrl := directUploadPathFormat
+
+	req, err := s.client.NewRequest(ctx, endpoint, method, requrl, params)
+	if err != nil {
+		return "", err
+	}
+
+	var resp struct{ File string }
+	if err := s.client.Do(req, &resp); err != nil {
+		return "", err
+	}
+
+	log.Debugf("uploaded file: %s", resp.File)
+
+	return resp.File, nil
 }

@@ -34,7 +34,7 @@ type service struct {
 	client ucare.Client
 }
 
-// NewService returns new Service instance
+// NewService creates new upload service instance.
 func NewService(client ucare.Client) Service {
 	return service{client}
 }
@@ -44,4 +44,8 @@ const (
 	ToStoreTrue  = "1"
 	ToStoreFalse = "0"
 	ToStoreAuto  = "auto"
+)
+
+const (
+	directUploadPathFormat = "/base/"
 )
