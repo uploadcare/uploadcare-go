@@ -13,7 +13,6 @@ import (
 	"os"
 	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -101,7 +100,8 @@ func (b *ResultBuf) ReadRawResult() (Raw, error) {
 // EncodeReqQuery encodes data passed as an http.Request query string.
 // NOTE: data must be a pointer to a struct type.
 func EncodeReqQuery(data interface{}, req *http.Request) error {
-	if err := checkDataType(data); err != nil {
+	t, v, err := reflectTypeValue(data)
+	if err != nil {
 		return err
 	}
 
@@ -121,63 +121,39 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 // EncodeReqFormData encodes data passed as a form data.
 // NOTE: data must be a pointer to a struct type.
 func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
-	if err := checkDataType(data); err != nil {
+	t, v, err := reflectTypeValue(data)
+	if err != nil {
 		return nil, "", err
 	}
 
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
-	fileField := config.FileFieldName
-
-	// writing file to the form
-	fileFieldName, ok := reflect.TypeOf(data).Elem().FieldByName(fileField)
-	if ok {
-		f, ok := reflect.ValueOf(data).Elem().
-			FieldByName(fileField).
-			Interface().(*os.File)
-		if !ok {
-			return nil, "", errors.New("File field must be on *os.File")
-		}
-		formFieldName := fileFieldName.Tag.Get("form")
-		part, err := writer.CreateFormFile(formFieldName, f.Name())
-		if err != nil {
-			return nil, "", err
-		}
-		if _, err = io.Copy(part, f); err != nil {
-			return nil, "", err
-		}
+	if err := writeFormFile(writer, data); err != nil {
+		return nil, "", err
 	}
 
 	for i := 0; i < t.NumField(); i++ {
 		tf, vf := t.Field(i), v.Field(i)
 
+		// file has been already written
+		if tf.Name == config.FileFieldName {
+			continue
+		}
+
 		if vf.Kind() == reflect.Struct {
 			// packing embedded struct fields
 			for i := 0; i < vf.NumField(); i++ {
-				f := vf.Field(i)
-				if f.Kind() == reflect.Ptr && f.IsNil() {
-					continue
-				}
-
-				formKey := tf.Type.Field(k).Tag.Get("form")
-				if formKey == "" {
-					continue
-				}
-
-				_ = writer.WriteField(formkey, fieldValue(f))
+				writeFormField(
+					writer,
+					tf.Type.Field(i),
+					vf.Field(i),
+				)
 			}
 			continue
 		}
-		if vf.Kind() != reflect.Struct && vf.IsNil() {
-			continue
-		}
 
-		formTag := t.Field(i).Tag.Get("form")
-		if formTag == strings.ToLower(fileField) || formTag == "" {
-			continue
-		}
-		_ = writer.WriteField(formTag, fieldValue(vf))
+		writeFormField(writer, tf, vf)
 	}
 
 	if err := writer.Close(); err != nil {
@@ -187,8 +163,57 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
 }
 
+func writeFormFile(
+	w *multipart.Writer,
+	data interface{},
+) error {
+	fileField, ok := reflect.
+		TypeOf(data).
+		Elem().
+		FieldByName(config.FileFieldName)
+	if ok {
+		f, ok := reflect.
+			ValueOf(data).
+			Elem().
+			FieldByName(config.FileFieldName).
+			Interface().(*os.File)
+		if !ok {
+			return errors.New("File must be of type *os.File")
+		}
+
+		formFieldName := fileField.Tag.Get("form")
+		part, err := w.CreateFormFile(formFieldName, f.Name())
+		if err != nil {
+			return err
+		}
+
+		if _, err = io.Copy(part, f); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeFormField(
+	w *multipart.Writer,
+	t reflect.StructField,
+	f reflect.Value,
+) {
+	if f.Kind() == reflect.Ptr && f.IsNil() {
+		return
+	}
+
+	formKey := t.Tag.Get("form")
+	if formKey == "" {
+		return
+	}
+
+	_ = w.WriteField(formKey, fieldValue(f))
+}
+
 func fieldValue(v reflect.Value) (val string) {
-	switch valc := f.Interface().(type) {
+	switch valc := v.Interface().(type) {
 	case string:
 		val = valc
 	case *string:
@@ -205,13 +230,14 @@ func fieldValue(v reflect.Value) (val string) {
 	return
 }
 
-func checkDataType(d interface{}) error {
-	if reflect.TypeOf(data).Kind() != reflect.Ptr {
-		return errors.New("data is not a pointer type")
+func reflectTypeValue(d interface{}) (t reflect.Type, v reflect.Value, err error) {
+	if reflect.TypeOf(d).Kind() != reflect.Ptr {
+		err = errors.New("data is not a pointer type")
+		return
 	}
-	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
+	t, v = reflect.TypeOf(d).Elem(), reflect.ValueOf(d).Elem()
 	if t.Kind() != reflect.Struct {
-		return errors.New("data is not a struct type")
+		err = errors.New("data is not a struct type")
 	}
-	return nil
+	return
 }
