@@ -37,8 +37,10 @@ const (
 	listPathFormat  = "/groups/"
 	infoPathFormat  = "/groups/%s/"
 	storePathFormat = "/groups/%s/storage/"
+)
 
-	// OrderBy predefined constants to be used in request params
+// OrderBy predefined constants to be used in request params
+const (
 	OrderByCreatedAtAsc  = "datetime_created"
 	OrderByCreatedAtDesc = "-datetime_created"
 )
