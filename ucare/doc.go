@@ -4,6 +4,7 @@ Package ucare provides the binding for the Uploadcare API.
 	import (
 		"github.com/uploadcare/uploadcare-go/ucare"
 		"github.com/uploadcare/uploadcare-go/file"
+		"github.com/uploadcare/uploadcare-go/upload"
 	)
 
 Construct a new Uploadcare client, then use the various domain services to
@@ -14,31 +15,25 @@ access different parts of the Uploadcare API:
 		PublicKey: "your_public_key",
 	}
 
-	conf := ucare.Config{
-		SignBasedAuth: true,
+	conf := &ucare.Config{
+		SignBasedAuthentication: true,
 	}
 
-	client, err := ucare.NewClient(creds, &conf)
+	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
 		// handle error
 	}
 
-To authenticate your account, every request made MUST be signed.
-There are two available auth functions for that:
+NOTE: If you want to use signature based authentication, you need to enable
+it in the Uploadcare dashboard first.
 
-	ucare.SimpleAuth (default)
-	ucare.SignBasedAuth
-
-NOTE: If you want to use SignBasedAuth you need to enable it in the Uploadcare
-dashboard first.
-
-Getting a paginated list of files:
+Getting a list of files:
 
 	// creating a file operations service
 	fileSvc := file.NewService(client)
 
 	listParams := &file.ListParams{
-		Stored:   ucare.String(true),
+		Stored:  ucare.String(true),
 		OrderBy: ucare.String(file.OrderBySizeAsc),
 	}
 
@@ -123,6 +118,25 @@ Getting a file group by ID:
 Marking all files in a group as stored:
 
 	_, err := groupSvc.Store(context.Background(), groupID)
+	if err != nil {
+		// handle error
+	}
+
+Uploading a file
+
+	uploadSvc := upload.NewService(client)
+
+	file, err := os.Open("somefile.png")
+	if err != nil {
+		// handle error
+	}
+
+	fileParams := &upload.FileParams{
+		File: file,
+		ToStore: ucare.String(upload.ToStoreTrue),
+	}
+
+	fileID, err := uploadSvc.UploadFile(context.Background(), fileParams)
 	if err != nil {
 		// handle error
 	}
