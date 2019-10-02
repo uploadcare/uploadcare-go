@@ -1,5 +1,4 @@
-// Package codec holds everything related to decoding paginated response
-// and making subsequent pages calls
+// Package codec holds encoding decoding reading writing stuff
 package codec
 
 import (
@@ -102,33 +101,18 @@ func (b *ResultBuf) ReadRawResult() (Raw, error) {
 // EncodeReqQuery encodes data passed as an http.Request query string.
 // NOTE: data must be a pointer to a struct type.
 func EncodeReqQuery(data interface{}, req *http.Request) error {
-	if reflect.TypeOf(data).Kind() != reflect.Ptr {
-		return errors.New("data is not a pointer type")
+	if err := checkDataType(data); err != nil {
+		return err
 	}
-	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
-	if t.Kind() != reflect.Struct {
-		return errors.New("data is not a struct type")
-	}
+
 	q := req.URL.Query()
 	for i := 0; i < t.NumField(); i++ {
 		f := v.Field(i)
-		if f.IsNil() {
+		if f.Kind() == reflect.Ptr && f.IsNil() {
 			continue
 		}
 
-		var val string
-		switch valc := f.Interface().(type) {
-		case *string:
-			val = ucare.StringVal(valc)
-		case *uint64:
-			val = strconv.FormatUint(ucare.Uint64Val(valc), 10)
-		case *bool:
-			val = fmt.Sprintf("%t", ucare.BoolVal(valc))
-		case *time.Time:
-			val = valc.Format(config.UCTimeLayout)
-		}
-
-		q.Set(t.Field(i).Tag.Get("form"), val)
+		q.Set(t.Field(i).Tag.Get("form"), fieldValue(f))
 	}
 	req.URL.RawQuery = q.Encode()
 	return nil
@@ -137,18 +121,14 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 // EncodeReqFormData encodes data passed as a form data.
 // NOTE: data must be a pointer to a struct type.
 func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
-	if reflect.TypeOf(data).Kind() != reflect.Ptr {
-		return nil, "", errors.New("data is not a pointer type")
-	}
-	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
-	if t.Kind() != reflect.Struct {
-		return nil, "", errors.New("data is not a struct type")
+	if err := checkDataType(data); err != nil {
+		return nil, "", err
 	}
 
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
-	fileField := "File"
+	fileField := config.FileFieldName
 
 	// writing file to the form
 	fileFieldName, ok := reflect.TypeOf(data).Elem().FieldByName(fileField)
@@ -185,7 +165,7 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 					continue
 				}
 
-				_ = writer.WriteField(formkey, fieldVal(f))
+				_ = writer.WriteField(formkey, fieldValue(f))
 			}
 			continue
 		}
@@ -197,7 +177,7 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 		if formTag == strings.ToLower(fileField) || formTag == "" {
 			continue
 		}
-		_ = writer.WriteField(formTag, fieldVal(vf))
+		_ = writer.WriteField(formTag, fieldValue(vf))
 	}
 
 	if err := writer.Close(); err != nil {
@@ -207,14 +187,31 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
 }
 
-func fieldVal(v reflect.Value) (val string) {
-	switch valc := v.Interface().(type) {
+func fieldValue(v reflect.Value) (val string) {
+	switch valc := f.Interface().(type) {
 	case string:
 		val = valc
 	case *string:
 		val = ucare.StringVal(valc)
+	case *uint64:
+		val = strconv.FormatUint(ucare.Uint64Val(valc), 10)
 	case *int64:
 		val = strconv.FormatInt(ucare.Int64Val(valc), 10)
+	case *bool:
+		val = fmt.Sprintf("%t", ucare.BoolVal(valc))
+	case *time.Time:
+		val = valc.Format(config.UCTimeLayout)
 	}
 	return
+}
+
+func checkDataType(d interface{}) error {
+	if reflect.TypeOf(data).Kind() != reflect.Ptr {
+		return errors.New("data is not a pointer type")
+	}
+	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
+	if t.Kind() != reflect.Struct {
+		return errors.New("data is not a struct type")
+	}
+	return nil
 }
