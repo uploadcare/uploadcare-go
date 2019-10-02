@@ -180,10 +180,12 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 					continue
 				}
 
-				_ = writer.WriteField(
-					tf.Type.Field(i).Tag.Get("form"),
-					fieldVal(f),
-				)
+				formKey := tf.Type.Field(k).Tag.Get("form")
+				if formKey == "" {
+					continue
+				}
+
+				_ = writer.WriteField(formkey, fieldVal(f))
 			}
 			continue
 		}
@@ -192,7 +194,7 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 		}
 
 		formTag := t.Field(i).Tag.Get("form")
-		if formTag == strings.ToLower(fileField) {
+		if formTag == strings.ToLower(fileField) || formTag == "" {
 			continue
 		}
 		_ = writer.WriteField(formTag, fieldVal(vf))
