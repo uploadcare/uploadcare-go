@@ -47,11 +47,13 @@ Getting a paginated list of files:
 		PublicKey: "your-project-public-key",
 	}
 
+	// client configuration
+	conf := &ucare.Config{
+		SignBasedAuthentication: true,
+	}
+
 	// creating underlying client for API calls and authentication
-	client, err := ucare.NewClient(
-		creds,
-		WithAuthentication(ucare.WithSignBasedAuth),
-	)
+	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
 		log.Fatal("creating uploadcare API client: %s", err)
 	}
