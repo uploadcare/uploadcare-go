@@ -3,12 +3,18 @@
 package codec
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -70,6 +76,7 @@ func (b *ResultBuf) ReadRawResult() (Raw, error) {
 
 		req, err := b.Client.NewRequest(
 			b.Ctx,
+			"",
 			b.ReqMethod,
 			*b.NextPage,
 			nil,
@@ -94,13 +101,13 @@ func (b *ResultBuf) ReadRawResult() (Raw, error) {
 
 // EncodeReqQuery encodes data passed as an http.Request query string.
 // NOTE: data must be a pointer to a struct type.
-func EncodeReqQuery(data interface{}, req *http.Request) {
+func EncodeReqQuery(data interface{}, req *http.Request) error {
 	if reflect.TypeOf(data).Kind() != reflect.Ptr {
-		return
+		return errors.New("data is not a pointer type")
 	}
 	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
 	if t.Kind() != reflect.Struct {
-		return
+		return errors.New("data is not a struct type")
 	}
 	q := req.URL.Query()
 	for i := 0; i < t.NumField(); i++ {
@@ -124,4 +131,88 @@ func EncodeReqQuery(data interface{}, req *http.Request) {
 		q.Set(t.Field(i).Tag.Get("form"), val)
 	}
 	req.URL.RawQuery = q.Encode()
+	return nil
+}
+
+// EncodeReqFormData encodes data passed as a form data.
+// NOTE: data must be a pointer to a struct type.
+func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
+	if reflect.TypeOf(data).Kind() != reflect.Ptr {
+		return nil, "", errors.New("data is not a pointer type")
+	}
+	t, v := reflect.TypeOf(data).Elem(), reflect.ValueOf(data).Elem()
+	if t.Kind() != reflect.Struct {
+		return nil, "", errors.New("data is not a struct type")
+	}
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+
+	fileField := "File"
+
+	// writing file to the form
+	fileFieldName, ok := reflect.TypeOf(data).Elem().FieldByName(fileField)
+	if ok {
+		f, ok := reflect.ValueOf(data).Elem().
+			FieldByName(fileField).
+			Interface().(*os.File)
+		if !ok {
+			return nil, "", errors.New("File field must be on *os.File")
+		}
+		formFieldName := fileFieldName.Tag.Get("form")
+		part, err := writer.CreateFormFile(formFieldName, f.Name())
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err = io.Copy(part, f); err != nil {
+			return nil, "", err
+		}
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		tf, vf := t.Field(i), v.Field(i)
+
+		if vf.Kind() == reflect.Struct {
+			// packing embedded struct fields
+			for i := 0; i < vf.NumField(); i++ {
+				f := vf.Field(i)
+				if f.Kind() == reflect.Ptr && f.IsNil() {
+					continue
+				}
+
+				_ = writer.WriteField(
+					tf.Type.Field(i).Tag.Get("form"),
+					fieldVal(f),
+				)
+			}
+			continue
+		}
+		if vf.Kind() != reflect.Struct && vf.IsNil() {
+			continue
+		}
+
+		formTag := t.Field(i).Tag.Get("form")
+		if formTag == strings.ToLower(fileField) {
+			continue
+		}
+		_ = writer.WriteField(formTag, fieldVal(vf))
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, "", err
+	}
+
+	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
+}
+
+func fieldVal(v reflect.Value) (val string) {
+	switch valc := v.Interface().(type) {
+	case string:
+		val = valc
+	case *string:
+		val = ucare.StringVal(valc)
+	case *int64:
+		val = strconv.FormatInt(ucare.Int64Val(valc), 10)
+	}
+	return
 }
