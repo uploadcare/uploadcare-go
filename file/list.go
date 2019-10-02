@@ -34,8 +34,8 @@ type ListParams struct {
 }
 
 // EncodeReq implements ucare.ReqEncoder
-func (d *ListParams) EncodeReq(req *http.Request) {
-	codec.EncodeReqQuery(d, req)
+func (d *ListParams) EncodeReq(req *http.Request) error {
+	return codec.EncodeReqQuery(d, req)
 }
 
 // List holds a list of files

@@ -31,8 +31,10 @@ const (
 	infoPathFormat   = "/files/%s/"
 	deletePathFormat = "/files/%s/"
 	storePathFormat  = "/files/%s/storage/"
+)
 
-	// OrderBy predefined constants to be used in request params
+// OrderBy predefined constants to be used in request params
+const (
 	OrderByUploadedAtAsc  = "datetime_uploaded"
 	OrderByUploadedAtDesc = "-datetime_uploaded"
 	OrderBySizeAsc        = "size"
