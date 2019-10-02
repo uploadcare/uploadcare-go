@@ -18,9 +18,10 @@ type testReqEncoder struct {
 	query string
 }
 
-func (t testReqEncoder) EncodeReq(r *http.Request) {
+func (t testReqEncoder) EncodeReq(r *http.Request) error {
 	r.URL.RawQuery = t.query
 	r.Body = ioutil.NopCloser(strings.NewReader(t.body))
+	return nil
 }
 
 func TestClientNewRequest(t *testing.T) {
@@ -57,7 +58,7 @@ func TestClientNewRequest(t *testing.T) {
 				"application/vnd.uploadcare-v0.5+json" {
 				return errors.New("wrong accept header")
 			}
-			if h.Get("User-Agent") !=
+			if h.Get("X-UC-User-Agent") !=
 				"UploadcareGo/0.1.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
