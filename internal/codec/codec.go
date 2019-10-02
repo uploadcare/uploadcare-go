@@ -163,48 +163,38 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
 }
 
-func writeFormFile(
-	w *multipart.Writer,
-	data interface{},
-) error {
-	dataType := reflect.TypeOf(data).Elem()
+func writeFormFile(w *multipart.Writer, d interface{}) error {
+	dataT, dataV := reflect.TypeOf(d).Elem(), reflect.ValueOf(d).Elem()
 
-	fileField, ok := dataType.FieldByName(config.FileFieldName)
+	fileField, ok := dataT.FieldByName(config.FileFieldName)
 	if !ok {
 		return nil
 	}
 
-	dataVal := reflect.ValueOf(data).Elem()
-
-	f, ok := dataVal.
+	data, ok := dataV.
 		FieldByName(config.FileFieldName).
 		Interface().(io.Reader)
 	if !ok {
-		return errors.New("File must be of type io.Reader")
+		return errors.New("File data must be of type io.Reader")
 	}
 
-	formFieldName := fileField.Tag.Get("form")
-
-	fileName, ok := dataVal.
+	name, ok := dataV.
 		FieldByName(config.FilenameFieldName).
 		Interface().(string)
 	if !ok {
 		return errors.New("File name must be of type string")
 	}
-	if fileName == "" {
+	if name == "" {
 		return errors.New("File name can't be empty string")
 	}
 
-	part, err := w.CreateFormFile(formFieldName, fileName)
+	part, err := w.CreateFormFile(fileField.Tag.Get("form"), name)
 	if err != nil {
 		return err
 	}
 
-	if _, err = io.Copy(part, f); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = io.Copy(part, data)
+	return err
 }
 
 func writeFormField(
