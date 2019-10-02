@@ -28,7 +28,7 @@ func New(client ucare.Client, log uclog.Logger) Service {
 var ErrNilParams = errors.New("nil params passed")
 
 // List returns a list of raw results, *codec.ResultBuf later must be wrapped
-// with somem concrete service type.
+// with a concrete service type.
 func (s Service) List(
 	ctx context.Context,
 	path string,
