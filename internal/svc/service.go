@@ -24,6 +24,7 @@ func New(client ucare.Client, log uclog.Logger) Service {
 	return Service{client, log}
 }
 
+// ErrNilParams is returned when method does not allow nil params to be passed
 var ErrNilParams = errors.New("nil params passed")
 
 // List returns a list of raw results, *codec.ResultBuf later must be wrapped
