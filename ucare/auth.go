@@ -79,7 +79,7 @@ func signBasedRESTAPIAuthParam(creds APICreds, req *http.Request) string {
 	return val
 }
 
-// UploadAPIAuthFunc is for internal use and should not be used by the users
+// UploadAPIAuthFunc is for internal use and should not be used by users
 type UploadAPIAuthFunc func() (pubkey string, sign *string, exp *int64)
 
 func simpleUploadAPIAuthFunc(creds APICreds) UploadAPIAuthFunc {
