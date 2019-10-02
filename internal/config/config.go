@@ -45,14 +45,8 @@ func (t *Time) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
-// CtxCreds is type for the api creds context key
-type CtxCreds struct{}
-
-// CtxCredsKey is a context key for passing api creds with the request
-var CtxCredsKey CtxCreds
-
-// CtxAuthFunc is type for the auth func passed through the context
+// CtxAuthFunc is a type for the auth func context key
 type CtxAuthFunc struct{}
 
-// CtxAuthFuncKey is a context key for passing auth function through the context
+// CtxAuthFuncKey is a context key for passing auth func through the context
 var CtxAuthFuncKey CtxAuthFunc
