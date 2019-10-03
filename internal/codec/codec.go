@@ -10,8 +10,10 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -173,22 +175,54 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 
 	data, ok := dataV.
 		FieldByName(config.FileFieldName).
-		Interface().(io.Reader)
+		Interface().(io.ReadSeeker)
 	if !ok {
-		return errors.New("File data must be of type io.Reader")
+		return TypeErr{
+			Data: config.FileFieldName,
+			Type: "io.ReadSeeker",
+		}
 	}
 
 	name, ok := dataV.
 		FieldByName(config.FilenameFieldName).
 		Interface().(string)
 	if !ok {
-		return errors.New("File name must be of type string")
+		return TypeErr{
+			Data: config.FilenameFieldName,
+			Type: "string",
+		}
 	}
 	if name == "" {
 		return errors.New("File name can't be empty string")
 	}
 
-	part, err := w.CreateFormFile(fileField.Tag.Get("form"), name)
+	contentType, ok := dataV.
+		FieldByName(config.FileContentTypeFieldName).
+		Interface().(string)
+	if !ok {
+		return TypeErr{
+			Data: config.FileContentTypeFieldName,
+			Type: "string",
+		}
+	}
+	if contentType == "" {
+		buf := make([]byte, 0, 512)
+		data.Read(buf)
+		contentType = http.DetectContentType(buf)
+		data.Seek(0, 0)
+	}
+
+	h := make(textproto.MIMEHeader)
+	h.Set(
+		"Content-Disposition",
+		fmt.Sprintf(
+			`form-data; name="%s"; filename="%s"`,
+			escapeQuotes(fileField.Tag.Get("form")),
+			escapeQuotes(name),
+		),
+	)
+	h.Set("Content-Type", contentType)
+	part, err := w.CreatePart(h)
 	if err != nil {
 		return err
 	}
@@ -242,4 +276,20 @@ func reflectTypeValue(d interface{}) (t reflect.Type, v reflect.Value, err error
 		err = errors.New("data is not a struct type")
 	}
 	return
+}
+
+// TypeErr is basically !ok casting case
+type TypeErr struct {
+	Data string
+	Type string
+}
+
+func (e TypeErr) Error() string {
+	return fmt.Sprintf("%s must be of type %s", e.Data, e.Type)
+}
+
+var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+
+func escapeQuotes(s string) string {
+	return quoteEscaper.Replace(s)
 }

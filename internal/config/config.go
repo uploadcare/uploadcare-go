@@ -24,10 +24,11 @@ const (
 	UCTimeLayout = "2006-01-02T15:04:05"
 )
 
-// For reflection based payload encoding purpose.
+// For the reflection-based payload encoding
 const (
-	FileFieldName     = "Data"
-	FilenameFieldName = "Name"
+	FileFieldName            = "Data"
+	FilenameFieldName        = "Name"
+	FileContentTypeFieldName = "ContentType"
 )
 
 // Time is needed just to parse custom formated time string
