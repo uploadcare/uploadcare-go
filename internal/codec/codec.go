@@ -206,7 +206,7 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 		}
 	}
 	if contentType == "" {
-		buf := make([]byte, 0, 512)
+		buf := make([]byte, 2048)
 		data.Read(buf)
 		contentType = http.DetectContentType(buf)
 		data.Seek(0, 0)
