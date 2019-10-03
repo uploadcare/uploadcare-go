@@ -94,7 +94,6 @@ try:
 	if err != nil {
 		return err
 	}
-	req.Body.Close()
 
 	log.Debugf("received response: %+v", resp)
 
