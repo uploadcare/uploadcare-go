@@ -132,9 +132,9 @@ Uploading a file
 	}
 
 	fileParams := &upload.FileParams{
-		Data: fiile,
-		Name: file.Name(),
-		ToStore: ucare.String(upload.ToStoreTrue),
+		Data:        file,
+		Name:        file.Name(),
+		ToStore:     ucare.String(upload.ToStoreTrue),
 	}
 
 	fileID, err := uploadSvc.UploadFile(context.Background(), fileParams)
