@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/internal/config"
@@ -15,8 +16,8 @@ func (s service) Info(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
-		infoPathFormat,
-		groupID,
+		fmt.Sprintf(infoPathFormat, groupID),
+		nil,
 		&data,
 	)
 	return
@@ -30,8 +31,8 @@ func (s service) Store(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPut,
-		storePathFormat,
-		groupID,
+		fmt.Sprintf(storePathFormat, groupID),
+		nil,
 		&data,
 	)
 	return

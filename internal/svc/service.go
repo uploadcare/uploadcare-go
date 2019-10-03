@@ -4,7 +4,6 @@ package svc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/internal/codec"
@@ -15,13 +14,19 @@ import (
 
 // Service is intended to wrap some common service operations
 type Service struct {
+	endpoint config.Endpoint
+
 	client ucare.Client
 	log    uclog.Logger
 }
 
 // New returns new Service instance
-func New(client ucare.Client, log uclog.Logger) Service {
-	return Service{client, log}
+func New(
+	endpoint config.Endpoint,
+	client ucare.Client,
+	log uclog.Logger,
+) Service {
+	return Service{endpoint, client, log}
 }
 
 // ErrNilParams is returned when method does not allow nil params to be passed
@@ -34,59 +39,38 @@ func (s Service) List(
 	path string,
 	params ucare.ReqEncoder,
 ) (*codec.ResultBuf, error) {
-	if params == nil {
-		return nil, ErrNilParams
-	}
-
-	endpoint := config.RESTAPIEndpoint
 	method := http.MethodGet
-
-	req, err := s.client.NewRequest(ctx, endpoint, method, path, params)
-	if err != nil {
-		return nil, err
-	}
-
 	resbuf := codec.ResultBuf{
 		Ctx:       ctx,
 		ReqMethod: method,
 		Client:    s.client,
 	}
-	err = s.client.Do(req, &resbuf)
-	if err != nil {
-		return nil, err
-	}
 
-	return &resbuf, nil
+	return &resbuf, s.ResourceOp(ctx, method, path, params, &resbuf)
 }
-
-var errEmptyFileID = errors.New("empty file id")
 
 // ResourceOp operates on single resource. The response data is
 // written into the resourceData param.
 func (s Service) ResourceOp(
 	ctx context.Context,
 	method string,
-	pathFormat string,
-	resourceID string,
+	requrl string,
+	params ucare.ReqEncoder,
 	resourceData interface{},
 ) error {
-	if resourceID == "" {
-		return errEmptyFileID
+	// shouldn't be the case
+	if method == "" || requrl == "" || resourceData == nil {
+		return errors.New("invalid params passed")
 	}
-
-	endpoint := config.RESTAPIEndpoint
-	requrl := fmt.Sprintf(pathFormat, resourceID)
 
 	s.log.Infof("requesting: %s %s", method, requrl)
 
-	req, err := s.client.NewRequest(ctx, endpoint, method, requrl, nil)
+	req, err := s.client.NewRequest(ctx, s.endpoint, method, requrl, params)
 	if err != nil {
 		return err
 	}
-
 	err = s.client.Do(req, &resourceData)
 
-	s.log.Debugf("received info: %+v", resourceData)
-
+	s.log.Debugf("received: %+v", resourceData)
 	return nil
 }

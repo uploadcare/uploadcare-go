@@ -10,6 +10,7 @@ package file
 import (
 	"context"
 
+	"github.com/uploadcare/uploadcare-go/internal/config"
 	"github.com/uploadcare/uploadcare-go/internal/svc"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
@@ -43,5 +44,5 @@ const (
 
 // NewService returns new instance of the Service
 func NewService(client ucare.Client) Service {
-	return service{svc.New(client, log)}
+	return service{svc.New(config.RESTAPIEndpoint, client, log)}
 }

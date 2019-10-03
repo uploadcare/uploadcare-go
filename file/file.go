@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/internal/config"
@@ -15,8 +16,8 @@ func (s service) Info(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
-		infoPathFormat,
-		fileID,
+		fmt.Sprintf(infoPathFormat, fileID),
+		nil,
 		&data,
 	)
 	return
@@ -30,8 +31,8 @@ func (s service) Store(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPut,
-		storePathFormat,
-		fileID,
+		fmt.Sprintf(storePathFormat, fileID),
+		nil,
 		&data,
 	)
 	return
@@ -45,23 +46,17 @@ func (s service) Delete(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodDelete,
-		deletePathFormat,
-		fileID,
+		fmt.Sprintf(deletePathFormat, fileID),
+		nil,
 		&data,
 	)
 	return
 }
 
-// Info holds file specific information
-type Info struct {
-	// RemovedAt is date and time when a file was removed, if any
-	RemovedAt *config.Time `json:"datetime_removed"`
-
-	// StoredAt is date and time of the last store request, if any
-	StoredAt *config.Time `json:"datetime_stored"`
-
-	// UploadedAt is a date and time when a file was uploaded
-	UploadedAt *config.Time `json:"datetime_uploaded"`
+// BasicFileInfo holds common file information no matter what is the context
+type BasicFileInfo struct {
+	// ID is a file unique id (UUID)
+	ID string `json:"uuid"`
 
 	// ImageInfo holds image metadata
 	ImageInfo *ImageInfo `json:"image_info"`
@@ -69,18 +64,8 @@ type Info struct {
 	// MimeType specifies file MIME-type
 	MimeType string `json:"mime_type"`
 
-	// OriginalFileURL is a publicly available file CDN URL.
-	// Available if a file is not deleted
-	OriginalFileURL string `json:"original_file_url"`
-
 	// OriginalFileName is a file name taken from uploaded file
 	OriginalFileName string `json:"original_filename"`
-
-	// URI is a API resource URL for a file
-	URI string `json:"uri"`
-
-	// ID is a file unique id (UUID)
-	ID string `json:"uuid"`
 
 	// Size denotes file size in bytes
 	Size uint64 `json:"size"`
@@ -90,6 +75,27 @@ type Info struct {
 
 	// IsReady denotes if file is ready to be used after upload
 	IsReady bool `json:"is_ready"`
+}
+
+// Info holds file specific information
+type Info struct {
+	BasicFileInfo
+
+	// RemovedAt is date and time when a file was removed, if any
+	RemovedAt *config.Time `json:"datetime_removed"`
+
+	// StoredAt is date and time of the last store request, if any
+	StoredAt *config.Time `json:"datetime_stored"`
+
+	// UploadedAt is a date and time when a file was uploaded
+	UploadedAt *config.Time `json:"datetime_uploaded"`
+
+	// OriginalFileURL is a publicly available file CDN URL.
+	// Available if a file is not deleted
+	OriginalFileURL string `json:"original_file_url"`
+
+	// URI is a API resource URL for a file
+	URI string `json:"uri"`
 }
 
 // Image color mode contants
