@@ -17,26 +17,25 @@ package upload
 import (
 	"context"
 
+	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/internal/svc"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // Service describes all upload related API functionality
 type Service interface {
 	UploadFile(context.Context, *FileParams) (id string, err error)
-	// TODO: implement today:
-	// UploadFromURL
-	// FileInfo
+	//FromURL(context.Context, *FromURLParams) (<-chan *FromURLData, error)
+	FileInfo(ctx context.Context, id string) (*FileInfo, error)
 	// CreateGroup
 	// GroupInfo
 }
 
-type service struct {
-	client ucare.Client
-}
+type service struct{ svc svc.Service }
 
 // NewService creates new upload service instance.
 func NewService(client ucare.Client) Service {
-	return service{client}
+	return service{svc.New(config.UploadAPIEndpoint, client, log)}
 }
 
 // Predefined file storing behaviour constants
@@ -47,5 +46,7 @@ const (
 )
 
 const (
-	directUploadPathFormat = "/base/"
+	directUploadPathFormat  = "/base/"
+	fromURLUploadPathFormat = "/from_url/"
+	fileInfoPathFormat      = "/info/"
 )
