@@ -25,7 +25,7 @@ import (
 // Service describes all upload related API functionality
 type Service interface {
 	UploadFile(context.Context, *FileParams) (id string, err error)
-	//FromURL(context.Context, *FromURLParams) (<-chan *FromURLData, error)
+	FromURL(context.Context, *FromURLParams) (FromURLData, error)
 	FileInfo(ctx context.Context, id string) (*FileInfo, error)
 	// CreateGroup
 	// GroupInfo
@@ -43,10 +43,20 @@ const (
 	ToStoreTrue  = "1"
 	ToStoreFalse = "0"
 	ToStoreAuto  = "auto"
+
+	URLDuplicatesTrue  = "1"
+	URLDuplicatesFalse = "0"
+
+	uploadStatuSuccess     = "success"
+	uploadStatusInProgress = "progress"
+	uploadStatusError      = "error"
+	uploadStatusWaiting    = "waiting"
+	uploadStatusUnknown    = "unknown"
 )
 
 const (
-	directUploadPathFormat  = "/base/"
-	fromURLUploadPathFormat = "/from_url/"
-	fileInfoPathFormat      = "/info/"
+	directUploadFormat  = "/base/"
+	fromURLFormat       = "/from_url/"
+	fromURLStatusFormat = "/from_url/status/?token=%s"
+	fileInfoFormat      = "/info/"
 )
