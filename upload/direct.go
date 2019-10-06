@@ -2,7 +2,6 @@ package upload
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,6 +30,10 @@ type FileParams struct {
 	ContentType string
 
 	// ToStore sets the file storing behaviour
+	// Valid values:
+	//	upload.ToStoreTrue
+	//	upload.ToStoreFalse
+	//	upload.ToStoreAuto
 	ToStore *string `form:"UPLOADCARE_STORE"`
 }
 
@@ -42,13 +45,11 @@ type authParams struct {
 
 // EncodeReq implementes ucare.ReqEncoder
 func (d *FileParams) EncodeReq(req *http.Request) error {
-	authFuncI := req.Context().Value(config.CtxAuthFuncKey)
-	authFunc, ok := authFuncI.(ucare.UploadAPIAuthFunc)
-	if !ok {
-		return errors.New("auth func has a wrong signature")
-	}
-	d.PubKey, d.Signature, d.ExpiresAt = authFunc()
+	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req)()
+	return encodeDataToForm(d, req)
+}
 
+func encodeDataToForm(d interface{}, req *http.Request) error {
 	formReader, contentType, err := codec.EncodeReqFormData(d)
 	if err != nil {
 		return fmt.Errorf("creating req form body: %w", err)
@@ -70,7 +71,7 @@ func (s service) UploadFile(
 	if err := s.svc.ResourceOp(
 		ctx,
 		http.MethodPost,
-		directUploadPathFormat,
+		directUploadFormat,
 		params,
 		&resp,
 	); err != nil {
@@ -80,4 +81,13 @@ func (s service) UploadFile(
 	log.Debugf("uploaded file: %s", resp.File)
 
 	return resp.File, nil
+}
+
+func authFromContext(req *http.Request) ucare.UploadAPIAuthFunc {
+	authFuncI := req.Context().Value(config.CtxAuthFuncKey)
+	authFunc, ok := authFuncI.(ucare.UploadAPIAuthFunc)
+	if !ok {
+		panic("auth func has wrong signature")
+	}
+	return authFunc
 }
