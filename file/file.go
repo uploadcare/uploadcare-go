@@ -60,6 +60,7 @@ type BasicFileInfo struct {
 
 	// ImageInfo holds image metadata
 	ImageInfo *ImageInfo `json:"image_info"`
+	// TODO: add VideoInfo
 
 	// MimeType specifies file MIME-type
 	MimeType string `json:"mime_type"`
