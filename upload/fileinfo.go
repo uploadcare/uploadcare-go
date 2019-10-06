@@ -2,13 +2,10 @@ package upload
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/file"
 	"github.com/uploadcare/uploadcare-go/internal/codec"
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // FileInfo holds file info (in the context of uploading)
@@ -19,12 +16,16 @@ type FileInfo struct {
 	IsStored bool `json:"is_stored"`
 
 	// Done denotes currently uploaded file size in bytes
-	Done int64 `json:"done"`
+	Done uint64 `json:"done"`
 	// Total is same as size
 	Total uint64 `json:"total"`
 
 	// Filename holds sanitized OriginalFileName
 	FileName string `json:"filename"`
+
+	// S3Bucket is your custom user bucket on which file are stored. Only
+	// available of you setup foreign storage bucket for your project
+	S3Bucket string `json:"s3_bucket"`
 }
 
 type fileInfoParams struct {
@@ -34,12 +35,7 @@ type fileInfoParams struct {
 
 // EncodeReqQuery implements ucare.ReqEncoder
 func (d *fileInfoParams) EncodeReq(req *http.Request) error {
-	authFuncI := req.Context().Value(config.CtxAuthFuncKey)
-	authFunc, ok := authFuncI.(ucare.UploadAPIAuthFunc)
-	if !ok {
-		return errors.New("auth func has a wrong signature")
-	}
-	d.PubKey, _, _ = authFunc()
+	d.PubKey, _, _ = authFromContext(req)()
 	return codec.EncodeReqQuery(d, req)
 }
 
@@ -51,7 +47,7 @@ func (s service) FileInfo(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
-		fileInfoPathFormat,
+		fileInfoFormat,
 		&fileInfoParams{FileID: fileID},
 		&data,
 	)
