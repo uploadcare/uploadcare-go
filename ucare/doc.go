@@ -24,9 +24,6 @@ access different parts of the Uploadcare API:
 		// handle error
 	}
 
-NOTE: If you want to use signature based authentication, you need to enable
-it in the Uploadcare dashboard first.
-
 Getting a list of files:
 
 	// creating a file operations service

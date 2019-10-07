@@ -36,8 +36,6 @@ type Config struct {
 	// SignBasedAuthentication should be true if you want to use
 	// signed uploads and signature based authentication for the
 	// REST API calls.
-	// NOTE: In order to use it you need to switch it on in your project’s
-	// settings via the dashboard.
 	SignBasedAuthentication bool
 }
 
