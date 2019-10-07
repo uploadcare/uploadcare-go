@@ -26,6 +26,10 @@ type FileInfo struct {
 	// S3Bucket is your custom user bucket on which file are stored. Only
 	// available of you setup foreign storage bucket for your project
 	S3Bucket string `json:"s3_bucket"`
+
+	// DefaultEffects holds CDN media transformations applied to the file
+	// when its group was created
+	DefaultEffects string `json:"default_effects"`
 }
 
 type fileInfoParams struct {
@@ -35,7 +39,7 @@ type fileInfoParams struct {
 
 // EncodeReqQuery implements ucare.ReqEncoder
 func (d *fileInfoParams) EncodeReq(req *http.Request) error {
-	d.PubKey, _, _ = authFromContext(req)()
+	d.PubKey, _, _ = authFromContext(req.Context())()
 	return codec.EncodeReqQuery(d, req)
 }
 
@@ -43,7 +47,7 @@ func (d *fileInfoParams) EncodeReq(req *http.Request) error {
 func (s service) FileInfo(
 	ctx context.Context,
 	fileID string,
-) (data *FileInfo, err error) {
+) (data FileInfo, err error) {
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,

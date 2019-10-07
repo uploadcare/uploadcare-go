@@ -13,7 +13,7 @@ import (
 
 // FileParams holds all possible params for the file upload
 type FileParams struct {
-	authParams
+	uploadFileAuthParams
 
 	// Data (required) holds the data to be uploaded.
 	//
@@ -37,15 +37,19 @@ type FileParams struct {
 	ToStore *string `form:"UPLOADCARE_STORE"`
 }
 
-type authParams struct {
-	PubKey    string  `form:"UPLOADCARE_PUB_KEY"`
+type uploadFileAuthParams struct {
+	PubKey string `form:"UPLOADCARE_PUB_KEY"`
+	signatureExpire
+}
+
+type signatureExpire struct {
 	Signature *string `form:"signature"`
 	ExpiresAt *int64  `form:"expire"`
 }
 
 // EncodeReq implementes ucare.ReqEncoder
 func (d *FileParams) EncodeReq(req *http.Request) error {
-	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req)()
+	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req.Context())()
 	return encodeDataToForm(d, req)
 }
 
@@ -83,8 +87,8 @@ func (s service) UploadFile(
 	return resp.File, nil
 }
 
-func authFromContext(req *http.Request) ucare.UploadAPIAuthFunc {
-	authFuncI := req.Context().Value(config.CtxAuthFuncKey)
+func authFromContext(ctx context.Context) ucare.UploadAPIAuthFunc {
+	authFuncI := ctx.Value(config.CtxAuthFuncKey)
 	authFunc, ok := authFuncI.(ucare.UploadAPIAuthFunc)
 	if !ok {
 		panic("auth func has wrong signature")

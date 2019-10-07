@@ -11,7 +11,7 @@ import (
 
 // FromURLParams holds parameters for upload from public URL link
 type FromURLParams struct {
-	authParams
+	fromURLAuthParams
 
 	// URL is a file URL, which should be a public HTTP or HTTPS link
 	URL string `form:"source_url"`
@@ -40,9 +40,14 @@ type FromURLParams struct {
 	SaveURLDuplicates *string `form:"save_URL_duplicates"`
 }
 
+type fromURLAuthParams struct {
+	PubKey string `form:"pub_key"`
+	signatureExpire
+}
+
 // EncodeReq implements ucare.ReqEncoder
 func (d *FromURLParams) EncodeReq(req *http.Request) error {
-	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req)()
+	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req.Context())()
 	return encodeDataToForm(d, req)
 }
 
