@@ -12,7 +12,7 @@ import (
 type createGroupParams struct {
 	groupAuthParams
 
-	fileIDs
+	FileIDs
 }
 
 type groupAuthParams struct {
@@ -20,7 +20,8 @@ type groupAuthParams struct {
 	signatureExpire
 }
 
-type fileIDs map[string]string
+// FileIDs is for internal use
+type FileIDs = map[string]string
 
 // EncodeReq implementes ucare.ReqEncoder
 func (d *createGroupParams) EncodeReq(req *http.Request) error {
@@ -40,11 +41,11 @@ func (s service) CreateGroup(
 	ctx context.Context,
 	ids []string,
 ) (info GroupInfo, err error) {
-	idmap := make(fileIDs, len(ids))
+	idmap := make(FileIDs, len(ids))
 	for i, id := range ids {
 		idmap[fmt.Sprintf("files[%d]", i)] = id
 	}
-	params := createGroupParams{fileIDs: idmap}
+	params := createGroupParams{FileIDs: idmap}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPost,
