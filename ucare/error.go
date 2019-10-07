@@ -10,8 +10,8 @@ var (
 	ErrInvalidAuthCreds = errors.New("Incorrect authentication credentials")
 	ErrAuthForbidden    = errors.New("Simple authentication over HTTP is " +
 		"forbidden. Please, use HTTPS or signed requests instead")
-	ErrInvalidVersion = errors.New("Could not satisfy the request " +
-		"Accept header")
+	ErrInvalidVersion = errors.New("This feature is not support. " +
+		"Try to change the version.")
 	ErrFileTooLarge = errors.New("Direct uploads only support " +
 		"files smaller than 100MB")
 )
