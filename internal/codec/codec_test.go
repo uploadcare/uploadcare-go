@@ -145,6 +145,21 @@ func TestEncodeReqFormData(t *testing.T) {
 			return nil
 		},
 		err: false,
+	}, {
+		test: "random data holding map",
+		data: &struct {
+			M map[string]string
+		}{
+			M: map[string]string{"key": "testdata"},
+		},
+		testReq: func(written string) error {
+			if !strings.Contains(written, "key") ||
+				!strings.Contains(written, "testdata") {
+				return errors.New("did not work at all")
+			}
+			return nil
+		},
+		err: false,
 	}}
 
 	for _, c := range cases {

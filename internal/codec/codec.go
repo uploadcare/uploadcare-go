@@ -229,12 +229,25 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 	return err
 }
 
+const wrongMapType = "codec: only map[string]string is supported for form encoding"
+
 func writeFormField(
 	w *multipart.Writer,
 	t reflect.StructField,
 	f reflect.Value,
 ) {
 	if f.Kind() == reflect.Ptr && f.IsNil() {
+		return
+	}
+
+	if f.Kind() == reflect.Map {
+		m, ok := f.Interface().(map[string]string)
+		if !ok {
+			panic(wrongMapType)
+		}
+		for k, v := range m {
+			w.WriteField(k, v)
+		}
 		return
 	}
 
