@@ -79,6 +79,9 @@ try:
 	if err != nil {
 		return err
 	}
+	if req.Body != nil {
+		defer req.Body.Close()
+	}
 
 	log.Debugf("received response: %+v", resp)
 
