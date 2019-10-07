@@ -4,6 +4,7 @@ package codec
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -116,6 +117,16 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 		q.Set(t.Field(i).Tag.Get("form"), fieldValue(f))
 	}
 	req.URL.RawQuery = q.Encode()
+	return nil
+}
+
+// EncodeReqBody encodes data into the req as a json object
+func EncodeReqBody(data interface{}, req *http.Request) error {
+	rawdata, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	req.Body = ioutil.NopCloser(bytes.NewReader(rawdata))
 	return nil
 }
 

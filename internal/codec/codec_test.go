@@ -89,6 +89,35 @@ func TestEncodeReqQuery(t *testing.T) {
 	}
 }
 
+func TestEncodeReqBody(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		test string
+
+		params           interface{}
+		expectedBodyData string
+	}{{
+		test: "slice data",
+
+		params:           []string{"test1", "test2"},
+		expectedBodyData: "[\"test1\",\"test2\"]",
+	}}
+	for _, c := range cases {
+		c := c
+		t.Run(c.test, func(t *testing.T) {
+			t.Parallel()
+
+			req, _ := http.NewRequest("PUT", "", nil)
+			codec.EncodeReqBody(c.params, req)
+
+			data, err := ioutil.ReadAll(req.Body)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, c.expectedBodyData, string(data))
+		})
+	}
+}
+
 func TestEncodeReqFormData(t *testing.T) {
 	t.Parallel()
 
