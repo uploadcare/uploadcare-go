@@ -19,8 +19,11 @@ import (
 type Service interface {
 	List(context.Context, *ListParams) (*List, error)
 	Info(ctx context.Context, id string) (Info, error)
-	Delete(ctx context.Context, id string) (Info, error)
 	Store(ctx context.Context, id string) (Info, error)
+	Delete(ctx context.Context, id string) (Info, error)
+
+	BatchStore(ctx context.Context, ids []string) (BatchInfo, error)
+	BatchDelete(ctx context.Context, ids []string) (BatchInfo, error)
 }
 
 type service struct {
@@ -32,6 +35,9 @@ const (
 	infoPathFormat   = "/files/%s/"
 	deletePathFormat = "/files/%s/"
 	storePathFormat  = "/files/%s/storage/"
+
+	batchStorePathFormat  = "/files/storage/"
+	batchDeletePathFormat = "/files/storage/"
 )
 
 // OrderBy predefined constants to be used in request params
