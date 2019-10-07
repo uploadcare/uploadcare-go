@@ -134,6 +134,16 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 		return nil, "", err
 	}
 
+	writeFields(writer, t, v)
+
+	if err := writer.Close(); err != nil {
+		return nil, "", err
+	}
+
+	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
+}
+
+func writeFields(w *multipart.Writer, t reflect.Type, v reflect.Value) {
 	for i := 0; i < t.NumField(); i++ {
 		tf, vf := t.Field(i), v.Field(i)
 
@@ -145,24 +155,12 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 
 		if vf.Kind() == reflect.Struct {
 			// packing embedded struct fields
-			for i := 0; i < vf.NumField(); i++ {
-				writeFormField(
-					writer,
-					tf.Type.Field(i),
-					vf.Field(i),
-				)
-			}
+			writeFields(w, tf.Type, vf)
 			continue
 		}
 
-		writeFormField(writer, tf, vf)
+		writeFormField(w, tf, vf)
 	}
-
-	if err := writer.Close(); err != nil {
-		return nil, "", err
-	}
-
-	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
 }
 
 func writeFormFile(w *multipart.Writer, d interface{}) error {
