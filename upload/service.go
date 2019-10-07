@@ -26,9 +26,9 @@ import (
 type Service interface {
 	UploadFile(context.Context, *FileParams) (id string, err error)
 	FromURL(context.Context, *FromURLParams) (FromURLData, error)
-	FileInfo(ctx context.Context, id string) (*FileInfo, error)
-	// CreateGroup
-	// GroupInfo
+	FileInfo(ctx context.Context, id string) (FileInfo, error)
+	CreateGroup(ctx context.Context, ids []string) (GroupInfo, error)
+	GroupInfo(ctx context.Context, groupID string) (GroupInfo, error)
 }
 
 type service struct{ svc svc.Service }
@@ -59,4 +59,6 @@ const (
 	fromURLFormat       = "/from_url/"
 	fromURLStatusFormat = "/from_url/status/?token=%s"
 	fileInfoFormat      = "/info/"
+	createGroupFormat   = "/group/"
+	groupInfoFormat     = "/group/info/"
 )
