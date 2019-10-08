@@ -62,7 +62,7 @@ type BasicFileInfo struct {
 	ImageInfo *ImageInfo `json:"image_info"`
 
 	// VideoInfo holds video metadata
-	VideoInfo *VideoInfo `json:"video_info"`
+	VideoMeta *VideoMeta `json:"video_info"`
 
 	// MimeType specifies file MIME-type
 	MimeType string `json:"mime_type"`
@@ -161,8 +161,8 @@ type ImageInfo struct {
 	Sequence bool `json:"sequence"`
 }
 
-// Video holds video metadata
-type VideoInfo struct {
+// VideoMeta holds video metadata
+type VideoMeta struct {
 	// Duration is a video duration in milliseconds
 	Duration uint64 `json:"duration"`
 
@@ -173,14 +173,14 @@ type VideoInfo struct {
 	Bitrate uint64 `json:"bitrate"`
 
 	// Audio holds audio stream metadata
-	Audio *AudioInfo `json:"audio"`
+	Audio *AudioStreamMeta `json:"audio"`
 
 	// Video holds video stream metadata
-	Video *VideoInfo `json:"video"`
+	Video *VideoStreamMeta `json:"video"`
 }
 
-// AudioInfo holds audio stream metadata
-type AudioInfo struct {
+// AudioStreamMeta holds audio stream metadata
+type AudioStreamMeta struct {
 	// Bitrate holds audio bitrate
 	Bitrate *uint64 `json:"bitrate"`
 
@@ -194,8 +194,8 @@ type AudioInfo struct {
 	Channels *uint64 `json:"channels"`
 }
 
-// VideoInfo holds video stream metadata
-type VideoInfo struct {
+// VideoStreamMeta holds video stream metadata
+type VideoStreamMeta struct {
 	// Height is video stream image height
 	Height uint64 `json:"height"`
 
