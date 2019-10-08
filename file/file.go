@@ -60,7 +60,9 @@ type BasicFileInfo struct {
 
 	// ImageInfo holds image metadata
 	ImageInfo *ImageInfo `json:"image_info"`
-	// TODO: add VideoInfo
+
+	// VideoInfo holds video metadata
+	VideoInfo *VideoInfo `json:"video_info"`
 
 	// MimeType specifies file MIME-type
 	MimeType string `json:"mime_type"`
@@ -93,10 +95,23 @@ type Info struct {
 
 	// OriginalFileURL is a publicly available file CDN URL.
 	// Available if a file is not deleted
-	OriginalFileURL string `json:"original_file_url"`
+	OriginalFileURL *string `json:"original_file_url"`
 
-	// URI is a API resource URL for a file
-	URI string `json:"uri"`
+	// URL is a API resource URL for a file
+	URL string `json:"url"`
+
+	// Source is a file upload source. This field contains information
+	// about from where file was uploaded, for example: facebook, gdrive,
+	// gphotos, etc
+	Source *string `json:"source"`
+
+	// Variatios is a dictionary of other files that has been created using
+	// this file as source. Used for video, document and etc. conversion
+	Variations []string `json:"variations"`
+
+	// RecognitionInfo is a dictionary of file categories with it"s
+	// confidence
+	RecognitionInfo map[string]float64 `json:"rekognition_info"`
 }
 
 // Image color mode contants
@@ -144,6 +159,57 @@ type ImageInfo struct {
 
 	// Sequence denotes if image is sequence image (GIF for example)
 	Sequence bool `json:"sequence"`
+}
+
+// Video holds video metadata
+type VideoInfo struct {
+	// Duration is a video duration in milliseconds
+	Duration uint64 `json:"duration"`
+
+	// Format is a video format(MP4 for example)
+	Format string `json:"format"`
+
+	// Bitrate is a video bitrate
+	Bitrate uint64 `json:"bitrate"`
+
+	// Audio holds audio stream metadata
+	Audio *AudioInfo `json:"audio"`
+
+	// Video holds video stream metadata
+	Video *VideoInfo `json:"video"`
+}
+
+// AudioInfo holds audio stream metadata
+type AudioInfo struct {
+	// Bitrate holds audio bitrate
+	Bitrate *uint64 `json:"bitrate"`
+
+	// Codec holds audio stream codec
+	Codec *string `json:"codec"`
+
+	// SampleRate holds audio stream sample rate
+	SampleRate *uint64 `json:"sample_rate"`
+
+	// Channels holds audio stream number of channels
+	Channels *uint64 `json:"channels"`
+}
+
+// VideoInfo holds video stream metadata
+type VideoInfo struct {
+	// Height is video stream image height
+	Height uint64 `json:"height"`
+
+	// Width is a video stream image width
+	Width uint64 `json:"width"`
+
+	// FrameRate is a video stream frame rate
+	FrameRate uint64 `json:"frame_rate"`
+
+	// Bitrate holds video bitrate
+	Bitrate *uint64 `json:"bitrate"`
+
+	// Codec holds video stream codec
+	Codec *string `json:"codec"`
 }
 
 // Location holds location coordinates
