@@ -1,4 +1,6 @@
 # uploadcare-go
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fuploadcare%2Fuploadcare-go.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fuploadcare%2Fuploadcare-go?ref=badge_shield)
+
 
 Go library for accessing Uploadcard API https://uploadcare.com/
 
@@ -98,3 +100,7 @@ Acquiring file-specific info:
 		fmt.Printf("image size: %dx%d\n", h, w)
 	}
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fuploadcare%2Fuploadcare-go.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fuploadcare%2Fuploadcare-go?ref=badge_large)
