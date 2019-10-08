@@ -21,9 +21,10 @@ type Service interface {
 	Info(ctx context.Context, id string) (Info, error)
 	Store(ctx context.Context, id string) (Info, error)
 	Delete(ctx context.Context, id string) (Info, error)
-
 	BatchStore(ctx context.Context, ids []string) (BatchInfo, error)
 	BatchDelete(ctx context.Context, ids []string) (BatchInfo, error)
+	LocalCopy(context.Context, LocalCopyParams) (LocalCopyInfo, error)
+	RemoteCopy(context.Context, RemoteCopyParams) (RemoteCopyInfo, error)
 }
 
 type service struct {
@@ -31,13 +32,14 @@ type service struct {
 }
 
 const (
-	listPathFormat   = "/files/"
-	infoPathFormat   = "/files/%s/"
-	deletePathFormat = "/files/%s/"
-	storePathFormat  = "/files/%s/storage/"
-
+	listPathFormat        = "/files/"
+	infoPathFormat        = "/files/%s/"
+	deletePathFormat      = "/files/%s/"
+	storePathFormat       = "/files/%s/storage/"
 	batchStorePathFormat  = "/files/storage/"
 	batchDeletePathFormat = "/files/storage/"
+	localCopyPathFormat   = "/files/local_copy/"
+	remoteCopyPathFormat  = "/files/remote_copy/"
 )
 
 // OrderBy predefined constants to be used in request params
@@ -46,6 +48,24 @@ const (
 	OrderByUploadedAtDesc = "-datetime_uploaded"
 	OrderBySizeAsc        = "size"
 	OrderBySizeDesc       = "-size"
+)
+
+// Copy file params constants
+const (
+	StoreTrue       = "true"
+	StoreFalse      = "false"
+	MakePublicTrue  = "true"
+	MakePublicFalse = "false"
+)
+
+// Pattern remote copy param constants
+const (
+	PatternDefault      = "${default}"
+	PatternAutoFileName = "${filename} ${effects} ${ext}"
+	PatternEffects      = "${effects}"
+	PatternFileName     = "${filename}"
+	PatternID           = "${uuid}"
+	PatternExt          = "${ext}"
 )
 
 // NewService returns new instance of the Service
