@@ -49,6 +49,7 @@ func (s service) LocalCopy(
 	return
 }
 
+// LocalCopyInfo holds LocalCopy response data
 type LocalCopyInfo struct {
 	Result Info `json:"result"`
 }
@@ -85,6 +86,7 @@ type RemoteCopyParams struct {
 	Pattern *string `json:"pattern"`
 }
 
+// EncodeReq implements ucare.ReqEncoder
 func (d RemoteCopyParams) EncodeReq(req *http.Request) error {
 	return codec.EncodeReqBody(d, req)
 }
@@ -109,6 +111,7 @@ func (s service) RemoteCopy(
 	return
 }
 
+// RemoteCopyInfo holds RemoteCopy response data
 type RemoteCopyInfo struct {
 	// AlreadyExists is true if destination file with that name
 	// already exists
