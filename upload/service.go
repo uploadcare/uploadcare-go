@@ -24,11 +24,12 @@ import (
 
 // Service describes all upload related API functionality
 type Service interface {
-	UploadFile(context.Context, *FileParams) (id string, err error)
-	FromURL(context.Context, *FromURLParams) (FromURLData, error)
+	UploadFile(context.Context, FileParams) (id string, err error)
+	FromURL(context.Context, FromURLParams) (FromURLData, error)
 	FileInfo(ctx context.Context, id string) (FileInfo, error)
 	CreateGroup(ctx context.Context, ids []string) (GroupInfo, error)
 	GroupInfo(ctx context.Context, groupID string) (GroupInfo, error)
+	Multipart(context.Context, MultipartParams) (MultipartData, error)
 }
 
 type service struct{ svc svc.Service }
@@ -55,10 +56,12 @@ const (
 )
 
 const (
-	directUploadFormat  = "/base/"
-	fromURLFormat       = "/from_url/"
-	fromURLStatusFormat = "/from_url/status/?token=%s"
-	fileInfoFormat      = "/info/"
-	createGroupFormat   = "/group/"
-	groupInfoFormat     = "/group/info/"
+	directUploadFormat      = "/base/"
+	fromURLFormat           = "/from_url/"
+	fromURLStatusFormat     = "/from_url/status/?token=%s"
+	fileInfoFormat          = "/info/"
+	createGroupFormat       = "/group/"
+	groupInfoFormat         = "/group/info/"
+	multipartStartFormat    = "/multipart/start/"
+	multipartCompleteFormat = "/multipart/complete/"
 )
