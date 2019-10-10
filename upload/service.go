@@ -7,11 +7,13 @@
 //
 // The package provides uploading files by making requests with payload to
 // the Uploadcare API endpoints. There are two basic upload types:
+//
 // - Direct uploads, a regular upload mode that suits most files less than 100MB
-//   in size. You won’t be able to use this mode for larger files.
+// in size. You won’t be able to use this mode for larger files.
+//
 // - Multipart uploads, a more sophisticated upload mode supporting any files
-//   larger than 10MB and implementing accelerated uploads through
-//   a distributed network.
+// larger than 10MB and implementing accelerated uploads through
+// a distributed network.
 package upload
 
 import (
