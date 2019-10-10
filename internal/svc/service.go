@@ -59,8 +59,8 @@ func (s Service) ResourceOp(
 	resourceData interface{},
 ) error {
 	// shouldn't be the case
-	if method == "" || requrl == "" || resourceData == nil {
-		return errors.New("invalid params passed")
+	if method == "" || requrl == "" {
+		return errors.New("invalid params or method passed")
 	}
 
 	s.log.Infof("requesting: %s %s", method, requrl)

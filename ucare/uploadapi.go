@@ -109,6 +109,9 @@ try:
 		goto try
 	}
 
+	if resdata == nil {
+		return nil
+	}
 	err = json.NewDecoder(resp.Body).Decode(&resdata)
 	if err != nil {
 		return err
