@@ -192,6 +192,11 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 		}
 	}
 
+	formValue := fileField.Tag.Get("form")
+	if formValue == "" {
+		return nil
+	}
+
 	name, ok := dataV.
 		FieldByName(config.FilenameFieldName).
 		Interface().(string)
@@ -226,7 +231,7 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 		"Content-Disposition",
 		fmt.Sprintf(
 			`form-data; name="%s"; filename="%s"`,
-			escapeQuotes(fileField.Tag.Get("form")),
+			escapeQuotes(formValue),
 			escapeQuotes(name),
 		),
 	)
@@ -278,6 +283,10 @@ func fieldValue(v reflect.Value) (val string) {
 		val = ucare.StringVal(valc)
 	case *uint64:
 		val = strconv.FormatUint(ucare.Uint64Val(valc), 10)
+	case uint64:
+		val = strconv.FormatUint(valc, 10)
+	case int64:
+		val = strconv.FormatInt(valc, 10)
 	case *int64:
 		val = strconv.FormatInt(ucare.Int64Val(valc), 10)
 	case *bool:
