@@ -73,7 +73,7 @@ func (v *List) ReadResult() (*Info, error) {
 //		info, err := fileList.ReadResult()
 //		...
 //	}
-func (s service) List(ctx context.Context, params *ListParams) (*List, error) {
-	resbuf, err := s.svc.List(ctx, listPathFormat, params)
+func (s service) List(ctx context.Context, params ListParams) (*List, error) {
+	resbuf, err := s.svc.List(ctx, listPathFormat, &params)
 	return &List{raw: resbuf}, err
 }

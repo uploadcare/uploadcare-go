@@ -25,7 +25,7 @@ import (
 
 // Service describes all group related API
 type Service interface {
-	List(context.Context, *ListParams) (*List, error)
+	List(context.Context, ListParams) (*List, error)
 	Info(ctx context.Context, id string) (Info, error)
 	Store(ctx context.Context, id string) (Info, error)
 }

@@ -68,7 +68,7 @@ func encodeDataToForm(d interface{}, req *http.Request) error {
 // Comply with the RFC7578 standard.
 func (s service) UploadFile(
 	ctx context.Context,
-	params *FileParams,
+	params FileParams,
 ) (string, error) {
 	var resp struct{ File string }
 
@@ -76,7 +76,7 @@ func (s service) UploadFile(
 		ctx,
 		http.MethodPost,
 		directUploadFormat,
-		params,
+		&params,
 		&resp,
 	); err != nil {
 		return "", err

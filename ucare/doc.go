@@ -29,7 +29,7 @@ Getting a list of files:
 	// creating a file operations service
 	fileSvc := file.NewService(client)
 
-	listParams := &file.ListParams{
+	listParams := file.ListParams{
 		Stored:  ucare.String(true),
 		OrderBy: ucare.String(file.OrderBySizeAsc),
 	}
@@ -82,7 +82,7 @@ Getting a list of groups:
 
 	groupSvc := group.New(client)
 
-	listParams := &file.ListParams{
+	listParams := file.ListParams{
 		OrderBy:      ucare.String(group.OrderByCreatedAtAsc),
 		Limit:        ucare.String(20),
 	}
@@ -128,7 +128,7 @@ Uploading a file
 		// handle error
 	}
 
-	fileParams := &upload.FileParams{
+	fileParams := upload.FileParams{
 		Data:        file,
 		Name:        file.Name(),
 		ToStore:     ucare.String(upload.ToStoreTrue),
