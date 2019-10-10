@@ -61,7 +61,7 @@ Getting a paginated list of files:
 	// creating a file operations service
 	fileSvc := file.NewService(client) 
 
-	listParams := &file.ListParams{
+	listParams := file.ListParams{
 		Stored:  ucare.String(true),
 		OrderBy: ucare.String(file.OrderBySizeAsc),
 	}
