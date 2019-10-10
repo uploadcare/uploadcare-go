@@ -22,9 +22,9 @@ type MultipartParams struct {
 	FileName string `form:"filename"`
 	// Size (required) is a precise file size in bytes.
 	// Should not exceed your project file size cap
-	Size uint64 `form:"size"`
+	Size int64 `form:"size"`
 	// ContentType (required) is the file MIME-type.
-	ContentType string
+	ContentType string `form:"content_type"`
 
 	// Data (required) reads the data to be uploaded
 	Data io.ReadSeeker
@@ -114,8 +114,12 @@ type multipartData struct {
 	Parts []string `json:"parts"`
 }
 
-// TODO: consider optimal value
-const concurrentUploads = 5
+// TODO: consider optimal values
+const (
+	concurrentUploads  = 5
+	maxUploadPartTries = 2
+	partSize           = 5242880 // 5MB
+)
 
 func (d *multipartData) uploadParts() {
 	if d == nil || d.ID == "" {
@@ -130,7 +134,7 @@ func (d *multipartData) uploadParts() {
 		case <-d.ctx.Done():
 			err := d.ctx.Err()
 			log.Errorf(
-				"stopped uploading parts ofthe file: %s: %+v",
+				"stopped uploading file: %s: %+v",
 				d.ID,
 				err,
 			)
@@ -145,8 +149,17 @@ func (d *multipartData) uploadParts() {
 				continue
 			}
 			partURL, d.Parts = d.Parts[0], d.Parts[1:]
+
+			part, err := d.partEncoder(partIndexFromURL(partURL))
+			if err != nil {
+				if len(d.err) < cap(d.err) {
+					d.err <- err
+				}
+				return
+			}
+
 			wg.Add(1)
-			go d.tryUploadPart(&wg, partURL)
+			go d.tryUploadPart(&wg, partURL, part)
 		}
 	}
 
@@ -158,30 +171,30 @@ func (d *multipartData) uploadParts() {
 		if len(d.err) < cap(d.err) {
 			d.err <- err
 		}
+		return
 	}
 
 	d.done <- fileInfo
 	return
 }
 
-func (d *multipartData) tryUploadPart(wg *sync.WaitGroup, partURL string) {
+func (d *multipartData) tryUploadPart(
+	wg *sync.WaitGroup,
+	partURL string,
+	part ucare.ReqEncoder,
+) {
 	defer wg.Done()
 
 	tries := 0
 try:
 	tries++
-	part, err := d.partEncoder(partIndexFromURL(partURL))
-	if err != nil {
-		d.err <- err
-		return
-	}
-	err = d.uploadPart(
+	err := d.uploadPart(
 		d.ctx,
 		partURL,
 		part,
 	)
 	if err != nil {
-		if tries >= 3 {
+		if tries >= maxUploadPartTries {
 			d.err <- err
 			return
 		}
@@ -196,8 +209,6 @@ func (s service) uploadPart(
 ) error {
 	return s.svc.ResourceOp(ctx, http.MethodPut, url, part, nil)
 }
-
-const partSize = 5242880 // 5MB
 
 func (d *multipartData) partEncoder(partIndex int64) (ucare.ReqEncoder, error) {
 	_, err := d.data.Seek(partIndex*partSize, 0)
@@ -231,6 +242,7 @@ type partEncoder struct {
 func (d partEncoder) EncodeReq(req *http.Request) error {
 	req.Body = ioutil.NopCloser(bytes.NewReader(d.data))
 	req.Header.Set("Content-Type", d.contentType)
+	req.Header.Set("Content-Length", strconv.Itoa(len(d.data)))
 	return nil
 }
 
