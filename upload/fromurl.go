@@ -107,7 +107,7 @@ func (d *FromURLParams) EncodeReq(req *http.Request) error {
 //	...
 func (s service) FromURL(
 	ctx context.Context,
-	params *FromURLParams,
+	params FromURLParams,
 ) (FromURLData, error) {
 	data := fromURLData{
 		ctx:           ctx,
@@ -118,7 +118,7 @@ func (s service) FromURL(
 		ctx,
 		http.MethodPost,
 		fromURLFormat,
-		params,
+		&params,
 		&data,
 	)
 	return &data, err
@@ -130,9 +130,9 @@ type FromURLData interface {
 	// If it was not uplaoded it returns (&FileInfo{}, false).
 	// The caller is responsible for handling case when upload is not
 	// done yet.
-	Info() (*FileInfo, bool)
+	Info() (FileInfo, bool)
 	// Done is used to block and wait for upload to be finished
-	Done() <-chan *FileInfo
+	Done() <-chan FileInfo
 	// Progress is used to track uploading progress
 	Progress() <-chan uint64
 	// Error is used to listen for uploading error. If error is
@@ -148,7 +148,7 @@ type fromURLData struct {
 
 	once     *sync.Once
 	progress chan uint64
-	done     chan *FileInfo
+	done     chan FileInfo
 	err      chan error
 
 	fromURLStatus func(context.Context, string) (*fromURLStatusData, error)
@@ -159,36 +159,37 @@ type fromURLData struct {
 }
 
 // FileInfo returns file info if uploading is done and otherwise nil
-func (d *fromURLData) Info() (*FileInfo, bool) {
+func (d *fromURLData) Info() (FileInfo, bool) {
 	if d.Token != nil || d.FileInfo == nil {
-		return &FileInfo{}, false
+		d.once.Do(func() {
+			d.done = make(chan FileInfo, 1)
+			d.progress = make(chan uint64, fromURLChanBuf)
+			d.err = make(chan error, fromURLChanBuf)
+			go d.wait()
+		})
+		return FileInfo{}, false
 	}
-	return d.FileInfo, true
+	return *d.FileInfo, true
 }
 
 // Done is used to wait for uploading to be done. If uploading fails it will
-// never receive *FileInfo value. To avoid deadlock always listen for errors:
+// never receive FileInfo value:
 //	select {
 //	case fileinfo := <-res.Done():
 //		// file info received
 //	case err := <-res.Error():
 //		// error received
 //	}
-func (d *fromURLData) Done() <-chan *FileInfo {
-	d.once.Do(func() {
-		d.done = make(chan *FileInfo, 1)
-		d.progress = make(chan uint64, fromURLChanBuf)
-		d.err = make(chan error, fromURLChanBuf)
-		go d.wait()
-	})
-	return d.done
-}
+func (d *fromURLData) Done() <-chan FileInfo { return d.done }
+
+// Error should be used to listen for errors inside of the select statement
+func (d *fromURLData) Error() <-chan error { return d.err }
 
 // TODO: consider smaller buf size
 const fromURLChanBuf = 10
 
 func (d *fromURLData) wait() {
-	if d.Token == nil {
+	if d == nil || d.Token == nil {
 		return
 	}
 	for {
@@ -198,7 +199,7 @@ func (d *fromURLData) wait() {
 			if len(d.err) < fromURLChanBuf {
 				d.err <- err
 			}
-			log.Debugf(
+			log.Errorf(
 				"stopped waiting for the file: %s: %+v",
 				d.Token,
 				err,
@@ -229,7 +230,7 @@ func (d *fromURLData) wait() {
 				}
 				continue
 			}
-			d.done <- data.FileInfo
+			d.done <- *data.FileInfo
 			return
 		}
 	}
@@ -243,9 +244,6 @@ func (d *fromURLData) Progress() <-chan uint64 {
 	}
 	return d.progress
 }
-
-// Error should be used to listen for errors inside of the select statement
-func (d *fromURLData) Error() <-chan error { return d.err }
 
 // TotalSize returns total file size to be uploaded
 func (d *fromURLData) TotalSize() uint64 {
