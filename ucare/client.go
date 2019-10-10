@@ -2,6 +2,7 @@ package ucare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -49,6 +50,41 @@ type ReqEncoder interface {
 
 type client struct {
 	backends map[config.Endpoint]Client
+	fallback Client
+}
+
+type fallbackClient struct {
+	conn *http.Client
+}
+
+func (c fallbackClient) NewRequest(
+	ctx context.Context,
+	endpoint config.Endpoint,
+	method string,
+	requrl string,
+	data ReqEncoder,
+) (*http.Request, error) {
+	req, err := http.NewRequest(method, requrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	err = data.EncodeReq(req)
+	if err != nil {
+		return nil, err
+	}
+	return req.WithContext(ctx), nil
+}
+
+func (c fallbackClient) Do(req *http.Request, resdata interface{}) error {
+	res, err := c.conn.Do(req)
+	if err != nil {
+		return err
+	}
+	if err = json.NewDecoder(res.Body).Decode(&resdata); err != nil {
+		return err
+	}
+	res.Body.Close()
+	return nil
 }
 
 // NewClient initializes and configures new client for the high level API.
@@ -66,6 +102,7 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 			config.RESTAPIEndpoint:   newRESTAPIClient(creds, conf),
 			config.UploadAPIEndpoint: newUploadAPIClient(creds, conf),
 		},
+		fallback: fallbackClient{conf.HTTPClient},
 	}
 
 	return &c, nil
@@ -83,9 +120,8 @@ func (c *client) NewRequest(
 ) (*http.Request, error) {
 	b, ok := c.backends[endpoint]
 	if !ok {
-		return nil, errNoClient
+		return c.fallback.NewRequest(ctx, endpoint, method, requrl, data)
 	}
-
 	return b.NewRequest(ctx, endpoint, method, requrl, data)
 }
 
@@ -93,7 +129,7 @@ func (c *client) NewRequest(
 func (c *client) Do(req *http.Request, resdata interface{}) error {
 	b, ok := c.backends[config.Endpoint(req.URL.Host)]
 	if !ok {
-		return errNoClient
+		return c.fallback.Do(req, resdata)
 	}
 	return b.Do(req, resdata)
 }
