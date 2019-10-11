@@ -195,7 +195,9 @@ try:
 	)
 	if err != nil {
 		if tries >= maxUploadPartTries {
-			d.err <- err
+			if len(d.err) < cap(d.err) {
+				d.err <- err
+			}
 			return
 		}
 		goto try

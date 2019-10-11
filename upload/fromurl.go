@@ -17,6 +17,9 @@ type FromURLParams struct {
 	URL string `form:"source_url"`
 
 	// ToStore sets the file storing behaviour
+	// Valid values are:
+	//	upload.ToStoreTrue
+	//	upload.ToStoreFalse
 	ToStore *string `form:"UPLOADCARE_STORE"`
 
 	// Name sets the name for a file uploaded from URL. If not defined, the
@@ -41,7 +44,8 @@ type FromURLParams struct {
 }
 
 type fromURLAuthParams struct {
-	PubKey string `form:"pub_key"`
+	//PubKey string `form:"pub_key"`
+	PubKey string `form:"UPLOADCARE_PUB_KEY"`
 	signatureExpire
 }
 
@@ -182,6 +186,9 @@ func (d *fromURLData) Info() (FileInfo, bool) {
 //	}
 func (d *fromURLData) Done() <-chan FileInfo { return d.done }
 
+// Progress returns channel for tracking uploading progress
+func (d *fromURLData) Progress() <-chan uint64 { return d.progress }
+
 // Error should be used to listen for errors inside of the select statement
 func (d *fromURLData) Error() <-chan error { return d.err }
 
@@ -196,7 +203,7 @@ func (d *fromURLData) wait() {
 		select {
 		case <-d.ctx.Done():
 			err := d.ctx.Err()
-			if len(d.err) < fromURLChanBuf {
+			if len(d.err) < cap(d.err) {
 				d.err <- err
 			}
 			log.Errorf(
@@ -208,7 +215,7 @@ func (d *fromURLData) wait() {
 		case <-time.After(3 * time.Second):
 			data, err := d.fromURLStatus(d.ctx, *d.Token)
 			if err != nil {
-				if len(d.err) < fromURLChanBuf {
+				if len(d.err) < cap(d.err) {
 					d.err <- err
 				}
 				return
@@ -221,11 +228,13 @@ func (d *fromURLData) wait() {
 			)
 
 			if data.Status == uploadStatusError {
-				d.err <- errors.New(data.Error)
+				if len(d.err) < cap(d.err) {
+					d.err <- errors.New(data.Error)
+				}
 				return
 			}
 			if data.Status == uploadStatusInProgress {
-				if len(d.progress) < fromURLChanBuf {
+				if len(d.progress) < cap(d.progress) {
 					d.progress <- data.Done
 				}
 				continue
@@ -234,15 +243,6 @@ func (d *fromURLData) wait() {
 			return
 		}
 	}
-}
-
-// Progress returns channel for tracking uploading progress
-func (d *fromURLData) Progress() <-chan uint64 {
-	if d.progress == nil {
-		d.progress = make(chan uint64, 10)
-
-	}
-	return d.progress
 }
 
 // TotalSize returns total file size to be uploaded
