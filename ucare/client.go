@@ -48,8 +48,8 @@ type ReqEncoder interface {
 }
 
 type client struct {
-	backends map[config.Endpoint]Client
-	fallback Client
+	backends   map[config.Endpoint]Client
+	fallbackDo func(*http.Request, interface{}) error
 }
 
 // NewClient initializes and configures new client for the high level API.
@@ -67,7 +67,7 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 			config.RESTAPIEndpoint:   newRESTAPIClient(creds, conf),
 			config.UploadAPIEndpoint: newUploadAPIClient(creds, conf),
 		},
-		fallback: fallbackClient{conf.HTTPClient},
+		fallbackDo: fallbackDoFunc(conf.HTTPClient),
 	}
 
 	return &c, nil
@@ -85,7 +85,7 @@ func (c *client) NewRequest(
 ) (*http.Request, error) {
 	b, ok := c.backends[endpoint]
 	if !ok {
-		return c.fallback.NewRequest(ctx, endpoint, method, requrl, data)
+		return nil, errNoClient
 	}
 	return b.NewRequest(ctx, endpoint, method, requrl, data)
 }
@@ -94,7 +94,7 @@ func (c *client) NewRequest(
 func (c *client) Do(req *http.Request, resdata interface{}) error {
 	b, ok := c.backends[config.Endpoint(req.URL.Host)]
 	if !ok {
-		return c.fallback.Do(req, resdata)
+		return c.fallbackDo(req, resdata)
 	}
 	return b.Do(req, resdata)
 }
