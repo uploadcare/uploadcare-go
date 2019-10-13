@@ -159,7 +159,7 @@ func (d *multipartData) uploadParts() {
 			}
 
 			wg.Add(1)
-			go d.tryUploadPart(&wg, partURL, part)
+			go d.tryUploadPart(&wg, uploadSem, partURL, part)
 		}
 	}
 
@@ -180,10 +180,12 @@ func (d *multipartData) uploadParts() {
 
 func (d *multipartData) tryUploadPart(
 	wg *sync.WaitGroup,
+	sem <-chan struct{},
 	partURL string,
 	part ucare.ReqEncoder,
 ) {
 	defer wg.Done()
+	defer func() { <-sem }()
 
 	tries := 0
 try:
@@ -218,12 +220,12 @@ func (d *multipartData) partEncoder(partIndex int64) (ucare.ReqEncoder, error) {
 		return nil, err
 	}
 	buf := make([]byte, partSize)
-	_, err = d.data.Read(buf)
+	n, err := d.data.Read(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	return partEncoder{buf, d.contentType}, nil
+	return partEncoder{buf[:n], d.contentType}, nil
 }
 
 func partIndexFromURL(partURL string) int64 {
@@ -244,7 +246,7 @@ type partEncoder struct {
 func (d partEncoder) EncodeReq(req *http.Request) error {
 	req.Body = ioutil.NopCloser(bytes.NewReader(d.data))
 	req.Header.Set("Content-Type", d.contentType)
-	req.Header.Set("Content-Length", strconv.Itoa(len(d.data)))
+	req.ContentLength = int64(len(d.data))
 	return nil
 }
 

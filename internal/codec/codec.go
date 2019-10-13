@@ -126,7 +126,9 @@ func EncodeReqBody(data interface{}, req *http.Request) error {
 	if err != nil {
 		return err
 	}
-	req.Body = ioutil.NopCloser(bytes.NewReader(rawdata))
+	buf := bytes.NewBuffer(rawdata)
+	req.Body = ioutil.NopCloser(buf)
+	req.ContentLength = int64(buf.Len())
 	return nil
 }
 
