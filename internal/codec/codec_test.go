@@ -17,7 +17,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/upload"
 )
 
-func TestEncodeReqQuery(t *testing.T) {
+func testEncodeReqQuery(t *testing.T) {
 	t.Parallel()
 
 	now, _ := time.Parse(config.UCTimeLayout, "2015-04-02T10:00:00")
@@ -89,7 +89,7 @@ func TestEncodeReqQuery(t *testing.T) {
 	}
 }
 
-func TestEncodeReqBody(t *testing.T) {
+func testEncodeReqBody(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -118,7 +118,7 @@ func TestEncodeReqBody(t *testing.T) {
 	}
 }
 
-func TestEncodeReqFormData(t *testing.T) {
+func testEncodeReqFormData(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
