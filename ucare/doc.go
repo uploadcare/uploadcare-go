@@ -134,7 +134,7 @@ Uploading a file
 		ToStore:     ucare.String(upload.ToStoreTrue),
 	}
 
-	fileID, err := uploadSvc.UploadFile(context.Background(), fileParams)
+	fileID, err := uploadSvc.File(context.Background(), fileParams)
 	if err != nil {
 		// handle error
 	}

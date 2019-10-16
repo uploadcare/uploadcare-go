@@ -64,9 +64,9 @@ func encodeDataToForm(d interface{}, req *http.Request) error {
 	return nil
 }
 
-// UploadFile uploads a file and return its unique id (uuid).
+// File uploads a file and return its unique id (uuid).
 // Comply with the RFC7578 standard.
-func (s service) UploadFile(
+func (s service) File(
 	ctx context.Context,
 	params FileParams,
 ) (string, error) {
