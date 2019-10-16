@@ -1,5 +1,9 @@
 # uploadcare-go
 
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
+[![Actions
+Status](https://github.com/uploadcare/uploadcare-go/workflows/make/badge.svg)](https://github.com/uploadcare/uploadcare-go/actions)
+
 Go library for accessing Uploadcard API https://uploadcare.com/
 
 ```
