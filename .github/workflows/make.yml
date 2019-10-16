@@ -14,5 +14,8 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v1
-    - name: Test 
-      run: make vet & make test
+    - name: Test
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
+      run: make vet & make test-full

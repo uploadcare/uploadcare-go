@@ -5,8 +5,12 @@ lint:
 .PHONY: lint
 
 test:
-	go test -v -race ./...
+	go test -v -race -short ./...
 .PHONY: test
+
+test-full:
+	go test -v -race ./...
+.PHONY: test-full
 
 vet:
 	go vet ./...
