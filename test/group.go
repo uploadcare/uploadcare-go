@@ -15,7 +15,9 @@ func groupList(t *testing.T, r *testenv.Runner) {
 	assert.Equal(t, nil, err)
 	for list.Next() {
 		res, err := list.ReadResult()
-		assert.Equal(t, nil, err)
+		if err != nil {
+			t.Fatal(err)
+		}
 		r.Artifacts.GroupIDs = append(r.Artifacts.GroupIDs, res.ID)
 	}
 }
@@ -23,13 +25,17 @@ func groupList(t *testing.T, r *testenv.Runner) {
 func groupInfo(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	info, err := r.Group.Info(ctx, r.Artifacts.GroupIDs[0])
-	assert.Equal(t, nil, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.Equal(t, r.Artifacts.GroupIDs[0], info.ID)
 }
 
 func groupStore(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	info, err := r.Group.Store(ctx, r.Artifacts.GroupIDs[0])
-	assert.Equal(t, nil, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.NotNil(t, info.StoredAt)
 }

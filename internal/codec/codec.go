@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -74,9 +75,11 @@ func (b *ResultBuf) ReadRawResult() (Raw, error) {
 	if b.at >= len(b.Vals) && b.NextPage != nil {
 		valsPrev, b.Vals = b.Vals, nil
 
+		u, _ := url.Parse(*b.NextPage)
+
 		req, err := b.Client.NewRequest(
 			b.Ctx,
-			"",
+			config.Endpoint(u.Host),
 			b.ReqMethod,
 			*b.NextPage,
 			nil,

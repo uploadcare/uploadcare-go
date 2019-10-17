@@ -40,18 +40,23 @@ func uploadFromURL(t *testing.T, r *testenv.Runner) {
 		Name: ucare.String("test_file_name"),
 	}
 	res, err := r.Upload.FromURL(ctx, params)
-	assert.Equal(t, nil, err)
-
-	select {
-	case info := <-res.Done():
-		assert.Equal(t, fileURL, info.OriginalFileName)
-		r.Artifacts.Files = append(
-			r.Artifacts.Files,
-			&file.Info{BasicFileInfo: info.BasicFileInfo},
-		)
-	case err := <-res.Error():
-		t.Error(err)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	info, ok := res.Info()
+	if !ok {
+		select {
+		case info = <-res.Done():
+		case err := <-res.Error():
+			t.Error(err)
+		}
+	}
+	assert.Equal(t, "photo_20190914_154427.jpg", info.OriginalFileName)
+	r.Artifacts.Files = append(
+		r.Artifacts.Files,
+		&file.Info{BasicFileInfo: info.BasicFileInfo},
+	)
 }
 
 func uploadFileInfo(t *testing.T, r *testenv.Runner) {
@@ -92,7 +97,9 @@ func uploadMultipart(t *testing.T, r *testenv.Runner) {
 		ContentType: "text/plain",
 		Data:        sizeReadSeeker{size: size},
 	})
-	assert.Equal(t, nil, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case info := <-res.Done():
 		assert.Equal(t, info.OriginalFileName, info.OriginalFileName)

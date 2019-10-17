@@ -44,8 +44,7 @@ type FromURLParams struct {
 }
 
 type fromURLAuthParams struct {
-	//PubKey string `form:"pub_key"`
-	PubKey string `form:"UPLOADCARE_PUB_KEY"`
+	PubKey string `form:"pub_key"`
 	signatureExpire
 }
 

@@ -17,7 +17,9 @@ func conversionDocument(t *testing.T, r *testenv.Runner) {
 		},
 	})
 	assert.Equal(t, nil, err)
-	assert.NotEqual(t, 0, len(info.Jobs))
+	if len(info.Jobs) == 0 {
+		t.Fatal("job should be started")
+	}
 
 	r.Artifacts.ConversionJobs = append(
 		r.Artifacts.ConversionJobs,

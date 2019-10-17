@@ -15,7 +15,9 @@ func listFiles(t *testing.T, r *testenv.Runner) {
 	assert.Equal(t, nil, err)
 	for list.Next() {
 		res, err := list.ReadResult()
-		assert.Equal(t, nil, err)
+		if err != nil {
+			t.Fatal(err)
+		}
 		assert.NotEqual(t, "", res.ID)
 		r.Artifacts.Files = append(r.Artifacts.Files, res)
 	}
