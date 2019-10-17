@@ -6,11 +6,6 @@ Status](https://github.com/uploadcare/uploadcare-go/workflows/make/badge.svg)](h
 
 Go library for accessing Uploadcard API https://uploadcare.com/
 
-```
-You are viewing the source code of the upcoming v0.1.0.
-This release is still in progress.
-```
-
 ### Table of Contents
 
 - [Requirements](#requirements)
