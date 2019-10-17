@@ -44,10 +44,15 @@ func (t *Time) UnmarshalJSON(b []byte) (err error) {
 	}
 	// time is returned in a different format every time
 	// so we need to normalize it in order to parse it
-	dotInd := strings.Index(s, ".")
-	if dotInd > -1 {
+	if dotInd := strings.Index(s, "."); dotInd > -1 {
 		s = s[:dotInd]
 	}
+
+	// sometimes Z suffix is present
+	if zInd := strings.Index(s, "Z"); zInd > -1 {
+		s = s[:zInd]
+	}
+
 	t.Time, err = time.Parse(UCTimeLayout, s)
 	return
 }

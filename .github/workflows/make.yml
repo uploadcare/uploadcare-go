@@ -18,4 +18,4 @@ jobs:
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
-      run: make vet & make test-full
+      run: make vet & make test
