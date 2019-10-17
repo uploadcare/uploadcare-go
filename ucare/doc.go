@@ -4,7 +4,9 @@ Package ucare provides the binding for the Uploadcare API.
 	import (
 		"github.com/uploadcare/uploadcare-go/ucare"
 		"github.com/uploadcare/uploadcare-go/file"
+		"github.com/uploadcare/uploadcare-go/group"
 		"github.com/uploadcare/uploadcare-go/upload"
+		"github.com/uploadcare/uploadcare-go/conversion"
 	)
 
 Construct a new Uploadcare client, then use the various domain services to
