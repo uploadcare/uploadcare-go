@@ -1,5 +1,13 @@
 # uploadcare-go
 
+<img 
+	align="right"
+	width="64"
+	height="64"
+	src="https://ucarecdn.com/2f4864b7-ed0e-4411-965b-8148623aa680/uploadcare-logo-mark.svg"
+	alt=""
+/>
+
 [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
 [![Actions
 Status](https://github.com/uploadcare/uploadcare-go/workflows/make/badge.svg)](https://github.com/uploadcare/uploadcare-go/actions)
