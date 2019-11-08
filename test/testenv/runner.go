@@ -20,17 +20,21 @@ type Runner struct {
 
 // Artifacts are test artifacts
 type Artifacts struct {
+	CustomStorage  string
 	Files          []*file.Info
 	GroupIDs       []string
 	ConversionJobs []conversion.Job
 }
 
 // NewRunner returns new Runner instance
-func NewRunner(client ucare.Client) *Runner {
+func NewRunner(client ucare.Client, customStorage string) *Runner {
 	return &Runner{
 		File:       file.NewService(client),
 		Group:      group.NewService(client),
 		Upload:     upload.NewService(client),
 		Conversion: conversion.NewService(client),
+		Artifacts: Artifacts{
+			CustomStorage: customStorage,
+		},
 	}
 }

@@ -95,6 +95,7 @@ func fileRemoteCopy(t *testing.T, r *testenv.Runner) {
 		ctx,
 		file.RemoteCopyParams{
 			Source: r.Artifacts.Files[0].ID,
+			Target: r.Artifacts.CustomStorage,
 		},
 	)
 	assert.Equal(t, nil, err)

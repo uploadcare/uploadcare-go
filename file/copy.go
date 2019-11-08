@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // CopyParams is used when copy original files or their modified
@@ -78,6 +79,12 @@ func (s service) LocalCopy(
 	ctx context.Context,
 	params LocalCopyParams,
 ) (data LocalCopyInfo, err error) {
+	if params.Store == nil {
+		params.Store = ucare.String(StoreFalse)
+	}
+	if params.MakePublic == nil {
+		params.MakePublic = ucare.String(MakePublicTrue)
+	}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPost,
@@ -137,6 +144,9 @@ func (s service) RemoteCopy(
 	ctx context.Context,
 	params RemoteCopyParams,
 ) (data RemoteCopyInfo, err error) {
+	if params.MakePublic == nil {
+		params.MakePublic = ucare.String(MakePublicTrue)
+	}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPost,
