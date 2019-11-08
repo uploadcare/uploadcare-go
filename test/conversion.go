@@ -30,6 +30,10 @@ func conversionDocument(t *testing.T, r *testenv.Runner) {
 func conversionDocumentStatus(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 
+	if len(r.Artifacts.ConversionJobs) == 0 {
+		t.Fatal("no conversion job token")
+	}
+
 	job, err := r.Conversion.DocumentStatus(
 		ctx,
 		r.Artifacts.ConversionJobs[0].Token,

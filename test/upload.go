@@ -103,6 +103,9 @@ func uploadMultipart(t *testing.T, r *testenv.Runner) {
 	select {
 	case info := <-res.Done():
 		assert.Equal(t, info.OriginalFileName, info.OriginalFileName)
+		r.Artifacts.Files = append(r.Artifacts.Files, &file.Info{
+			BasicFileInfo: info.BasicFileInfo,
+		})
 	case err := <-res.Error():
 		t.Error(err)
 	}

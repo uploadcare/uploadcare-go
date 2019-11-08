@@ -27,10 +27,10 @@ var integrationTests = []struct {
 	{"list files", listFiles},
 	{"get file info", fileInfo},
 	{"store file", fileStore},
-	{"delete file", fileDelete},
 	{"batch file store", fileBatchStore},
-	//{"local file copy", fileLocalCopy},
-	//{"remote file copy", fileRemoteCopy},
+	{"local file copy", fileLocalCopy},
+	{"remote file copy", fileRemoteCopy},
+	{"delete file", fileDelete},
 	{"batch file delete", fileBatchDelete},
 }
 
@@ -55,7 +55,9 @@ func TestIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := testenv.NewRunner(client)
+	customStorage := env.MustGet("CUSTOM_STORAGE_BUCKET")
+
+	r := testenv.NewRunner(client, customStorage)
 
 	// The ordering here is important as each test adds state to artifacts
 	for _, test := range integrationTests {

@@ -57,10 +57,11 @@ func fileBatchStore(t *testing.T, r *testenv.Runner) {
 
 func fileBatchDelete(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
-	res, err := r.File.BatchDelete(
-		ctx,
-		[]string{r.Artifacts.Files[0].ID},
-	)
+	ids := make([]string, 0, len(r.Artifacts.Files))
+	for _, r := range r.Artifacts.Files {
+		ids = append(ids, r.ID)
+	}
+	res, err := r.File.BatchDelete(ctx, ids)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, 0, len(res.Results))
 }
