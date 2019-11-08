@@ -107,7 +107,7 @@ type Info struct {
 
 	// Variatios is a dictionary of other files that has been created using
 	// this file as source. Used for video, document and etc. conversion
-	Variations []string `json:"variations"`
+	Variations *map[string]string `json:"variations"`
 
 	// RecognitionInfo is a dictionary of file categories with it"s
 	// confidence
