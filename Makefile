@@ -1,17 +1,18 @@
-all: lint vet test
+GO ?= go
 
-lint:
-	golint -set_exit_status ./...
+
+lint: vet
+	@golint -set_exit_status ./...
 .PHONY: lint
 
-test:
-	go test -v -race -short ./...
+test: lint
+	@$(GO) test -v -race -short ./...
 .PHONY: test
 
-test-full:
-	go test -v -race ./...
+test-full: lint
+	@$(GO) test -v -race ./...
 .PHONY: test-full
 
 vet:
-	go vet ./...
+	@$(GO) vet ./...
 .PHONY: vet

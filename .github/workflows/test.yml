@@ -1,5 +1,5 @@
+name: test
 on: [push, pull_request]
-name: Test
 jobs:
   test:
     strategy:
@@ -14,8 +14,21 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v1
+    - name: Restore Cache
+      uses: actions/cache@preview
+      id: cache
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+    - name: Install tooling deps 
+      run: go get -u golang.org/x/lint/golint 
     - name: Test
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
-      run: make vet & make test
+      run: |
+        # TODO: move this to env block
+        export GOPATH="$(go env GOPATH)"
+        export PATH="$GOPATH/bin:$PATH"
+
+        make test 
