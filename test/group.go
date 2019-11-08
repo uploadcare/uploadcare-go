@@ -13,12 +13,14 @@ func groupList(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	list, err := r.Group.List(ctx, group.ListParams{})
 	assert.Equal(t, nil, err)
-	for list.Next() {
+	count := 0
+	for list.Next() && count < 10 {
 		res, err := list.ReadResult()
 		if err != nil {
 			t.Fatal(err)
 		}
 		r.Artifacts.GroupIDs = append(r.Artifacts.GroupIDs, res.ID)
+		count++
 	}
 }
 
