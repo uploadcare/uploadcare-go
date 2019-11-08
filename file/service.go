@@ -32,14 +32,17 @@ type service struct {
 }
 
 const (
-	listPathFormat        = "/files/"
-	infoPathFormat        = "/files/%s/"
-	deletePathFormat      = "/files/%s/"
+	listPathFormat   = "/files/"
+	infoPathFormat   = "/files/%s/"
+	deletePathFormat = "/files/%s/"
+
 	storePathFormat       = "/files/%s/storage/"
 	batchStorePathFormat  = "/files/storage/"
 	batchDeletePathFormat = "/files/storage/"
-	localCopyPathFormat   = "/files/local_copy/"
-	remoteCopyPathFormat  = "/files/remote_copy/"
+
+	copyPathFormat       = "/files/"
+	localCopyPathFormat  = "/files/local_copy/"
+	remoteCopyPathFormat = "/files/remote_copy/"
 )
 
 // OrderBy predefined constants to be used in request params
