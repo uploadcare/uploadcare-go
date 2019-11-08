@@ -159,7 +159,14 @@ func (d *multipartData) uploadParts() {
 			}
 
 			wg.Add(1)
-			go d.tryUploadPart(&wg, uploadSem, partURL, part)
+			go func() {
+				err := d.tryUploadPart(partURL, part)
+				if len(d.err) < cap(d.err) {
+					d.err <- err
+				}
+				<-uploadSem
+				wg.Done()
+			}()
 		}
 	}
 
@@ -179,14 +186,9 @@ func (d *multipartData) uploadParts() {
 }
 
 func (d *multipartData) tryUploadPart(
-	wg *sync.WaitGroup,
-	sem <-chan struct{},
 	partURL string,
 	part ucare.ReqEncoder,
-) {
-	defer wg.Done()
-	defer func() { <-sem }()
-
+) error {
 	tries := 0
 try:
 	tries++
@@ -197,13 +199,11 @@ try:
 	)
 	if err != nil {
 		if tries >= maxUploadPartTries {
-			if len(d.err) < cap(d.err) {
-				d.err <- err
-			}
-			return
+			return err
 		}
 		goto try
 	}
+	return nil
 }
 
 func (s service) uploadPart(
