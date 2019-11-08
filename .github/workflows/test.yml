@@ -26,9 +26,10 @@ jobs:
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
+        CUSTOM_STORAGE_BUCKET: ${{ secrets.CUSTOM_STORAGE_BUCKET }}
       run: |
         # TODO: move this to env block
         export GOPATH="$(go env GOPATH)"
         export PATH="$GOPATH/bin:$PATH"
 
-        make test 
+        make test-full
