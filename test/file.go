@@ -65,18 +65,37 @@ func fileBatchDelete(t *testing.T, r *testenv.Runner) {
 	assert.NotEqual(t, 0, len(res.Results))
 }
 
+func fileCopy(t *testing.T, r *testenv.Runner) {
+	ctx := context.Background()
+	_, err := r.File.Copy(
+		ctx,
+		file.CopyParams{
+			LocalCopyParams: file.LocalCopyParams{
+				Source: r.Artifacts.Files[0].ID,
+			},
+		},
+	)
+	assert.Equal(t, nil, err)
+}
+
 func fileLocalCopy(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
-	_, err := r.File.LocalCopy(ctx, file.LocalCopyParams{
-		Source: r.Artifacts.Files[1].ID,
-	})
+	_, err := r.File.LocalCopy(
+		ctx,
+		file.LocalCopyParams{
+			Source: r.Artifacts.Files[0].ID,
+		},
+	)
 	assert.Equal(t, nil, err)
 }
 
 func fileRemoteCopy(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
-	_, err := r.File.RemoteCopy(ctx, file.RemoteCopyParams{
-		Source: r.Artifacts.Files[1].ID,
-	})
+	_, err := r.File.RemoteCopy(
+		ctx,
+		file.RemoteCopyParams{
+			Source: r.Artifacts.Files[0].ID,
+		},
+	)
 	assert.Equal(t, nil, err)
 }
