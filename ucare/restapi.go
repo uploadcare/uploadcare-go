@@ -102,7 +102,12 @@ try:
 
 	switch resp.StatusCode {
 	case 400:
-		return ErrAuthForbidden
+		var err respErr
+		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
+			return e
+		}
+		resp.Body.Close()
+		return err
 	case 401:
 		var err authErr
 		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {

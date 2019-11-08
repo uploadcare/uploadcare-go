@@ -23,6 +23,7 @@ type Service interface {
 	Delete(ctx context.Context, id string) (Info, error)
 	BatchStore(ctx context.Context, ids []string) (BatchInfo, error)
 	BatchDelete(ctx context.Context, ids []string) (BatchInfo, error)
+	Copy(context.Context, CopyParams) (LocalCopyInfo, error)
 	LocalCopy(context.Context, LocalCopyParams) (LocalCopyInfo, error)
 	RemoteCopy(context.Context, RemoteCopyParams) (RemoteCopyInfo, error)
 }
