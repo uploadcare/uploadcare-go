@@ -35,13 +35,13 @@ type Params struct {
 	//	/page/:number/ converts a single page of a multi-paged document to
 	// either jpg or png. The method will not work for any other target
 	// formats. :number stands for the one-based number of a page to convert.
-	Paths []string `form:"paths"`
+	Paths []string `json:"paths"`
 
 	// ToStore is the flag indicating if we should store your outputs.
 	// Valid values:
 	//	conversion.ToStoreTrue
 	//	conversion.ToStoreFalse
-	ToStore *string `form:"store"`
+	ToStore *string `json:"store"`
 }
 
 // EncodeReq implements ucare.ReqEncoder
@@ -82,7 +82,7 @@ type Job struct {
 	// ID is a UUID of your converted document
 	ID string `json:"uuid"`
 	// Token is a conversion job token that can be used to get a job status
-	Token string `json:"token"`
+	Token int64 `json:"token"`
 	// ThumbnailsGroupID is a UUID of a file group with thumbnails
 	// for an output video, based on the `thumbs` operation parameters
 	ThumbnailsGroupID *string `json:"thumbnails_group_id"`
@@ -91,7 +91,7 @@ type Job struct {
 // DocumentStatus gets document conversion job status
 func (s service) DocumentStatus(
 	ctx context.Context,
-	token string,
+	token int64,
 ) (data StatusResult, err error) {
 	err = s.svc.ResourceOp(
 		ctx,
@@ -142,7 +142,7 @@ func (s service) Video(
 // VideoStatus gets video conversion job status
 func (s service) VideoStatus(
 	ctx context.Context,
-	token string,
+	token int64,
 ) (data StatusResult, err error) {
 	err = s.svc.ResourceOp(
 		ctx,

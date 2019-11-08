@@ -11,11 +11,12 @@ import (
 
 func conversionDocument(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
-	info, err := r.Conversion.Document(ctx, conversion.Params{
+	params := conversion.Params{
 		Paths: []string{
-			r.Artifacts.Files[0].ID + "/document/-/format/pdf/",
+			r.Artifacts.Files[1].ID + "/document/-/format/pdf/",
 		},
-	})
+	}
+	info, err := r.Conversion.Document(ctx, params)
 	assert.Equal(t, nil, err)
 	if len(info.Jobs) == 0 {
 		t.Fatal("job should be started")

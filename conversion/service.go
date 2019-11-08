@@ -11,10 +11,10 @@ import (
 // Service describes all conversion related API
 type Service interface {
 	Document(context.Context, Params) (Result, error)
-	DocumentStatus(context.Context, string) (StatusResult, error)
+	DocumentStatus(context.Context, int64) (StatusResult, error)
 
 	Video(context.Context, Params) (Result, error)
-	VideoStatus(context.Context, string) (StatusResult, error)
+	VideoStatus(context.Context, int64) (StatusResult, error)
 }
 
 type service struct {
@@ -28,9 +28,9 @@ func NewService(client ucare.Client) Service {
 
 const (
 	convertDocumentFormat       = "/convert/document/"
-	convertDocumentStatusFormat = "/convert/document/status/%s/"
+	convertDocumentStatusFormat = "/convert/document/status/%d/"
 	convertVideoFormat          = "/convert/video/"
-	convertVideoStatusFormat    = "/convert/video/status/%s/"
+	convertVideoStatusFormat    = "/convert/video/status/%d/"
 )
 
 // Predefined constants
