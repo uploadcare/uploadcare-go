@@ -3,7 +3,9 @@ package ucare
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -136,8 +138,17 @@ try:
 	if resdata == nil {
 		return nil
 	}
-	err = json.NewDecoder(resp.Body).Decode(&resdata)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, &resdata)
+	if err != nil {
+		// if response doesn't appear to be a json
+		var syntaxErr *json.SyntaxError
+		if errors.As(err, &syntaxErr) {
+			return respErr{string(data)}
+		}
 		return err
 	}
 	resp.Body.Close()
