@@ -13,13 +13,15 @@ func listFiles(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	list, err := r.File.List(ctx, file.ListParams{})
 	assert.Equal(t, nil, err)
-	for list.Next() {
+	count := 0
+	for list.Next() && count < 10 {
 		res, err := list.ReadResult()
 		if err != nil {
 			t.Fatal(err)
 		}
 		assert.NotEqual(t, "", res.ID)
 		r.Artifacts.Files = append(r.Artifacts.Files, res)
+		count++
 	}
 }
 
