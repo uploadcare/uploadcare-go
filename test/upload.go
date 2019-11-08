@@ -88,14 +88,14 @@ func uploadGroupInfo(t *testing.T, r *testenv.Runner) {
 
 func uploadMultipart(t *testing.T, r *testenv.Runner) {
 	originalFileName := "huge_test_file"
-	size := int64(1024 * 1024 * 1024 * 12) // 12MB
+	size := int64(1024 * 1024 * 12) // 12MB
 
 	ctx := context.Background()
 	res, err := r.Upload.Multipart(ctx, upload.MultipartParams{
 		FileName:    originalFileName,
 		Size:        size,
 		ContentType: "text/plain",
-		Data:        sizeReadSeeker{size: size},
+		Data:        &sizeReadSeeker{size: size},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -116,7 +116,7 @@ type sizeReadSeeker struct {
 	offset int64
 }
 
-func (s sizeReadSeeker) Read(p []byte) (n int, err error) {
+func (s *sizeReadSeeker) Read(p []byte) (n int, err error) {
 	for i := 0; i < len(p); i++ {
 		p[i] = 'f'
 	}
@@ -126,7 +126,7 @@ func (s sizeReadSeeker) Read(p []byte) (n int, err error) {
 	return int(s.size - s.offset), nil
 }
 
-func (s sizeReadSeeker) Seek(offset int64, whence int) (int64, error) {
+func (s *sizeReadSeeker) Seek(offset int64, whence int) (int64, error) {
 	s.offset = offset
 	return 0, nil
 }

@@ -86,7 +86,7 @@ func (s service) Multipart(
 
 	go d.uploadParts()
 
-	return &d, err
+	return &d, nil
 }
 
 // MultipartData holds response from Multipart upload request
@@ -129,7 +129,8 @@ func (d *multipartData) uploadParts() {
 	var wg sync.WaitGroup
 	uploadSem := make(chan struct{}, concurrentUploads)
 
-	for uploadSem != nil {
+loop:
+	for {
 		select {
 		case <-d.ctx.Done():
 			err := d.ctx.Err()
@@ -138,15 +139,14 @@ func (d *multipartData) uploadParts() {
 				d.ID,
 				err,
 			)
-			if len(d.err) < cap(d.err) {
+			if err != nil && len(d.err) < cap(d.err) {
 				d.err <- err
 			}
 			return
 		case uploadSem <- struct{}{}:
 			var partURL string
 			if len(d.Parts) == 0 {
-				uploadSem = nil
-				continue
+				break loop
 			}
 			partURL, d.Parts = d.Parts[0], d.Parts[1:]
 
@@ -161,7 +161,7 @@ func (d *multipartData) uploadParts() {
 			wg.Add(1)
 			go func() {
 				err := d.tryUploadPart(partURL, part)
-				if len(d.err) < cap(d.err) {
+				if err != nil && len(d.err) < cap(d.err) {
 					d.err <- err
 				}
 				<-uploadSem
