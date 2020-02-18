@@ -1,3 +1,9 @@
+## 1.1.1 (Feb 18, 2020)
+
+BUG FIXES:
+
+* Change file.AudioStreamMeta.Channels type (uint64 to string)
+
 ## 1.1.0 (Nov 8, 2019)
 
 FEATURES:

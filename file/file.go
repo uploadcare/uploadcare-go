@@ -191,7 +191,7 @@ type AudioStreamMeta struct {
 	SampleRate *uint64 `json:"sample_rate"`
 
 	// Channels holds audio stream number of channels
-	Channels *uint64 `json:"channels"`
+	Channels *string `json:"channels"`
 }
 
 // VideoStreamMeta holds video stream metadata
