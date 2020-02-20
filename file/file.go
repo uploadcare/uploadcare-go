@@ -203,7 +203,7 @@ type VideoStreamMeta struct {
 	Width uint64 `json:"width"`
 
 	// FrameRate is a video stream frame rate
-	FrameRate uint64 `json:"frame_rate"`
+	FrameRate float64 `json:"frame_rate"`
 
 	// Bitrate holds video bitrate
 	Bitrate *uint64 `json:"bitrate"`

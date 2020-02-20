@@ -1,3 +1,9 @@
+## 1.1.2 (Feb 20, 2020)
+
+BUG FIXES:
+
+* Change file.VideoStreamMeta.FrameRate type (uint64 to float64)
+
 ## 1.1.1 (Feb 18, 2020)
 
 BUG FIXES:
