@@ -149,7 +149,7 @@ type ImageInfo struct {
 	Orientation *int64 `json:"orientation"`
 
 	// DPI specifies image DPI for two dimensions
-	DPI []int64 `json:"dpi"`
+	DPI []float64 `json:"dpi"`
 
 	// GeoLocation is geo-location of image from EXIF
 	GeoLocation *Location `json:"geo_location"`

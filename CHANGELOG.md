@@ -1,3 +1,9 @@
+## 1.1.4 (Mar 20, 2020)
+
+BUG FIXES:
+
+* Change ImageInfo.DPI field value type to []float64
+
 ## 1.1.3 (Mar 20, 2020)
 
 BUG FIXES:
