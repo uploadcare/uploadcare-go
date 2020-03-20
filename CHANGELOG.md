@@ -1,3 +1,9 @@
+## 1.1.3 (Mar 20, 2020)
+
+BUG FIXES:
+
+* Change Location field value types to float64
+
 ## 1.1.2 (Feb 20, 2020)
 
 BUG FIXES:

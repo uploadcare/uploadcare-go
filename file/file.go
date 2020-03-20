@@ -214,6 +214,6 @@ type VideoStreamMeta struct {
 
 // Location holds location coordinates
 type Location struct {
-	Latitude  int64 `json:"latitude"`
-	Longitude int64 `json:"longitude"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
