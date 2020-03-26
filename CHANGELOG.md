@@ -1,3 +1,9 @@
+## 1.1.5 (Mar 26, 2020)
+
+BUG FIXES:
+
+* Change ImageInfo.DateTimeOrignal type to \*time.Time
+
 ## 1.1.4 (Mar 20, 2020)
 
 BUG FIXES:
