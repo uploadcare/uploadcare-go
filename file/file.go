@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/uploadcare/uploadcare-go/internal/config"
 )
@@ -156,7 +155,7 @@ type ImageInfo struct {
 	GeoLocation *Location `json:"geo_location"`
 
 	// DateTimeOriginal is image date and time from EXIF
-	DateTimeOriginal *time.Time `json:"datetime_original"`
+	DateTimeOriginal *string `json:"datetime_original"`
 
 	// Sequence denotes if image is sequence image (GIF for example)
 	Sequence bool `json:"sequence"`
