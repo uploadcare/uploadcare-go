@@ -146,7 +146,8 @@ type ImageInfo struct {
 	Width uint64 `json:"width"`
 
 	// Orientation is image orientation from EXIF
-	Orientation *int64 `json:"orientation"`
+	// could be *string or *int64
+	Orientation interface{} `json:"orientation"`
 
 	// DPI specifies image DPI for two dimensions
 	DPI []float64 `json:"dpi"`

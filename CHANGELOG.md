@@ -1,3 +1,9 @@
+## 1.1.6 (Apr 14, 2020)
+
+BUG FIXES:
+
+* Change ImageInfo.Orientation type to \*string
+
 ## 1.1.5 (Mar 26, 2020)
 
 BUG FIXES:
