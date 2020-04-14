@@ -1,3 +1,9 @@
+## 1.1.7 (Apr 14, 2020)
+
+BUG FIXES:
+
+* Change ImageInfo.Orientation type to interface{} 
+
 ## 1.1.6 (Apr 14, 2020)
 
 BUG FIXES:
