@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -93,14 +94,14 @@ func simpleUploadAPIAuthFunc(creds APICreds) UploadAPIAuthFunc {
 
 func signBasedUploadAPIAuthFunc(creds APICreds) UploadAPIAuthFunc {
 	return func() (string, *string, *int64) {
-		exp := time.Now().Add(30 * time.Minute).Unix()
+		exp := time.Now().Add(signedUploadTTL).Unix()
 		sign := signBasedUploadAPIAuthParam(creds.SecretKey, exp)
 		return creds.PublicKey, &sign, &exp
 	}
 }
 
 func signBasedUploadAPIAuthParam(secret string, exp int64) string {
-	h := md5.New()
-	h.Write([]byte(secret + strconv.FormatInt(exp, 10)))
+	h := hmac.New(sha256.New, []byte(secret))
+	_, _ = h.Write([]byte(strconv.FormatInt(exp, 10)))
 	return hex.EncodeToString(h.Sum(nil))
 }

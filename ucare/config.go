@@ -13,14 +13,11 @@ const (
 	simpleAuthScheme    = "Uploadcare.Simple"
 	signBasedAuthScheme = "Uploadcare"
 	dateHeaderFormat    = time.RFC1123
+
+	signedUploadTTL = 60 * time.Second
 )
 
 var (
-	supportedVersions = map[string]bool{
-		APIv05: true,
-		APIv06: true,
-	}
-
 	defaultAPIVersion = APIv05
 
 	authHeaderKey      = http.CanonicalHeaderKey("Authorization")

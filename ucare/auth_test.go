@@ -8,7 +8,7 @@ import (
 	assert "github.com/stretchr/testify/require"
 )
 
-func testSimpleAuthRESTAPIParam(t *testing.T) {
+func TestSimpleAuthRESTAPIParam(t *testing.T) {
 	t.Parallel()
 
 	creds := APICreds{
@@ -22,7 +22,7 @@ func testSimpleAuthRESTAPIParam(t *testing.T) {
 	assert.Equal(t, expectedParam, authParam)
 }
 
-func testSignBasedRESTAPIAuthParam(t *testing.T) {
+func TestSignBasedRESTAPIAuthParam(t *testing.T) {
 	creds := APICreds{
 		SecretKey: "demoprivatekey",
 		PublicKey: "testpk",
@@ -47,10 +47,10 @@ func testSignBasedRESTAPIAuthParam(t *testing.T) {
 	assert.Equal(t, expected, authParam)
 }
 
-func testSignBasedUploadAPIAuthParam(t *testing.T) {
+func TestSignBasedUploadAPIAuthParam(t *testing.T) {
 	secret := "project_secret_key"
 	now := int64(1454903856)
-	expected := "46f70d2b4fb6196daeb2c16bf44a7f1e"
+	expected := "d39a461d41f607338abffee5f31da4d4e46535651c87346e76906bf75c064d47"
 
 	assert.Equal(t, expected, signBasedUploadAPIAuthParam(secret, now))
 }
