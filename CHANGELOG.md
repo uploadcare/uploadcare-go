@@ -1,3 +1,10 @@
+## 1.1.8 (Apr 22, 2020)
+
+IMPROVEMENTS:
+
+* Use HMAC-SHA256 signature for signed uploads
+* Set upload TTL to 60 seconds
+
 ## 1.1.7 (Apr 14, 2020)
 
 BUG FIXES:
