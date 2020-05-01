@@ -20,7 +20,7 @@ type FromURLParams struct {
 	// Valid values are:
 	//	upload.ToStoreTrue
 	//	upload.ToStoreFalse
-	ToStore *string `form:"UPLOADCARE_STORE"`
+	ToStore *string `form:"store"`
 
 	// Name sets the name for a file uploaded from URL. If not defined, the
 	// filename is obtained from either response headers or a source URL
