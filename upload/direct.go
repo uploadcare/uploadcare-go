@@ -72,6 +72,10 @@ func (s service) File(
 ) (string, error) {
 	var resp struct{ File string }
 
+	if params.ToStore == nil {
+		params.ToStore = ucare.String(ToStoreAuto)
+	}
+
 	if err := s.svc.ResourceOp(
 		ctx,
 		http.MethodPost,

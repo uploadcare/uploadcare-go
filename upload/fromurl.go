@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/uploadcare/uploadcare-go/ucare"
 )
 
 // FromURLParams holds parameters for upload from public URL link
@@ -20,7 +22,8 @@ type FromURLParams struct {
 	// Valid values are:
 	//	upload.ToStoreTrue
 	//	upload.ToStoreFalse
-	ToStore *string `form:"UPLOADCARE_STORE"`
+	//      upload.ToStoreAuto
+	ToStore *string `form:"store"`
 
 	// Name sets the name for a file uploaded from URL. If not defined, the
 	// filename is obtained from either response headers or a source URL
@@ -117,6 +120,11 @@ func (s service) FromURL(
 		once:          &sync.Once{},
 		fromURLStatus: s.fromURLStatus,
 	}
+
+	if params.ToStore == nil {
+		params.ToStore = ucare.String(ToStoreAuto)
+	}
+
 	err := s.svc.ResourceOp(
 		ctx,
 		http.MethodPost,
