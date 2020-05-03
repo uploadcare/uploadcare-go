@@ -1,3 +1,10 @@
+## 1.1.9 (May 3, 2020)
+
+BUG FIXES:
+
+* Set default upload ToStore form param value to "auto" 
+* Change "UPLOADCARE_STORE" upload.FromURL param to "store" according to specs
+
 ## 1.1.8 (Apr 22, 2020)
 
 IMPROVEMENTS:
