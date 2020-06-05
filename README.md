@@ -11,7 +11,7 @@
 [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
 ![](https://github.com/uploadcare/uploadcare-go/workflows/test/badge.svg)
 
-Go library for accessing Uploadcard API https://uploadcare.com/
+Go library for accessing Uploadcare API https://uploadcare.com/
 
 ### Table of Contents
 
