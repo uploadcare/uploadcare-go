@@ -50,7 +50,9 @@ func (c *uploadAPIClient) NewRequest(
 	req = req.WithContext(ctx)
 
 	if data != nil {
-		if err := data.EncodeReq(req); err != nil {
+		req.GetBody = getBodyBuilder(req, data)
+		req.Body, err = req.GetBody()
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -72,6 +74,14 @@ func (c *uploadAPIClient) Do(
 	tries := 0
 try:
 	tries++
+
+	if tries > 1 && req.GetBody != nil {
+		var err error
+		req.Body, err = req.GetBody()
+		if err != nil {
+			return err
+		}
+	}
 
 	log.Debugf("making %d request: %s %+v", tries, req.Method, req.URL)
 

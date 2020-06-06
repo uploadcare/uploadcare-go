@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -50,6 +51,13 @@ func newRESTAPIClient(creds APICreds, conf *Config) Client {
 	return &c
 }
 
+func getBodyBuilder(req *http.Request, data ReqEncoder) func() (io.ReadCloser, error) {
+	return func() (io.ReadCloser, error) {
+		err := data.EncodeReq(req)
+		return req.Body, err
+	}
+}
+
 func (c *restAPIClient) NewRequest(
 	ctx context.Context,
 	endpoint config.Endpoint,
@@ -68,7 +76,9 @@ func (c *restAPIClient) NewRequest(
 
 	req = req.WithContext(ctx)
 	if data != nil {
-		if err := data.EncodeReq(req); err != nil {
+		req.GetBody = getBodyBuilder(req, data)
+		req.Body, err = req.GetBody()
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -87,8 +97,17 @@ func (c *restAPIClient) NewRequest(
 
 func (c *restAPIClient) Do(req *http.Request, resdata interface{}) error {
 	tries := 0
+
 try:
 	tries++
+
+	if tries > 1 && req.GetBody != nil {
+		var err error
+		req.Body, err = req.GetBody()
+		if err != nil {
+			return err
+		}
+	}
 
 	log.Debugf("making %d request: %+v", tries, req)
 
