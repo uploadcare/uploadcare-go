@@ -1,3 +1,9 @@
+## 1.1.10 (June 6, 2020)
+
+BUG FIXES:
+
+* Fix throttling request empty body issue
+
 ## 1.1.9 (May 3, 2020)
 
 BUG FIXES:
