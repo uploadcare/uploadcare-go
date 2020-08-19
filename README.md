@@ -17,7 +17,8 @@ Go library for accessing Uploadcare API https://uploadcare.com/
 
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Documentation](#documentation)
+- [Configuration](#configuration)
+- [Usage](#usage)
 
 ### Requirements
 
@@ -43,10 +44,7 @@ import (
 )
 ```
 
-### Documentation
-
-For a comprehensive list of examples, check out the [API documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare).
-Below are a few usage examples:
+### Configuration 
 
 Creating a client:
 
@@ -66,6 +64,11 @@ if err != nil {
 	log.Fatal("creating uploadcare API client: %s", err)
 }
 ```
+
+### Usage
+
+For a comprehensive list of examples, check out the [API documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare).
+Below are a few usage examples:
 
 Getting a list of files:
 
