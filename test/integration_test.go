@@ -32,6 +32,11 @@ var integrationTests = []struct {
 	{"remote file copy", fileRemoteCopy},
 	{"delete file", fileDelete},
 	{"batch file delete", fileBatchDelete},
+	{"create webhook", webhookCreate},
+	{"update webhook", webhookUpdate},
+	{"list webhooks", webhookList},
+	{"delete webhook", webhookDelete},
+	{"project info", projectInfo},
 }
 
 func TestIntegration(t *testing.T) {
