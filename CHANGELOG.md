@@ -1,3 +1,14 @@
+## 1.2.0 (August 19, 2020)
+
+FEATURES:
+
+* Webhooks
+* Project
+
+BUG FIXES:
+
+* Fix empty response handling
+
 ## 1.1.10 (June 6, 2020)
 
 BUG FIXES:
