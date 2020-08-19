@@ -70,11 +70,12 @@ func (s Service) ResourceOp(
 		return err
 	}
 
-	err = s.client.Do(req, &resourceData)
+	err = s.client.Do(req, resourceData)
 	if err != nil {
 		return err
 	}
 
 	s.log.Debugf("received: %+v", resourceData)
 	return nil
+
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/uploadcare/uploadcare-go/internal/config"
@@ -117,9 +118,10 @@ try:
 		// retry after is not returned from the upload API
 		time.Sleep(5 * time.Second)
 		goto try
+	default:
 	}
 
-	if resdata == nil {
+	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
 		return nil
 	}
 	err = json.NewDecoder(resp.Body).Decode(&resdata)

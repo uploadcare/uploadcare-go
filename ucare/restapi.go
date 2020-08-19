@@ -1,14 +1,15 @@
 package ucare
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -119,10 +120,15 @@ try:
 		defer req.Body.Close()
 	}
 
+	buf := new(bytes.Buffer)
+	io.Copy(buf, resp.Body)
+	fmt.Println(buf.String())
+	resp.Body = ioutil.NopCloser(buf)
+
 	log.Debugf("received response: %+v", resp)
 
 	switch resp.StatusCode {
-	case 400:
+	case 400, 404:
 		var err respErr
 		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
 			return e
@@ -152,22 +158,15 @@ try:
 
 		time.Sleep(time.Duration(retryAfter) * time.Second)
 		goto try
+	default:
 	}
 
-	if resdata == nil {
+	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
 		return nil
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+
+	err = json.NewDecoder(resp.Body).Decode(&resdata)
 	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(data, &resdata)
-	if err != nil {
-		// if response doesn't appear to be a json
-		var syntaxErr *json.SyntaxError
-		if errors.As(err, &syntaxErr) {
-			return respErr{string(data)}
-		}
 		return err
 	}
 	resp.Body.Close()
