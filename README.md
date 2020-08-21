@@ -1,30 +1,22 @@
-# uploadcare-go
+# Golang API client for Uploadcare
 
-<img 
-	align="right"
-	width="64"
-	height="64"
-	src="https://ucarecdn.com/2f4864b7-ed0e-4411-965b-8148623aa680/uploadcare-logo-mark.svg"
-	alt=""
-/>
-
+![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
 [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
 ![](https://github.com/uploadcare/uploadcare-go/workflows/test/badge.svg)
 
-Go library for accessing Uploadcare API https://uploadcare.com/
-
-### Table of Contents
+Uploadcare Golang API client that handles uploads and further operations with files by wrapping Uploadcare Upload and REST APIs.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+- [Useful links](#useful-links)
 
-### Requirements
+## Requirements
 
 go1.13
 
-### Installation
+## Installation
 
 Install uploadcare-go with:
 
@@ -44,7 +36,7 @@ import (
 )
 ```
 
-### Configuration 
+## Configuration 
 
 Creating a client:
 
@@ -65,7 +57,7 @@ if err != nil {
 }
 ```
 
-### Usage
+## Usage
 
 For a comprehensive list of examples, check out the [API documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare).
 Below are a few usage examples:
@@ -134,7 +126,13 @@ if err != nil {
 }
 ```
 
-----
+## Useful links
 
-
-MIT License. Copyright (c) 2019 Uploadcare
+[Golang API client documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare)  
+[Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[Changelog](https://github.com/uploadcare/uploadcare-go/blob/master/CHANGELOG.md)  
+[Contributing guide](https://github.com/uploadcare/.github/blob/master/CONTRIBUTING.md)  
+[Security policy](https://github.com/uploadcare/uploadcare-go/security/policy)  
+[Support](https://github.com/uploadcare/.github/blob/master/SUPPORT.md)  
