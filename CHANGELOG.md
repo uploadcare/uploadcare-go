@@ -1,3 +1,10 @@
+## 1.2.1 (September 1, 2020)
+
+IMPROVEMENTS:
+
+* Update delete method endpoint
+* Remove useless code
+
 ## 1.2.0 (August 19, 2020)
 
 FEATURES:
