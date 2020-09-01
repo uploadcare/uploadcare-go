@@ -35,7 +35,7 @@ type service struct {
 const (
 	listPathFormat   = "/files/"
 	infoPathFormat   = "/files/%s/"
-	deletePathFormat = "/files/%s/"
+	deletePathFormat = "/files/%s/storage/"
 
 	storePathFormat       = "/files/%s/storage/"
 	batchStorePathFormat  = "/files/storage/"
