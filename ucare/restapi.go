@@ -1,12 +1,10 @@
 package ucare
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -119,11 +117,6 @@ try:
 	if req.Body != nil {
 		defer req.Body.Close()
 	}
-
-	buf := new(bytes.Buffer)
-	io.Copy(buf, resp.Body)
-	fmt.Println(buf.String())
-	resp.Body = ioutil.NopCloser(buf)
 
 	log.Debugf("received response: %+v", resp)
 
