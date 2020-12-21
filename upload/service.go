@@ -50,7 +50,7 @@ const (
 	URLDuplicatesTrue  = "1"
 	URLDuplicatesFalse = "0"
 
-	uploadStatuSuccess     = "success"
+	uploadStatusSuccess    = "success"
 	uploadStatusInProgress = "progress"
 	uploadStatusError      = "error"
 	uploadStatusWaiting    = "waiting"
