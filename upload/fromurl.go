@@ -234,20 +234,31 @@ func (d *fromURLData) wait() {
 				data,
 			)
 
-			if data.Status == uploadStatusError {
+			switch data.Status {
+			case uploadStatusSuccess:
+				d.done <- *data.FileInfo
+				return
+			case uploadStatusInProgress:
+				if len(d.progress) < cap(d.progress) {
+					d.progress <- data.Done
+				}
+			case uploadStatusError:
 				if len(d.err) < cap(d.err) {
 					d.err <- errors.New(data.Error)
 				}
 				return
+			case uploadStatusWaiting:
+				log.Debugf(
+					"received status: %s, waiting",
+					data.Status,
+				)
+			case uploadStatusUnknown:
+				log.Errorf(
+					"received status: %s, aborting",
+					data.Status,
+				)
+				return
 			}
-			if data.Status == uploadStatusInProgress {
-				if len(d.progress) < cap(d.progress) {
-					d.progress <- data.Done
-				}
-				continue
-			}
-			d.done <- *data.FileInfo
-			return
 		}
 	}
 }
