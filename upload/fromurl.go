@@ -252,11 +252,15 @@ func (d *fromURLData) wait() {
 					"received status: %s, waiting",
 					data.Status,
 				)
-			case uploadStatusUnknown:
-				log.Errorf(
+			default:
+				err := fmt.Sprintf(
 					"received status: %s, aborting",
 					data.Status,
 				)
+				log.Error(err)
+				if len(d.err) < cap(d.err) {
+					d.err <- errors.New(err)
+				}
 				return
 			}
 		}
