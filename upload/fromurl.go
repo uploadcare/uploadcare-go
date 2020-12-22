@@ -236,6 +236,17 @@ func (d *fromURLData) wait() {
 
 			switch data.Status {
 			case uploadStatusSuccess:
+				if data == nil || data.FileInfo == nil {
+					err := fmt.Errorf(
+						"no data received: %+v",
+						data,
+					)
+					log.Error(err)
+					if len(d.err) < cap(d.err) {
+						d.err <- err
+					}
+					return
+				}
 				d.done <- *data.FileInfo
 				return
 			case uploadStatusInProgress:
