@@ -234,20 +234,46 @@ func (d *fromURLData) wait() {
 				data,
 			)
 
-			if data.Status == uploadStatusError {
+			switch data.Status {
+			case uploadStatusSuccess:
+				if data == nil || data.FileInfo == nil {
+					err := fmt.Errorf(
+						"no data received: %+v",
+						data,
+					)
+					log.Error(err)
+					if len(d.err) < cap(d.err) {
+						d.err <- err
+					}
+					return
+				}
+				d.done <- *data.FileInfo
+				return
+			case uploadStatusInProgress:
+				if len(d.progress) < cap(d.progress) {
+					d.progress <- data.Done
+				}
+			case uploadStatusError:
 				if len(d.err) < cap(d.err) {
 					d.err <- errors.New(data.Error)
 				}
 				return
-			}
-			if data.Status == uploadStatusInProgress {
-				if len(d.progress) < cap(d.progress) {
-					d.progress <- data.Done
+			case uploadStatusWaiting:
+				log.Debugf(
+					"received status: %s, waiting",
+					data.Status,
+				)
+			default:
+				err := fmt.Sprintf(
+					"received status: %s, aborting",
+					data.Status,
+				)
+				log.Error(err)
+				if len(d.err) < cap(d.err) {
+					d.err <- errors.New(err)
 				}
-				continue
+				return
 			}
-			d.done <- *data.FileInfo
-			return
 		}
 	}
 }
