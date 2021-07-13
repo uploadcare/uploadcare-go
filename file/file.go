@@ -171,7 +171,7 @@ type VideoMeta struct {
 	Format string `json:"format"`
 
 	// Bitrate is a video bitrate
-	Bitrate uint64 `json:"bitrate"`
+	Bitrate *uint64 `json:"bitrate"`
 
 	// Audio holds audio stream metadata
 	Audio *AudioStreamMeta `json:"audio"`
@@ -192,7 +192,7 @@ type AudioStreamMeta struct {
 	SampleRate *uint64 `json:"sample_rate"`
 
 	// Channels holds audio stream number of channels
-	Channels *string `json:"channels"`
+	Channels interface{} `json:"channels"`
 }
 
 // VideoStreamMeta holds video stream metadata
