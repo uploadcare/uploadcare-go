@@ -64,6 +64,11 @@ type BasicFileInfo struct {
 	// VideoMeta holds video metadata
 	VideoMeta *VideoMeta `json:"video_info"`
 
+	// ContentInfo holds information about file content
+	// ImageInfo and VideoMeta are duplicates of this data,
+	// left for compatibility.
+	ContentInfo *ContentInfo `json:"content_info"`
+
 	// MimeType specifies file MIME-type
 	MimeType string `json:"mime_type"`
 
@@ -217,4 +222,51 @@ type VideoStreamMeta struct {
 type Location struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
+}
+
+// ContentInfo holds information about file content
+type ContentInfo struct {
+	Mime *Mime `json:"mime"`
+	Video *VideoInfo `json:"video"`
+	Image *ImageInfo `json:"image"`
+}
+
+// Mime holds detected and parsed mime type
+type Mime struct {
+	Mime string `json:"mime"`
+	Type string `json:"type"`
+	Subtype string `json:"subtype"`
+}
+
+// VideoInfo hold information about video file and it's streams
+type VideoInfo struct {
+	// Duration is a video duration in milliseconds
+	Duration uint64 `json:"duration"`
+
+	// Format is a video format(MP4 for example)
+	Format string `json:"format"`
+
+	// Bitrate is a video bitrate
+	Bitrate uint64 `json:"bitrate"`
+
+	// Audio holds audio stream metadata
+	Audio []AudioStreamInfo `json:"audio"`
+
+	// Video holds video stream metadata
+	Video []VideoStreamMeta `json:"video"`
+}
+
+// AudioStreamInfo differs from older AudioStreamMeta by having integer `Channels`
+type AudioStreamInfo struct {
+	// Bitrate holds audio bitrate
+	Bitrate *uint64 `json:"bitrate"`
+
+	// Codec holds audio stream codec
+	Codec *string `json:"codec"`
+
+	// SampleRate holds audio stream sample rate
+	SampleRate *uint64 `json:"sample_rate"`
+
+	// Channels holds audio stream number of channels
+	Channels *uint64 `json:"channels"`
 }
