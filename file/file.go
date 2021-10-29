@@ -64,7 +64,7 @@ type BasicFileInfo struct {
 	// VideoMeta holds video metadata
 	VideoMeta *VideoMeta `json:"video_info"`
 
-	// ContentInfo holds information about file content
+	// ContentInfo holds information about file content.
 	// ImageInfo and VideoMeta are duplicates of this data,
 	// left for compatibility.
 	ContentInfo *ContentInfo `json:"content_info"`
@@ -238,12 +238,12 @@ type Mime struct {
 	Subtype string `json:"subtype"`
 }
 
-// VideoInfo hold information about video file and it's streams
+// VideoInfo holds information about video file and its audio and video streams
 type VideoInfo struct {
 	// Duration is a video duration in milliseconds
 	Duration uint64 `json:"duration"`
 
-	// Format is a video format(MP4 for example)
+	// Format is a video format (MP4 for example)
 	Format string `json:"format"`
 
 	// Bitrate is a video bitrate
@@ -256,7 +256,7 @@ type VideoInfo struct {
 	Video []VideoStreamMeta `json:"video"`
 }
 
-// AudioStreamInfo differs from older AudioStreamMeta by having integer `Channels`
+// AudioStreamInfo differs from older AudioStreamMeta by having `Channels` represented as integer
 type AudioStreamInfo struct {
 	// Bitrate holds audio bitrate
 	Bitrate *uint64 `json:"bitrate"`
