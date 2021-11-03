@@ -241,13 +241,13 @@ type Mime struct {
 // VideoInfo holds information about video file and its audio and video streams
 type VideoInfo struct {
 	// Duration is a video duration in milliseconds
-	Duration uint64 `json:"duration"`
+	Duration *uint64 `json:"duration"`
 
 	// Format is a video format (MP4 for example)
 	Format string `json:"format"`
 
 	// Bitrate is a video bitrate
-	Bitrate uint64 `json:"bitrate"`
+	Bitrate *uint64 `json:"bitrate"`
 
 	// Audio holds audio stream metadata
 	Audio []AudioStreamInfo `json:"audio"`
