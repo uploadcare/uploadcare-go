@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	webhookURL       string
-	webhookURLSuffix int
+	webhookURL        string
+	webhookSignSecret string
+	webhookURLSuffix  int
 )
 
 func init() {
@@ -26,6 +27,7 @@ func init() {
 		"https://google.com/webhook_endpoint%d",
 		webhookURLSuffix,
 	)
+	webhookSignSecret = "new_signing_secret"
 }
 
 func webhookCreate(t *testing.T, r *testenv.Runner) {
@@ -34,25 +36,28 @@ func webhookCreate(t *testing.T, r *testenv.Runner) {
 			"https://duckduckgo.com/webhook_endpoint%d",
 			webhookURLSuffix,
 		)),
-		IsActive: ucare.Bool(true),
-		Event:    ucare.String(webhook.EventFileUploaded),
+		SigningSecret: ucare.String("test_signing_secret"),
+		IsActive:      ucare.Bool(true),
+		Event:         ucare.String(webhook.EventFileUploaded),
 	}
 	info, err := r.Webhook.Create(context.Background(), params)
 	assert.Equal(t, nil, err)
 
-	r.Artifacts.WebhookID = info.ID
+	r.Artifacts.Webhook = info
 }
 
 func webhookUpdate(t *testing.T, r *testenv.Runner) {
 	params := webhook.Params{
-		ID:        ucare.Int64(r.Artifacts.WebhookID),
-		TargetURL: ucare.String(webhookURL),
+		ID:            ucare.Int64(r.Artifacts.Webhook.ID),
+		TargetURL:     ucare.String(webhookURL),
+		SigningSecret: ucare.String(webhookSignSecret),
 	}
 	info, err := r.Webhook.Update(context.Background(), params)
 
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, webhookURL, info.TargetURL)
+	assert.Equal(t, webhookSignSecret, *info.SigningSecret)
 }
 
 func webhookList(t *testing.T, r *testenv.Runner) {
