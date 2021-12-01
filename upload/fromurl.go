@@ -61,7 +61,7 @@ func (d *FromURLParams) EncodeReq(req *http.Request) error {
 //
 // Usage example
 //
-//	params := &upload.FromURLParams{
+//	params := upload.FromURLParams{
 //		URL: "https://bit.ly/2LJ2xOf",
 //	}
 //	res, err := uploadSvc.FromURL(ctx, params)
