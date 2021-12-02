@@ -26,6 +26,11 @@ type FileInfo struct {
 	// S3Bucket is your custom user bucket on which file are stored. Only
 	// available of you setup foreign storage bucket for your project
 	S3Bucket string `json:"s3_bucket"`
+}
+
+// GroupFileInfo holds file info in group
+type GroupFileInfo struct {
+	FileInfo
 
 	// DefaultEffects holds CDN media transformations applied to the file
 	// when its group was created

@@ -70,7 +70,7 @@ type GroupInfo struct {
 	//
 	// CDN transformations that were present in the request params
 	// can be found in the DefaultEffects field.
-	Files []FileInfo `json:"files"`
+	Files []GroupFileInfo `json:"files"`
 }
 
 type groupInfoParams struct {

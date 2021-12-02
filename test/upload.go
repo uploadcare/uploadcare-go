@@ -72,11 +72,14 @@ func uploadCreateGroup(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	var ids []string
 	for _, r := range r.Artifacts.Files {
-		ids = append(ids, r.ID)
+		ids = append(ids, r.ID + "/-/resize/x10/")
 	}
 	info, err := r.Upload.CreateGroup(ctx, ids)
 	assert.Equal(t, nil, err)
 	r.Artifacts.GroupIDs = append(r.Artifacts.GroupIDs, info.ID)
+	for _, f := range info.Files {
+		assert.Equal(t, "resize/x10/", f.DefaultEffects)
+	}
 }
 
 func uploadGroupInfo(t *testing.T, r *testenv.Runner) {
