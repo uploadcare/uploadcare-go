@@ -28,7 +28,7 @@ type Artifacts struct {
 	Files          []*file.Info
 	GroupIDs       []string
 	ConversionJobs []conversion.Job
-	WebhookID      int64
+	Webhook        webhook.Info
 }
 
 // NewRunner returns new Runner instance

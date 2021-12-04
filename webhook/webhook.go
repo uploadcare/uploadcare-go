@@ -100,6 +100,9 @@ type Info struct {
 	// Where webhook data will be posted.
 	TargetURL string `json:"target_url"`
 
+	// Signing secret (optional)
+	SigningSecret *string `json:"signing_secret,omitempty"`
+
 	// Webhook project ID.
 	Project int64 `json:"project"`
 
@@ -114,6 +117,8 @@ type Params struct {
 	// A target URL MUST be unique for each project — event type combination.
 	// Will not be changed if set to nil.
 	TargetURL *string `json:"target_url,omitempty"`
+	// Signing secret can be added when creating or updating a webhook
+	SigningSecret *string `json:"signing_secret"`
 	// An event you subscribe to. Presently, we only support the EventFileUploaded event.
 	// Will not be changed if set to nil.
 	Event *string `json:"event,omitempty"`
