@@ -128,11 +128,11 @@ if err != nil {
 
 ## Useful links
 
-[Golang API client documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
-[Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)
-[Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)
-[REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)
-[Changelog](https://github.com/uploadcare/uploadcare-go/blob/master/CHANGELOG.md)
-[Contributing guide](https://github.com/uploadcare/.github/blob/master/CONTRIBUTING.md)
-[Security policy](https://github.com/uploadcare/uploadcare-go/security/policy)
-[Support](https://github.com/uploadcare/.github/blob/master/SUPPORT.md)
+[Golang API client documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare)  
+[Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[Changelog](https://github.com/uploadcare/uploadcare-go/blob/master/CHANGELOG.md)  
+[Contributing guide](https://github.com/uploadcare/.github/blob/master/CONTRIBUTING.md)  
+[Security policy](https://github.com/uploadcare/uploadcare-go/security/policy)  
+[Support](https://github.com/uploadcare/.github/blob/master/SUPPORT.md)  
