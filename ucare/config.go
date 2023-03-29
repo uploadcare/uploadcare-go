@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	defaultAPIVersion = APIv05
+	defaultAPIVersion = APIv07
 
 	authHeaderKey      = http.CanonicalHeaderKey("Authorization")
 	userAgentHeaderKey = http.CanonicalHeaderKey("X-UC-User-Agent")
