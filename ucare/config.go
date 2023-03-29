@@ -9,6 +9,7 @@ import (
 const (
 	APIv05 = "v0.5"
 	APIv06 = "v0.6"
+	APIv07 = "v0.7"
 
 	simpleAuthScheme    = "Uploadcare.Simple"
 	signBasedAuthScheme = "Uploadcare"
