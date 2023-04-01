@@ -21,7 +21,7 @@ jobs:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
     - name: Install tooling deps 
-      run: go get -u golang.org/x/lint/golint 
+      run: go get golang.org/x/lint/golint@v0.0.0-20210515140541-a0d7171a0942
     - name: Test
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
