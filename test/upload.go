@@ -52,7 +52,7 @@ func uploadFromURL(t *testing.T, r *testenv.Runner) {
 			t.Error(err)
 		}
 	}
-	assert.Equal(t, "photo_20190914_154427.jpg", info.OriginalFileName)
+	assert.Equal(t, "test_file_name", info.FileName)
 	r.Artifacts.Files = append(
 		r.Artifacts.Files,
 		&file.Info{BasicFileInfo: info.BasicFileInfo},
@@ -72,7 +72,7 @@ func uploadCreateGroup(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	var ids []string
 	for _, r := range r.Artifacts.Files {
-		ids = append(ids, r.ID + "/-/resize/x10/")
+		ids = append(ids, r.ID+"/-/resize/x10/")
 	}
 	info, err := r.Upload.CreateGroup(ctx, ids)
 	assert.Equal(t, nil, err)

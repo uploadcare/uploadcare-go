@@ -164,8 +164,7 @@ func writeFields(w *multipart.Writer, t reflect.Type, v reflect.Value) {
 		tf, vf := t.Field(i), v.Field(i)
 
 		// file has been already written
-		if tf.Name == config.FileFieldName ||
-			tf.Name == config.FilenameFieldName {
+		if tf.Name == config.FileFieldName {
 			continue
 		}
 
