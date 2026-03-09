@@ -3,7 +3,7 @@ package ucare
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -36,7 +36,7 @@ func TestUploadAPIClient(t *testing.T) {
 		},
 		checkReq: func(r *http.Request) error {
 			// check only data in this test case
-			data, _ := ioutil.ReadAll(r.Body)
+			data, _ := io.ReadAll(r.Body)
 			if string(data) != "formkey=formvalue" {
 				return errors.New("invalid req body data")
 			}

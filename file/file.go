@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -58,15 +59,7 @@ type BasicFileInfo struct {
 	// ID is a file unique id (UUID)
 	ID string `json:"uuid"`
 
-	// ImageInfo holds image metadata
-	ImageInfo *ImageInfo `json:"image_info"`
-
-	// VideoMeta holds video metadata
-	VideoMeta *VideoMeta `json:"video_info"`
-
-	// ContentInfo holds information about file content.
-	// ImageInfo and VideoMeta are duplicates of this data,
-	// left for compatibility.
+	// ContentInfo holds information about file content
 	ContentInfo *ContentInfo `json:"content_info"`
 
 	// MimeType specifies file MIME-type
@@ -110,13 +103,16 @@ type Info struct {
 	// gphotos, etc
 	Source *string `json:"source"`
 
-	// Variatios is a dictionary of other files that has been created using
+	// Variations is a dictionary of other files that has been created using
 	// this file as source. Used for video, document and etc. conversion
 	Variations *map[string]string `json:"variations"`
 
-	// RecognitionInfo is a dictionary of file categories with it"s
-	// confidence
-	RecognitionInfo map[string]float64 `json:"rekognition_info"`
+	// Metadata is a user-defined key-value metadata for the file
+	Metadata map[string]string `json:"metadata"`
+
+	// AppData holds application-specific data from add-ons (e.g. recognition results).
+	// The structure varies per add-on, so values are raw JSON.
+	AppData map[string]json.RawMessage `json:"appdata"`
 }
 
 // Image color mode contants

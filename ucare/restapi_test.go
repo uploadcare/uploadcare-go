@@ -3,7 +3,7 @@ package ucare
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -20,7 +20,7 @@ type testReqEncoder struct {
 
 func (t testReqEncoder) EncodeReq(r *http.Request) error {
 	r.URL.RawQuery = t.query
-	r.Body = ioutil.NopCloser(strings.NewReader(t.body))
+	r.Body = io.NopCloser(strings.NewReader(t.body))
 	return nil
 }
 
@@ -54,11 +54,11 @@ func TestRESTAPIClient(t *testing.T) {
 		checkReq: func(r *http.Request) error {
 			h := r.Header
 			if h.Get("Accept") !=
-				"application/vnd.uploadcare-v0.5+json" {
+				"application/vnd.uploadcare-v0.7+json" {
 				return errors.New("wrong accept header")
 			}
 			if h.Get("X-UC-User-Agent") !=
-				"UploadcareGo/0.1.0/testpublickey" {
+				"UploadcareGo/2.0.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
 			if h.Get("Content-Type") != "application/json" {

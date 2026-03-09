@@ -23,7 +23,6 @@ type Service interface {
 	Delete(ctx context.Context, id string) (Info, error)
 	BatchStore(ctx context.Context, ids []string) (BatchInfo, error)
 	BatchDelete(ctx context.Context, ids []string) (BatchInfo, error)
-	Copy(context.Context, CopyParams) (LocalCopyInfo, error)
 	LocalCopy(context.Context, LocalCopyParams) (LocalCopyInfo, error)
 	RemoteCopy(context.Context, RemoteCopyParams) (RemoteCopyInfo, error)
 }
@@ -41,17 +40,14 @@ const (
 	batchStorePathFormat  = "/files/storage/"
 	batchDeletePathFormat = "/files/storage/"
 
-	copyPathFormat       = "/files/"
 	localCopyPathFormat  = "/files/local_copy/"
 	remoteCopyPathFormat = "/files/remote_copy/"
 )
 
-// OrderBy predefined constants to be used in request params
+// OrderBy predefined constants to be used in request params.
 const (
 	OrderByUploadedAtAsc  = "datetime_uploaded"
 	OrderByUploadedAtDesc = "-datetime_uploaded"
-	OrderBySizeAsc        = "size"
-	OrderBySizeDesc       = "-size"
 )
 
 // Copy file params constants

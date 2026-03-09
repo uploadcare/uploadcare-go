@@ -33,7 +33,7 @@ Getting a list of files:
 
 	listParams := file.ListParams{
 		Stored:  ucare.String(true),
-		OrderBy: ucare.String(file.OrderBySizeAsc),
+		OrderBy: ucare.String(file.OrderByUploadedAtDesc),
 	}
 
 	fileList, err := fileSvc.List(context.Background(), listParams)
@@ -60,9 +60,9 @@ Acquiring file-specific info:
 		// handle error
 	}
 
-	if file.IsImage {
-		h := file.ImageInfo.Height
-		w := file.ImageInfo.Width
+	if file.IsImage && file.ContentInfo != nil && file.ContentInfo.Image != nil {
+		h := file.ContentInfo.Image.Height
+		w := file.ContentInfo.Image.Width
 		fmt.Printf("image size: %dx%d\n", h, w)
 	}
 
@@ -113,13 +113,6 @@ Getting a file group by ID:
 	}
 
 	fmt.Printf("group %s contains %d files\n", group.ID, group.FileCount)
-
-Marking all files in a group as stored:
-
-	_, err := groupSvc.Store(context.Background(), groupID)
-	if err != nil {
-		// handle error
-	}
 
 Uploading a file
 

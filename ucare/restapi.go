@@ -46,6 +46,9 @@ func newRESTAPIClient(creds APICreds, conf *Config) Client {
 		config.ClientVersion,
 		creds.PublicKey,
 	)
+	if conf.UserAgent != "" {
+		c.userAgent += " " + conf.UserAgent
+	}
 
 	return &c
 }
@@ -68,12 +71,10 @@ func (c *restAPIClient) NewRequest(
 	if err != nil {
 		return nil, fmt.Errorf("resolving req url: %w", err)
 	}
-	req, err := http.NewRequest(method, requrl, nil)
+	req, err := http.NewRequestWithContext(ctx, method, requrl, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	req = req.WithContext(ctx)
 	if data != nil {
 		req.GetBody = getBodyBuilder(req, data)
 		req.Body, err = req.GetBody()
@@ -149,7 +150,11 @@ try:
 			return throttleErr{retryAfter}
 		}
 
-		time.Sleep(time.Duration(retryAfter) * time.Second)
+		select {
+		case <-req.Context().Done():
+			return req.Context().Err()
+		case <-time.After(time.Duration(retryAfter) * time.Second):
+		}
 		goto try
 	default:
 	}

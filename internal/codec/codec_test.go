@@ -2,7 +2,7 @@ package codec_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -33,14 +33,14 @@ func testEncodeReqQuery(t *testing.T) {
 			Removed:      ucare.Bool(true),
 			Stored:       ucare.Bool(false),
 			Limit:        ucare.Uint64(500),
-			OrderBy:      ucare.String(file.OrderBySizeAsc),
+			OrderBy:      ucare.String(file.OrderByUploadedAtAsc),
 			StartingFrom: ucare.Time(now.AddDate(0, -3, 0)),
 		},
 		expectedQuery: url.Values{
 			"removed":  []string{"true"},
 			"stored":   []string{"false"},
 			"limit":    []string{"500"},
-			"ordering": []string{"size"},
+			"ordering": []string{"datetime_uploaded"},
 			"from":     []string{"2015-01-02T10:00:00"},
 		},
 	}, {
@@ -111,7 +111,7 @@ func testEncodeReqBody(t *testing.T) {
 			req, _ := http.NewRequest("PUT", "", nil)
 			codec.EncodeReqBody(c.params, req)
 
-			data, err := ioutil.ReadAll(req.Body)
+			data, err := io.ReadAll(req.Body)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, c.expectedBodyData, string(data))
 		})
@@ -207,7 +207,7 @@ func testEncodeReqFormData(t *testing.T) {
 				return
 			}
 
-			data, _ := ioutil.ReadAll(body)
+			data, _ := io.ReadAll(body)
 
 			assert.Equal(t, nil, err)
 			assert.Equal(t, nil, c.testReq(string(data)))

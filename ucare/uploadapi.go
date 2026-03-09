@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -42,13 +42,11 @@ func (c *uploadAPIClient) NewRequest(
 	if err != nil {
 		return nil, fmt.Errorf("resolving req url: %w", err)
 	}
-	req, err := http.NewRequest(method, requrl, nil)
+	ctx = context.WithValue(ctx, config.CtxAuthFuncKey, c.authFunc)
+	req, err := http.NewRequestWithContext(ctx, method, requrl, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx = context.WithValue(ctx, config.CtxAuthFuncKey, c.authFunc)
-	req = req.WithContext(ctx)
 
 	if data != nil {
 		req.GetBody = getBodyBuilder(req, data)
@@ -98,7 +96,7 @@ try:
 
 	switch resp.StatusCode {
 	case 400, 403:
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -116,7 +114,11 @@ try:
 			return throttleErr{}
 		}
 		// retry after is not returned from the upload API
-		time.Sleep(5 * time.Second)
+		select {
+		case <-req.Context().Done():
+			return req.Context().Err()
+		case <-time.After(5 * time.Second):
+		}
 		goto try
 	default:
 	}

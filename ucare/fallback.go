@@ -2,7 +2,7 @@ package ucare
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ func fallbackDoFunc(client *http.Client) func(*http.Request, interface{}) error 
 		if err != nil {
 			return err
 		}
-		data, err := ioutil.ReadAll(res.Body)
+		data, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}

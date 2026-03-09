@@ -27,7 +27,6 @@ import (
 type Service interface {
 	List(context.Context, ListParams) (*List, error)
 	Info(ctx context.Context, id string) (Info, error)
-	Store(ctx context.Context, id string) (Info, error)
 }
 
 type service struct {
@@ -35,9 +34,8 @@ type service struct {
 }
 
 const (
-	listPathFormat  = "/groups/"
-	infoPathFormat  = "/groups/%s/"
-	storePathFormat = "/groups/%s/storage/"
+	listPathFormat = "/groups/"
+	infoPathFormat = "/groups/%s/"
 )
 
 // OrderBy predefined constants to be used in request params

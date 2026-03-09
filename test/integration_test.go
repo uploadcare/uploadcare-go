@@ -2,9 +2,9 @@
 package test
 
 import (
+	"os"
 	"testing"
 
-	"github.com/segmentio/go-env"
 	"github.com/uploadcare/uploadcare-go/test/testenv"
 	"github.com/uploadcare/uploadcare-go/ucare"
 )
@@ -20,7 +20,6 @@ var integrationTests = []struct {
 	{"get uploaded group info", uploadGroupInfo},
 	{"upload file through multipart upload API", uploadMultipart},
 	{"list file groups", groupList},
-	{"store file group", groupStore},
 	{"file group info", groupInfo},
 	{"convert document", conversionDocument},
 	{"document conversion status", conversionDocumentStatus},
@@ -44,15 +43,21 @@ func TestIntegration(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
+	secretKey := os.Getenv("SECRET_KEY")
+	publicKey := os.Getenv("PUBLIC_KEY")
+	if secretKey == "" || publicKey == "" {
+		t.Skip("skipping integration test: SECRET_KEY and PUBLIC_KEY env vars required")
+	}
+
 	creds := ucare.APICreds{
-		SecretKey: env.MustGet("SECRET_KEY"),
-		PublicKey: env.MustGet("PUBLIC_KEY"),
+		SecretKey: secretKey,
+		PublicKey: publicKey,
 	}
 
 	// TODO: test with different config settings
 	conf := ucare.Config{
 		SignBasedAuthentication: true,
-		APIVersion:              ucare.APIv06,
+		APIVersion:             ucare.APIv07,
 	}
 
 	client, err := ucare.NewClient(creds, &conf)
@@ -60,7 +65,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	customStorage := env.MustGet("CUSTOM_STORAGE_BUCKET")
+	customStorage := os.Getenv("CUSTOM_STORAGE_BUCKET")
 
 	r := testenv.NewRunner(client, customStorage)
 

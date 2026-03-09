@@ -9,6 +9,7 @@ import (
 const (
 	APIv05 = "v0.5"
 	APIv06 = "v0.6"
+	APIv07 = "v0.7"
 
 	simpleAuthScheme    = "Uploadcare.Simple"
 	signBasedAuthScheme = "Uploadcare"
@@ -18,7 +19,7 @@ const (
 )
 
 var (
-	defaultAPIVersion = APIv05
+	defaultAPIVersion = APIv07
 
 	authHeaderKey      = http.CanonicalHeaderKey("Authorization")
 	userAgentHeaderKey = http.CanonicalHeaderKey("X-UC-User-Agent")

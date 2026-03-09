@@ -33,11 +33,3 @@ func groupInfo(t *testing.T, r *testenv.Runner) {
 	assert.Equal(t, r.Artifacts.GroupIDs[0], info.ID)
 }
 
-func groupStore(t *testing.T, r *testenv.Runner) {
-	ctx := context.Background()
-	info, err := r.Group.Store(ctx, r.Artifacts.GroupIDs[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotNil(t, info.StoredAt)
-}

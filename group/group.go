@@ -23,21 +23,6 @@ func (s service) Info(
 	return
 }
 
-// Store marks all files in group as stored
-func (s service) Store(
-	ctx context.Context,
-	groupID string,
-) (data Info, err error) {
-	err = s.svc.ResourceOp(
-		ctx,
-		http.MethodPut,
-		fmt.Sprintf(storePathFormat, groupID),
-		nil,
-		&data,
-	)
-	return
-}
-
 // Info holds group specific information
 type Info struct {
 	// ID is a group identifier
