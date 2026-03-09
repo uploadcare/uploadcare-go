@@ -4,32 +4,21 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.13.x]
+        go-version: ['1.25']
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v1
-    - name: Restore Cache
-      uses: actions/cache@preview
-      id: cache
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-    - name: Install tooling deps 
-      run: go get golang.org/x/lint/golint@v0.0.0-20201208152925-83fdc39ff7b5
+      uses: actions/checkout@v4
+    - name: Vet
+      run: go vet ./...
     - name: Test
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
         CUSTOM_STORAGE_BUCKET: ${{ secrets.CUSTOM_STORAGE_BUCKET }}
-      run: |
-        # TODO: move this to env block
-        export GOPATH="$(go env GOPATH)"
-        export PATH="$GOPATH/bin:$PATH"
-
-        make test-full
+      run: go test -v -race ./...
