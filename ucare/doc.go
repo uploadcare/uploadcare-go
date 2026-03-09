@@ -32,7 +32,7 @@ Getting a list of files:
 	fileSvc := file.NewService(client)
 
 	listParams := file.ListParams{
-		Stored:  ucare.String(true),
+		Stored:  ucare.Bool(true),
 		OrderBy: ucare.String(file.OrderByUploadedAtDesc),
 	}
 
@@ -82,26 +82,26 @@ Storing a single file by ID:
 
 Getting a list of groups:
 
-	groupSvc := group.New(client)
+	groupSvc := group.NewService(client)
 
-	listParams := file.ListParams{
-		OrderBy:      ucare.String(group.OrderByCreatedAtAsc),
-		Limit:        ucare.String(20),
+	listParams := group.ListParams{
+		OrderBy: ucare.String(group.OrderByCreatedAtAsc),
+		Limit:   ucare.Uint64(20),
 	}
 
-	groupList, err := groupSvc.List(context.Backgroud(), listParams)
+	groupList, err := groupSvc.List(context.Background(), listParams)
 	if err != nil {
 		// handle error
 	}
 
 	// getting group IDs
-	groupIDs = make([]string, 0, 100)
+	groupIDs := make([]string, 0, 100)
 	for groupList.Next() {
-		groupList, err := groupList.ReadResult()
+		ginfo, err := groupList.ReadResult()
 		if err != nil {
 			// handle error
 		}
-		groupIDs = append(groupIDs, groupList.ID)
+		groupIDs = append(groupIDs, ginfo.ID)
 	}
 
 Getting a file group by ID:
