@@ -1,7 +1,7 @@
 # Golang API client for Uploadcare
 
 ![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
-[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/uploadcare/uploadcare-go/ucare)
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://pkg.go.dev/github.com/uploadcare/uploadcare-go/ucare)
 ![](https://github.com/uploadcare/uploadcare-go/workflows/test/badge.svg)
 
 Uploadcare Golang API client that handles uploads and further operations with files by wrapping Uploadcare Upload and REST APIs.
@@ -14,7 +14,7 @@ Uploadcare Golang API client that handles uploads and further operations with fi
 
 ## Requirements
 
-go1.13
+Go 1.25
 
 ## Installation
 
@@ -48,7 +48,6 @@ creds := ucare.APICreds{
 
 conf := &ucare.Config{
 	SignBasedAuthentication: true,
-	APIVersion:              ucare.APIv06,
 }
 
 client, err := ucare.NewClient(creds, conf)
@@ -59,7 +58,7 @@ if err != nil {
 
 ## Usage
 
-For a comprehensive list of examples, check out the [API documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare).
+For a comprehensive list of examples, check out the [API documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/ucare).
 Below are a few usage examples:
 
 Getting a list of files:
@@ -69,7 +68,7 @@ fileSvc := file.NewService(client)
 
 listParams := file.ListParams{
 	Stored:  ucare.Bool(true),
-	OrderBy: ucare.String(file.OrderBySizeAsc),
+	OrderBy: ucare.String(file.OrderByUploadedAtDesc),
 }
 
 fileList, err := fileSvc.List(context.Background(), listParams)
@@ -98,9 +97,9 @@ if err != nil {
 	// handle error
 }
 
-if file.IsImage {
-	h := file.ImageInfo.Height
-	w := file.ImageInfo.Width
+if file.IsImage && file.ContentInfo != nil && file.ContentInfo.Image != nil {
+	h := file.ContentInfo.Image.Height
+	w := file.ContentInfo.Image.Width
 	fmt.Printf("image size: %dx%d\n", h, w)
 }
 ```
@@ -128,7 +127,7 @@ if err != nil {
 
 ## Useful links
 
-[Golang API client documentation](https://godoc.org/github.com/uploadcare/uploadcare-go/ucare)  
+[Golang API client documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/ucare)  
 [Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
