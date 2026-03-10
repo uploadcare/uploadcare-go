@@ -46,7 +46,7 @@ func TestIntegration(t *testing.T) {
 	secretKey := os.Getenv("SECRET_KEY")
 	publicKey := os.Getenv("PUBLIC_KEY")
 	if secretKey == "" || publicKey == "" {
-		t.Skip("skipping integration test: SECRET_KEY and PUBLIC_KEY env vars required")
+		t.Fatal("SECRET_KEY and PUBLIC_KEY env vars are required")
 	}
 
 	creds := ucare.APICreds{

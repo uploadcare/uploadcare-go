@@ -81,7 +81,7 @@ func fileLocalCopy(t *testing.T, r *testenv.Runner) {
 
 func fileRemoteCopy(t *testing.T, r *testenv.Runner) {
 	if r.Artifacts.CustomStorage == "" {
-		t.Skip("skipping: CUSTOM_STORAGE_BUCKET env var required")
+		t.Fatal("CUSTOM_STORAGE_BUCKET env var is required")
 	}
 	ctx := context.Background()
 	_, err := r.File.RemoteCopy(
