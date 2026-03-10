@@ -1,3 +1,29 @@
+## 0.2.0
+
+BREAKING CHANGES:
+
+* Target REST API v0.7 (previously v0.5)
+* Remove `ImageInfo` and `VideoMeta` fields from `file.BasicFileInfo` — use `ContentInfo.Image` and `ContentInfo.Video`
+* Remove `RecognitionInfo` field from `file.Info` — use `AppData`
+* Add `Metadata` and `AppData` fields to `file.Info`
+* Remove `group.Store()` method (endpoint removed in v0.7)
+* Remove `file.Copy()` method and `file.CopyParams` type — use `LocalCopy()` and `RemoteCopy()`
+* Remove `file.OrderBySizeAsc` and `file.OrderBySizeDesc` constants (not supported in v0.7)
+* Remove `APIv05` and `APIv06` constants
+* Minimum Go version is now 1.25
+
+IMPROVEMENTS:
+
+* Add `UserAgent` field to `ucare.Config` for custom agent identification
+* Replace `http.NewRequest` + `WithContext` with `http.NewRequestWithContext`
+* Throttle retry loops now respect context cancellation
+* Replace `ioutil` usage with `io` equivalents
+* Replace `go-env` dependency with `os.Getenv`
+* Update `stretchr/testify` to v1.10.0
+* Update CI: Go 1.25, modern GitHub Actions versions, remove deprecated golint
+* Integration tests skip gracefully when credentials are not set
+* Fix errors in package documentation examples
+
 ## 1.2.1 (September 1, 2020)
 
 IMPROVEMENTS:

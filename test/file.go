@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
 )
 
 func listFiles(t *testing.T, r *testenv.Runner) {

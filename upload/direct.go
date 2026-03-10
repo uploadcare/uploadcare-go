@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/codec"
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // FileParams holds all possible params for the file upload

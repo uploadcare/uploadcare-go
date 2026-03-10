@@ -10,7 +10,7 @@ import (
 	"time"
 
 	assert "github.com/stretchr/testify/require"
-	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 type testReqEncoder struct {
@@ -58,7 +58,7 @@ func TestRESTAPIClient(t *testing.T) {
 				return errors.New("wrong accept header")
 			}
 			if h.Get("X-UC-User-Agent") !=
-				"UploadcareGo/2.0.0/testpublickey" {
+				"UploadcareGo/0.2.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
 			if h.Get("Content-Type") != "application/json" {

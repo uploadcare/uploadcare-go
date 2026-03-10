@@ -18,9 +18,9 @@ package group
 import (
 	"context"
 
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/internal/svc"
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/svc"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // Service describes all group related API

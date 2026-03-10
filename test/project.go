@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
 )
 
 func projectInfo(t *testing.T, r *testenv.Runner) {

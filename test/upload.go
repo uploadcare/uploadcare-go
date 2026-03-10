@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
-	"github.com/uploadcare/uploadcare-go/ucare"
-	"github.com/uploadcare/uploadcare-go/upload"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/upload"
 )
 
 func uploadFile(t *testing.T, r *testenv.Runner) {

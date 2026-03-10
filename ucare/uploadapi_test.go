@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	assert "github.com/stretchr/testify/require"
-	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 func TestUploadAPIClient(t *testing.T) {

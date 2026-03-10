@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/uploadcare/uploadcare-go/test/testenv"
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 var integrationTests = []struct {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 // Client describes API client behaviour

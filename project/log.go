@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/uploadcare/uploadcare-go/uclog"
+	"github.com/uploadcare/uploadcare-go/v2/uclog"
 )
 
 var log uclog.Logger

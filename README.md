@@ -1,8 +1,8 @@
 # Golang API client for Uploadcare
 
 ![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
-[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://pkg.go.dev/github.com/uploadcare/uploadcare-go/ucare)
-![](https://github.com/uploadcare/uploadcare-go/workflows/test/badge.svg)
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://pkg.go.dev/github.com/uploadcare/uploadcare-go/v2/ucare)
+![](https://github.com/uploadcare/uploadcare-go/v2/workflows/test/badge.svg)
 
 Uploadcare Golang API client that handles uploads and further operations with files by wrapping Uploadcare Upload and REST APIs.
 
@@ -21,18 +21,18 @@ Go 1.25
 Install uploadcare-go with:
 
 ```
-go get -u -v github.com/uploadcare/uploadcare-go/...
+go get -u -v github.com/uploadcare/uploadcare-go/v2/...
 ```
 
 Then import it using:
 
 ```go
 import (
-	"github.com/uploadcare/uploadcare-go/ucare"
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/group"
-	"github.com/uploadcare/uploadcare-go/upload"
-	"github.com/uploadcare/uploadcare-go/conversion"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/group"
+	"github.com/uploadcare/uploadcare-go/v2/upload"
+	"github.com/uploadcare/uploadcare-go/v2/conversion"
 )
 ```
 
@@ -58,7 +58,7 @@ if err != nil {
 
 ## Usage
 
-For a comprehensive list of examples, check out the [API documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/ucare).
+For a comprehensive list of examples, check out the [API documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/v2/ucare).
 Below are a few usage examples:
 
 Getting a list of files:
@@ -127,11 +127,11 @@ if err != nil {
 
 ## Useful links
 
-[Golang API client documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/ucare)  
+[Golang API client documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/v2/ucare)  
 [Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
-[Changelog](https://github.com/uploadcare/uploadcare-go/blob/master/CHANGELOG.md)  
+[Changelog](https://github.com/uploadcare/uploadcare-go/v2/blob/master/CHANGELOG.md)  
 [Contributing guide](https://github.com/uploadcare/.github/blob/master/CONTRIBUTING.md)  
-[Security policy](https://github.com/uploadcare/uploadcare-go/security/policy)  
+[Security policy](https://github.com/uploadcare/uploadcare-go/v2/security/policy)  
 [Support](https://github.com/uploadcare/.github/blob/master/SUPPORT.md)  

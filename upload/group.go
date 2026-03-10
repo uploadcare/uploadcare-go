@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/group"
-	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/group"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 )
 
 type createGroupParams struct {

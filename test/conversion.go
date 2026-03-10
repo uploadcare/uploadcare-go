@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/conversion"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/conversion"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
 )
 
 func conversionDocument(t *testing.T, r *testenv.Runner) {

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
-	"github.com/uploadcare/uploadcare-go/ucare"
-	"github.com/uploadcare/uploadcare-go/webhook"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/webhook"
 )
 
 var (

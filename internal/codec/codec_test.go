@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/internal/codec"
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/ucare"
-	"github.com/uploadcare/uploadcare-go/upload"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/upload"
 )
 
 func testEncodeReqQuery(t *testing.T) {

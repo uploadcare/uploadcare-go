@@ -1,4 +1,4 @@
-module github.com/uploadcare/uploadcare-go
+module github.com/uploadcare/uploadcare-go/v2
 
 go 1.25
 
