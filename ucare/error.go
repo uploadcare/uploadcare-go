@@ -13,7 +13,7 @@ var (
 	ErrInvalidVersion = errors.New("This feature is not supported. " +
 		"Try to change the version (refer to " +
 		"https://uploadcare.com/api-refs/rest-api/v0.7.0/ for " +
-		"more information on what methods belong to what version).")
+		"more information on which methods belong to which version).")
 	ErrFileTooLarge = errors.New("Direct uploads only support " +
 		"files smaller than 100MB")
 )
