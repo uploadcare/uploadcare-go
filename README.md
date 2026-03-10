@@ -2,7 +2,7 @@
 
 ![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
 [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://pkg.go.dev/github.com/uploadcare/uploadcare-go/v2/ucare)
-![](https://github.com/uploadcare/uploadcare-go/v2/workflows/test/badge.svg)
+![](https://github.com/uploadcare/uploadcare-go/workflows/test/badge.svg)
 
 Uploadcare Golang API client that handles uploads and further operations with files by wrapping Uploadcare Upload and REST APIs.
 
@@ -131,7 +131,7 @@ if err != nil {
 [Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
-[Changelog](https://github.com/uploadcare/uploadcare-go/v2/blob/master/CHANGELOG.md)  
+[Changelog](https://github.com/uploadcare/uploadcare-go/blob/master/CHANGELOG.md)  
 [Contributing guide](https://github.com/uploadcare/.github/blob/master/CONTRIBUTING.md)  
-[Security policy](https://github.com/uploadcare/uploadcare-go/v2/security/policy)  
+[Security policy](https://github.com/uploadcare/uploadcare-go/security/policy)  
 [Support](https://github.com/uploadcare/.github/blob/master/SUPPORT.md)  
