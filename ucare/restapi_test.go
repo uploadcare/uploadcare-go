@@ -57,8 +57,8 @@ func TestRESTAPIClient(t *testing.T) {
 				"application/vnd.uploadcare-v0.7+json" {
 				return errors.New("wrong accept header")
 			}
-			if h.Get("X-UC-User-Agent") !=
-				"UploadcareGo/0.2.0/testpublickey" {
+			if h.Get("User-Agent") !=
+				"UploadcareGo/2.0.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
 			if h.Get("Content-Type") != "application/json" {
