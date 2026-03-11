@@ -31,6 +31,8 @@ var integrationTests = []struct {
 	{"get file metadata", metadataGet},
 	{"list file metadata", metadataList},
 	{"delete file metadata", metadataDelete},
+	{"execute clamav addon", addonClamAVExecute},
+	{"check clamav addon status", addonClamAVStatus},
 	{"batch file store", fileBatchStore},
 	{"local file copy", fileLocalCopy},
 	{"remote file copy", fileRemoteCopy},
