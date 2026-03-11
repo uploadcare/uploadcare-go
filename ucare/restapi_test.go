@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -91,4 +92,72 @@ func TestRESTAPIClient(t *testing.T) {
 			assert.Equal(t, nil, c.checkReq(req))
 		})
 	}
+}
+
+func TestDo_UnhandledStatusWithDetail(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(`{"detail":"Addon is already running for this file."}`))
+	}))
+	defer srv.Close()
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/addons/uc_clamav_virus_scan/execute/", nil)
+	assert.NoError(t, err)
+
+	var result struct {
+		RequestID string `json:"request_id"`
+	}
+	err = client.Do(req, &result)
+
+	assert.Error(t, err)
+	var apiErr respErr
+	assert.True(t, errors.As(err, &apiErr))
+	assert.Equal(t, "Addon is already running for this file.", apiErr.Details)
+	assert.Equal(t, "", result.RequestID)
+}
+
+func TestDo_UnhandledStatusWithoutDetail(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("Bad Gateway"))
+	}))
+	defer srv.Close()
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+	assert.NoError(t, err)
+
+	var result map[string]string
+	err = client.Do(req, &result)
+
+	assert.Error(t, err)
+	var statusErr unexpectedStatusErr
+	assert.True(t, errors.As(err, &statusErr))
+	assert.Equal(t, http.StatusBadGateway, statusErr.StatusCode)
+}
+
+func TestDo_UnhandledStatusNilResdata(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(`{"detail":"Conflict"}`))
+	}))
+	defer srv.Close()
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/groups/abc~1/", nil)
+	assert.NoError(t, err)
+
+	err = client.Do(req, nil)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Conflict")
 }
