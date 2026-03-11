@@ -33,3 +33,9 @@ func groupInfo(t *testing.T, r *testenv.Runner) {
 	assert.Equal(t, r.Artifacts.GroupIDs[0], info.ID)
 }
 
+func groupDelete(t *testing.T, r *testenv.Runner) {
+	ctx := context.Background()
+	err := r.Group.Delete(ctx, r.Artifacts.GroupIDs[0])
+	assert.Equal(t, nil, err)
+}
+
