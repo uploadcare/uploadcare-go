@@ -14,6 +14,7 @@ BREAKING CHANGES:
 
 FEATURES:
 
+* Add `group.Delete()` for deleting group metadata without deleting files
 * Add webhook event constants for `file.stored`, `file.deleted`, `file.info_updated`, and deprecated `file.infected`
 
 IMPROVEMENTS:

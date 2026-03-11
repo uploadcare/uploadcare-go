@@ -21,6 +21,7 @@ var integrationTests = []struct {
 	{"upload file through multipart upload API", uploadMultipart},
 	{"list file groups", groupList},
 	{"file group info", groupInfo},
+	{"delete file group", groupDelete},
 	{"convert document", conversionDocument},
 	{"document conversion status", conversionDocumentStatus},
 	{"list files", listFiles},

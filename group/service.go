@@ -27,6 +27,7 @@ import (
 type Service interface {
 	List(context.Context, ListParams) (*List, error)
 	Info(ctx context.Context, id string) (Info, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type service struct {
@@ -34,8 +35,9 @@ type service struct {
 }
 
 const (
-	listPathFormat = "/groups/"
-	infoPathFormat = "/groups/%s/"
+	listPathFormat   = "/groups/"
+	infoPathFormat   = "/groups/%s/"
+	deletePathFormat = "/groups/%s/"
 )
 
 // OrderBy predefined constants to be used in request params
