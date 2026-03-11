@@ -1,6 +1,7 @@
 package testenv
 
 import (
+	"github.com/uploadcare/uploadcare-go/v2/addon"
 	"github.com/uploadcare/uploadcare-go/v2/conversion"
 	"github.com/uploadcare/uploadcare-go/v2/file"
 	"github.com/uploadcare/uploadcare-go/v2/group"
@@ -20,6 +21,7 @@ type Runner struct {
 	Webhook    webhook.Service
 	Project    project.Service
 	Metadata   metadata.Service
+	Addon      addon.Service
 
 	Artifacts Artifacts
 }
@@ -31,6 +33,7 @@ type Artifacts struct {
 	GroupIDs       []string
 	ConversionJobs []conversion.Job
 	Webhook        webhook.Info
+	AddonRequestID string
 }
 
 // NewRunner returns new Runner instance
@@ -43,6 +46,7 @@ func NewRunner(client ucare.Client, customStorage string) *Runner {
 		Webhook:    webhook.NewService(client),
 		Project:    project.NewService(client),
 		Metadata:   metadata.NewService(client),
+		Addon:      addon.NewService(client),
 		Artifacts: Artifacts{
 			CustomStorage: customStorage,
 		},
