@@ -157,13 +157,22 @@ try:
 		}
 		goto try
 	default:
+		if resp.StatusCode >= 400 {
+			var apiErr respErr
+			if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil || apiErr.Details == "" {
+				resp.Body.Close()
+				return unexpectedStatusErr{StatusCode: resp.StatusCode}
+			}
+			resp.Body.Close()
+			return apiErr
+		}
 	}
 
 	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
 		return nil
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(&resdata)
+	err = json.NewDecoder(resp.Body).Decode(resdata)
 	if err != nil {
 		return err
 	}

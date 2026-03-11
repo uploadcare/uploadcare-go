@@ -50,3 +50,11 @@ func (e reqValidationErr) Error() string {
 }
 
 type reqForbiddenErr struct{ respErr }
+
+type unexpectedStatusErr struct {
+	StatusCode int
+}
+
+func (e unexpectedStatusErr) Error() string {
+	return fmt.Sprintf("unexpected HTTP status: %d", e.StatusCode)
+}
