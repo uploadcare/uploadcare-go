@@ -30,7 +30,13 @@ const (
 
 // Events
 const (
-	EventFileUploaded = "file.uploaded"
+	EventFileUploaded    = "file.uploaded"
+	EventFileStored      = "file.stored"
+	EventFileDeleted     = "file.deleted"
+	EventFileInfoUpdated = "file.info_updated"
+
+	// EventFileInfected is deprecated. Use EventFileInfoUpdated instead.
+	EventFileInfected = "file.infected"
 )
 
 // NewService returns new instance of the Service

@@ -119,7 +119,7 @@ type Params struct {
 	TargetURL *string `json:"target_url,omitempty"`
 	// Signing secret can be added when creating or updating a webhook
 	SigningSecret *string `json:"signing_secret"`
-	// An event you subscribe to. Presently, we only support the EventFileUploaded event.
+	// An event you subscribe to. See Event* constants for supported values.
 	// Will not be changed if set to nil.
 	Event *string `json:"event,omitempty"`
 	// Marks a subscription as either active or not, defaults to true, otherwise false.
