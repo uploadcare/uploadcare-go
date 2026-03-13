@@ -32,6 +32,22 @@ func testCreds() APICreds {
 	}
 }
 
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+type trackedReadCloser struct {
+	io.ReadCloser
+	closed *bool
+}
+
+func (t trackedReadCloser) Close() error {
+	*t.closed = true
+	return t.ReadCloser.Close()
+}
+
 func TestRESTAPIClient(t *testing.T) {
 	t.Parallel()
 
@@ -160,4 +176,31 @@ func TestDo_UnhandledStatusNilResdata(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Conflict")
+}
+
+func TestDo_SuccessNilResdataClosesBody(t *testing.T) {
+	t.Parallel()
+
+	closed := false
+	client := &restAPIClient{
+		conn: &http.Client{
+			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNoContent,
+					Header:     make(http.Header),
+					Body: trackedReadCloser{
+						ReadCloser: io.NopCloser(strings.NewReader("")),
+						closed:     &closed,
+					},
+				}, nil
+			}),
+		},
+	}
+	req, err := http.NewRequest(http.MethodDelete, "https://example.test/groups/abc~1/", nil)
+	assert.NoError(t, err)
+
+	err = client.Do(req, nil)
+
+	assert.NoError(t, err)
+	assert.True(t, closed)
 }
