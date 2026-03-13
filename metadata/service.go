@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 	"github.com/uploadcare/uploadcare-go/v2/internal/svc"
@@ -57,10 +58,13 @@ func (s service) Get(
 	ctx context.Context,
 	fileUUID, key string,
 ) (data string, err error) {
+	if err = validateKey(key); err != nil {
+		return
+	}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
-		fmt.Sprintf("/files/%s/metadata/%s/", fileUUID, key),
+		metadataKeyPath(fileUUID, key),
 		nil,
 		&data,
 	)
@@ -72,10 +76,13 @@ func (s service) Set(
 	ctx context.Context,
 	fileUUID, key, value string,
 ) (data string, err error) {
+	if err = validateKey(key); err != nil {
+		return
+	}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodPut,
-		fmt.Sprintf("/files/%s/metadata/%s/", fileUUID, key),
+		metadataKeyPath(fileUUID, key),
 		stringBody(value),
 		&data,
 	)
@@ -87,10 +94,13 @@ func (s service) Delete(
 	ctx context.Context,
 	fileUUID, key string,
 ) (err error) {
+	if err = validateKey(key); err != nil {
+		return
+	}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodDelete,
-		fmt.Sprintf("/files/%s/metadata/%s/", fileUUID, key),
+		metadataKeyPath(fileUUID, key),
 		nil,
 		nil,
 	)
@@ -111,4 +121,23 @@ func (s stringBody) EncodeReq(req *http.Request) error {
 	req.Body = io.NopCloser(buf)
 	req.ContentLength = int64(buf.Len())
 	return nil
+}
+
+func metadataKeyPath(fileUUID, key string) string {
+	return fmt.Sprintf(
+		"/files/%s/metadata/%s/",
+		fileUUID,
+		escapeKeyPathSegment(key),
+	)
+}
+
+func escapeKeyPathSegment(key string) string {
+	switch key {
+	case ".":
+		return "%2E"
+	case "..":
+		return "%2E%2E"
+	default:
+		return url.PathEscape(key)
+	}
 }
