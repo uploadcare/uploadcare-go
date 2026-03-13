@@ -4,33 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/codec"
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
-
-// CopyParams is used when copy original files or their modified
-// versions to default storage. Source files MAY either be stored or just
-// uploaded and MUST NOT be deleted
-type CopyParams struct {
-	LocalCopyParams
-
-	// Target identifies a custom storage name related to your project.
-	// Implies you are copying a file to a specified custom storage. Keep in
-	// mind you can have multiple storages associated with a single S3
-	// bucket.
-	Target *string `json:"target"`
-
-	// Pattern is used to specify file names Uploadcare passes to a custom
-	// storage. In case the parameter is omitted, we use pattern of your
-	// custom storage. Use any combination of allowed values:
-	//	file.PatternDefault      = ${uuid}/${auto_filename}
-	//	file.PatternAutoFileName = ${filename} ${effects} ${ext}
-	//	file.PatternEffects      = processing operations put into a CDN URL
-	//	file.PatternFileName     = original filename, no extension
-	//	file.PatternID           = file UUID
-	//	file.PatternExt          = file extension, leading dot, e.g. .jpg
-	Pattern *string `json:"pattern"`
-}
 
 // LocalCopyParams is used when copy original files or their modified
 // versions to default storage
@@ -55,21 +31,6 @@ type LocalCopyParams struct {
 // EncodeReq implements ucare.ReqEncoder
 func (d *LocalCopyParams) EncodeReq(req *http.Request) error {
 	return codec.EncodeReqBody(d, req)
-}
-
-// Copy is the APIv05 version of the LocalCopy and RemoteCopy, use them instead
-func (s service) Copy(
-	ctx context.Context,
-	params CopyParams,
-) (data LocalCopyInfo, err error) {
-	err = s.svc.ResourceOp(
-		ctx,
-		http.MethodPost,
-		copyPathFormat,
-		&params,
-		&data,
-	)
-	return
 }
 
 // LocalCopy is used to copy original files or their modified versions to

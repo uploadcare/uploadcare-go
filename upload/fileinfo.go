@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 )
 
 // FileInfo holds file info (in the context of uploading)

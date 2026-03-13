@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 // Info acquires some group-specific info
@@ -17,21 +17,6 @@ func (s service) Info(
 		ctx,
 		http.MethodGet,
 		fmt.Sprintf(infoPathFormat, groupID),
-		nil,
-		&data,
-	)
-	return
-}
-
-// Store marks all files in group as stored
-func (s service) Store(
-	ctx context.Context,
-	groupID string,
-) (data Info, err error) {
-	err = s.svc.ResourceOp(
-		ctx,
-		http.MethodPut,
-		fmt.Sprintf(storePathFormat, groupID),
 		nil,
 		&data,
 	)

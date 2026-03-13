@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
 )
 
 func listFiles(t *testing.T, r *testenv.Runner) {
@@ -68,19 +68,6 @@ func fileBatchDelete(t *testing.T, r *testenv.Runner) {
 	assert.NotEqual(t, 0, len(res.Results))
 }
 
-func fileCopy(t *testing.T, r *testenv.Runner) {
-	ctx := context.Background()
-	_, err := r.File.Copy(
-		ctx,
-		file.CopyParams{
-			LocalCopyParams: file.LocalCopyParams{
-				Source: r.Artifacts.Files[0].ID,
-			},
-		},
-	)
-	assert.Equal(t, nil, err)
-}
-
 func fileLocalCopy(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
 	_, err := r.File.LocalCopy(
@@ -93,6 +80,9 @@ func fileLocalCopy(t *testing.T, r *testenv.Runner) {
 }
 
 func fileRemoteCopy(t *testing.T, r *testenv.Runner) {
+	if r.Artifacts.CustomStorage == "" {
+		t.Fatal("CUSTOM_STORAGE_BUCKET env var is required")
+	}
 	ctx := context.Background()
 	_, err := r.File.RemoteCopy(
 		ctx,

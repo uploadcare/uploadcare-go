@@ -3,12 +3,12 @@ package ucare
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
 	assert "github.com/stretchr/testify/require"
-	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 func TestUploadAPIClient(t *testing.T) {
@@ -36,7 +36,7 @@ func TestUploadAPIClient(t *testing.T) {
 		},
 		checkReq: func(r *http.Request) error {
 			// check only data in this test case
-			data, _ := ioutil.ReadAll(r.Body)
+			data, _ := io.ReadAll(r.Body)
 			if string(data) != "formkey=formvalue" {
 				return errors.New("invalid req body data")
 			}

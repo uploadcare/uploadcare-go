@@ -2,11 +2,11 @@
 Package ucare provides the binding for the Uploadcare API.
 
 	import (
-		"github.com/uploadcare/uploadcare-go/ucare"
-		"github.com/uploadcare/uploadcare-go/file"
-		"github.com/uploadcare/uploadcare-go/group"
-		"github.com/uploadcare/uploadcare-go/upload"
-		"github.com/uploadcare/uploadcare-go/conversion"
+		"github.com/uploadcare/uploadcare-go/v2/ucare"
+		"github.com/uploadcare/uploadcare-go/v2/file"
+		"github.com/uploadcare/uploadcare-go/v2/group"
+		"github.com/uploadcare/uploadcare-go/v2/upload"
+		"github.com/uploadcare/uploadcare-go/v2/conversion"
 	)
 
 Construct a new Uploadcare client, then use the various domain services to
@@ -32,8 +32,8 @@ Getting a list of files:
 	fileSvc := file.NewService(client)
 
 	listParams := file.ListParams{
-		Stored:  ucare.String(true),
-		OrderBy: ucare.String(file.OrderBySizeAsc),
+		Stored:  ucare.Bool(true),
+		OrderBy: ucare.String(file.OrderByUploadedAtDesc),
 	}
 
 	fileList, err := fileSvc.List(context.Background(), listParams)
@@ -60,9 +60,9 @@ Acquiring file-specific info:
 		// handle error
 	}
 
-	if file.IsImage {
-		h := file.ImageInfo.Height
-		w := file.ImageInfo.Width
+	if file.IsImage && file.ContentInfo != nil && file.ContentInfo.Image != nil {
+		h := file.ContentInfo.Image.Height
+		w := file.ContentInfo.Image.Width
 		fmt.Printf("image size: %dx%d\n", h, w)
 	}
 
@@ -82,26 +82,26 @@ Storing a single file by ID:
 
 Getting a list of groups:
 
-	groupSvc := group.New(client)
+	groupSvc := group.NewService(client)
 
-	listParams := file.ListParams{
-		OrderBy:      ucare.String(group.OrderByCreatedAtAsc),
-		Limit:        ucare.String(20),
+	listParams := group.ListParams{
+		OrderBy: ucare.String(group.OrderByCreatedAtAsc),
+		Limit:   ucare.Uint64(20),
 	}
 
-	groupList, err := groupSvc.List(context.Backgroud(), listParams)
+	groupList, err := groupSvc.List(context.Background(), listParams)
 	if err != nil {
 		// handle error
 	}
 
 	// getting group IDs
-	groupIDs = make([]string, 0, 100)
+	groupIDs := make([]string, 0, 100)
 	for groupList.Next() {
-		groupList, err := groupList.ReadResult()
+		ginfo, err := groupList.ReadResult()
 		if err != nil {
 			// handle error
 		}
-		groupIDs = append(groupIDs, groupList.ID)
+		groupIDs = append(groupIDs, ginfo.ID)
 	}
 
 Getting a file group by ID:
@@ -113,13 +113,6 @@ Getting a file group by ID:
 	}
 
 	fmt.Printf("group %s contains %d files\n", group.ID, group.FileCount)
-
-Marking all files in a group as stored:
-
-	_, err := groupSvc.Store(context.Background(), groupID)
-	if err != nil {
-		// handle error
-	}
 
 Uploading a file
 

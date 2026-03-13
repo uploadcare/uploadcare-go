@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 )
 
 // ListParams holds all possible params for for the List method

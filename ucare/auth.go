@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -50,7 +49,7 @@ func signBasedRESTAPIAuthParam(creds APICreds, req *http.Request) string {
 	io.Copy(bodyBuf, bodyReader)
 	bodyHash := fmt.Sprintf("%x", md5.Sum(bodyBuf.Bytes()))
 
-	req.Body = ioutil.NopCloser(bodyBuf)
+	req.Body = io.NopCloser(bodyBuf)
 
 	uri := req.URL.Path
 	if rq := req.URL.RawQuery; rq != "" {

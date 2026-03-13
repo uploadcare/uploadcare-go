@@ -6,10 +6,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/codec"
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/ucare"
-	"github.com/uploadcare/uploadcare-go/uclog"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/uclog"
 )
 
 // Service is intended to wrap some common service operations

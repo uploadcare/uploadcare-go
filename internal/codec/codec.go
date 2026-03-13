@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -19,8 +18,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // Raw represents raw bytes data
@@ -130,7 +129,7 @@ func EncodeReqBody(data interface{}, req *http.Request) error {
 		return err
 	}
 	buf := bytes.NewBuffer(rawdata)
-	req.Body = ioutil.NopCloser(buf)
+	req.Body = io.NopCloser(buf)
 	req.ContentLength = int64(buf.Len())
 	return nil
 }
@@ -156,7 +155,7 @@ func EncodeReqFormData(data interface{}) (io.ReadCloser, string, error) {
 		return nil, "", err
 	}
 
-	return ioutil.NopCloser(body), writer.FormDataContentType(), nil
+	return io.NopCloser(body), writer.FormDataContentType(), nil
 }
 
 func writeFields(w *multipart.Writer, t reflect.Type, v reflect.Value) {

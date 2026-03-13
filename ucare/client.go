@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 // Client describes API client behaviour
@@ -29,7 +29,7 @@ type APICreds struct {
 
 // Config holds configuration for the client
 type Config struct {
-	// HTTPClient allowes you to set custom http client for the calls
+	// HTTPClient allows you to set custom http client for the calls
 	HTTPClient *http.Client
 	// APIVersion specifies REST API version to be used
 	APIVersion string
@@ -37,6 +37,9 @@ type Config struct {
 	// signed uploads and signature based authentication for the
 	// REST API calls.
 	SignBasedAuthentication bool
+	// UserAgent is appended to the default User-Agent string.
+	// Use this to identify your application (e.g. "my-app/1.0.0").
+	UserAgent string
 }
 
 // ReqEncoder exists to encode data into the prepared request.

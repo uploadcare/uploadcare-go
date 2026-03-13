@@ -1,13 +1,13 @@
 package testenv
 
 import (
-	"github.com/uploadcare/uploadcare-go/conversion"
-	"github.com/uploadcare/uploadcare-go/file"
-	"github.com/uploadcare/uploadcare-go/group"
-	"github.com/uploadcare/uploadcare-go/project"
-	"github.com/uploadcare/uploadcare-go/ucare"
-	"github.com/uploadcare/uploadcare-go/upload"
-	"github.com/uploadcare/uploadcare-go/webhook"
+	"github.com/uploadcare/uploadcare-go/v2/conversion"
+	"github.com/uploadcare/uploadcare-go/v2/file"
+	"github.com/uploadcare/uploadcare-go/v2/group"
+	"github.com/uploadcare/uploadcare-go/v2/project"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/upload"
+	"github.com/uploadcare/uploadcare-go/v2/webhook"
 )
 
 // Runner holds service instances and test artifacts

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // FromURLParams holds parameters for upload from public URL link

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/uploadcare/uploadcare-go/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 )
 
 type batchParams []string

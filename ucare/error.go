@@ -10,10 +10,10 @@ var (
 	ErrInvalidAuthCreds = errors.New("Incorrect authentication credentials")
 	ErrAuthForbidden    = errors.New("Simple authentication over HTTP is " +
 		"forbidden. Please, use HTTPS or signed requests instead")
-	ErrInvalidVersion = errors.New("This feature is not support. " +
+	ErrInvalidVersion = errors.New("This feature is not supported. " +
 		"Try to change the version (refer to " +
-		"https://uploadcare.com/api-refs/rest-api/v0.6.0/ for " +
-		"more information on what methods belongs to what version).")
+		"https://uploadcare.com/api-refs/rest-api/v0.7.0/ for " +
+		"more information on which methods belong to which version).")
 	ErrFileTooLarge = errors.New("Direct uploads only support " +
 		"files smaller than 100MB")
 )

@@ -18,16 +18,15 @@ package group
 import (
 	"context"
 
-	"github.com/uploadcare/uploadcare-go/internal/config"
-	"github.com/uploadcare/uploadcare-go/internal/svc"
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/svc"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // Service describes all group related API
 type Service interface {
 	List(context.Context, ListParams) (*List, error)
 	Info(ctx context.Context, id string) (Info, error)
-	Store(ctx context.Context, id string) (Info, error)
 }
 
 type service struct {
@@ -35,9 +34,8 @@ type service struct {
 }
 
 const (
-	listPathFormat  = "/groups/"
-	infoPathFormat  = "/groups/%s/"
-	storePathFormat = "/groups/%s/storage/"
+	listPathFormat = "/groups/"
+	infoPathFormat = "/groups/%s/"
 )
 
 // OrderBy predefined constants to be used in request params

@@ -5,13 +5,12 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
 
-	"github.com/uploadcare/uploadcare-go/ucare"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // MultipartParams holds parameters for multipart upload
@@ -244,7 +243,7 @@ type partEncoder struct {
 }
 
 func (d partEncoder) EncodeReq(req *http.Request) error {
-	req.Body = ioutil.NopCloser(bytes.NewReader(d.data))
+	req.Body = io.NopCloser(bytes.NewReader(d.data))
 	req.Header.Set("Content-Type", d.contentType)
 	req.ContentLength = int64(len(d.data))
 	return nil

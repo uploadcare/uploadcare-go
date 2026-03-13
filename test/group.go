@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/group"
-	"github.com/uploadcare/uploadcare-go/test/testenv"
+	"github.com/uploadcare/uploadcare-go/v2/group"
+	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
 )
 
 func groupList(t *testing.T, r *testenv.Runner) {
@@ -33,11 +33,3 @@ func groupInfo(t *testing.T, r *testenv.Runner) {
 	assert.Equal(t, r.Artifacts.GroupIDs[0], info.ID)
 }
 
-func groupStore(t *testing.T, r *testenv.Runner) {
-	ctx := context.Background()
-	info, err := r.Group.Store(ctx, r.Artifacts.GroupIDs[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotNil(t, info.StoredAt)
-}
