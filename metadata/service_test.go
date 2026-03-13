@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -154,4 +155,124 @@ func TestGet_NotFound(t *testing.T) {
 	_, err := svc.Get(context.Background(), "test-uuid", "nokey")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "404")
+}
+
+func TestKeyValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		call func(Service) error
+	}{
+		{
+			name: "get rejects slash",
+			call: func(svc Service) error {
+				_, err := svc.Get(context.Background(), "test-uuid", "a/b")
+				return err
+			},
+		},
+		{
+			name: "set rejects empty",
+			call: func(svc Service) error {
+				_, err := svc.Set(context.Background(), "test-uuid", "", "value")
+				return err
+			},
+		},
+		{
+			name: "delete rejects too long",
+			call: func(svc Service) error {
+				err := svc.Delete(context.Background(), "test-uuid", strings.Repeat("a", 65))
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				t.Fatalf("unexpected request: %s %s", r.Method, r.RequestURI)
+			}))
+			defer srv.Close()
+
+			err := tt.call(svc)
+			assert.ErrorIs(t, err, ErrInvalidKey)
+		})
+	}
+}
+
+func TestDotSegmentKeysAreEscaped(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		method     string
+		key        string
+		wantURI    string
+		wantBody   string
+		call       func(Service, string) error
+		statusCode int
+	}{
+		{
+			name:       "get dot key",
+			method:     http.MethodGet,
+			key:        ".",
+			wantURI:    "/files/test-uuid/metadata/%2E/",
+			statusCode: http.StatusOK,
+			call: func(svc Service, key string) error {
+				_, err := svc.Get(context.Background(), "test-uuid", key)
+				return err
+			},
+		},
+		{
+			name:       "set dotdot key",
+			method:     http.MethodPut,
+			key:        "..",
+			wantURI:    "/files/test-uuid/metadata/%2E%2E/",
+			wantBody:   `"value"`,
+			statusCode: http.StatusOK,
+			call: func(svc Service, key string) error {
+				_, err := svc.Set(context.Background(), "test-uuid", key, "value")
+				return err
+			},
+		},
+		{
+			name:       "delete dot key",
+			method:     http.MethodDelete,
+			key:        ".",
+			wantURI:    "/files/test-uuid/metadata/%2E/",
+			statusCode: http.StatusNoContent,
+			call: func(svc Service, key string) error {
+				return svc.Delete(context.Background(), "test-uuid", key)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, tt.method, r.Method)
+				assert.Equal(t, tt.wantURI, r.RequestURI)
+
+				if tt.wantBody != "" {
+					body, err := io.ReadAll(r.Body)
+					assert.NoError(t, err)
+					assert.Equal(t, tt.wantBody, string(body))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				if tt.statusCode != http.StatusNoContent {
+					json.NewEncoder(w).Encode("ok")
+				}
+			}))
+			defer srv.Close()
+
+			err := tt.call(svc, tt.key)
+			assert.NoError(t, err)
+		})
+	}
 }
