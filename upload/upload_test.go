@@ -181,6 +181,7 @@ func TestUpload_LargeFile_MultipartUpload(t *testing.T) {
 	assert.Equal(t, "large.bin", info.FileName)
 	assert.Equal(t, int32(0), directHit.Load())
 	assert.Equal(t, int32(1), multipartHit.Load())
+	assert.Equal(t, int32(1), completeHit.Load())
 }
 
 func TestUpload_CustomThreshold(t *testing.T) {
