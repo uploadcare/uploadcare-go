@@ -34,6 +34,9 @@ type MultipartParams struct {
 	//	upload.ToStoreFalse
 	//	upload.ToStoreAuto
 	ToStore *string `form:"UPLOADCARE_STORE"`
+
+	// Metadata stores user-defined key-value pairs with the uploaded file.
+	Metadata map[string]string `form:"metadata"`
 }
 
 type multipartAuthParams struct {
@@ -250,6 +253,7 @@ func (d partEncoder) EncodeReq(req *http.Request) error {
 
 // Done is used to wait for uploading to be done. If uploading fails it will
 // never receive FileInfo value:
+//
 //	select {
 //	case fileinfo := <-res.Done():
 //		// file info received

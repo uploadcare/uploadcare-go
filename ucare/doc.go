@@ -55,7 +55,7 @@ Getting a list of files:
 Acquiring file-specific info:
 
 	fileID := ids[0]
-	file, err := fileSvc.Info(context.Background(), fileID)
+	file, err := fileSvc.Info(context.Background(), fileID, nil)
 	if err != nil {
 		// handle error
 	}
@@ -133,6 +133,5 @@ Uploading a file
 	if err != nil {
 		// handle error
 	}
-
 */
 package ucare

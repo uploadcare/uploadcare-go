@@ -35,6 +35,9 @@ type FileParams struct {
 	//	upload.ToStoreFalse
 	//	upload.ToStoreAuto
 	ToStore *string `form:"UPLOADCARE_STORE"`
+
+	// Metadata stores user-defined key-value pairs with the uploaded file.
+	Metadata map[string]string `form:"metadata"`
 }
 
 type uploadFileAuthParams struct {

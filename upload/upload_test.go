@@ -3,8 +3,10 @@ package upload
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -144,5 +146,72 @@ func TestUpload(t *testing.T) {
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "empty upload ID")
 		})
+	})
+}
+
+func TestUpload_MetadataPassThrough_DirectUpload(t *testing.T) {
+	t.Parallel()
+
+	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/base/":
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Contains(t, string(body), `name="metadata[source]"`)
+			assert.Contains(t, string(body), "cli")
+			uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-metadata-direct"})
+		case "/info/":
+			uctest.RespondJSON(t, w, FileInfo{FileName: "meta.txt"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}), func(t *testing.T, srv *httptest.Server) {
+		svc := NewService(uctest.NewUploadServerClient(srv))
+
+		info, err := svc.Upload(context.Background(), UploadParams{
+			Data:     strings.NewReader("hi"),
+			Name:     "meta.txt",
+			Size:     2,
+			Metadata: map[string]string{"source": "cli"},
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, "meta.txt", info.FileName)
+	})
+}
+
+func TestUpload_MetadataPassThrough_MultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/multipart/start/":
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Contains(t, string(body), `name="metadata[source]"`)
+			assert.Contains(t, string(body), "cli")
+			uctest.RespondJSON(t, w, map[string]interface{}{
+				"uuid":  "test-uuid-metadata-multipart",
+				"parts": []string{},
+			})
+		case "/multipart/complete/":
+			uctest.RespondJSON(t, w, FileInfo{FileName: "meta-multi.txt"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}), func(t *testing.T, srv *httptest.Server) {
+		svc := NewService(uctest.NewUploadServerClient(srv))
+
+		info, err := svc.Upload(context.Background(), UploadParams{
+			Data:               bytes.NewReader([]byte("hello")),
+			Name:               "meta-multi.txt",
+			ContentType:        "text/plain",
+			Size:               5,
+			Metadata:           map[string]string{"source": "cli"},
+			MultipartThreshold: int64Ptr(-1),
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, "meta-multi.txt", info.FileName)
 	})
 }

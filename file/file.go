@@ -6,19 +6,39 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
+
+// InfoParams holds optional parameters for the Info method.
+type InfoParams struct {
+	// Include specifies additional fields to include in the response.
+	// Valid value: "appdata".
+	Include *string `form:"include"`
+}
+
+// EncodeReq implements ucare.ReqEncoder.
+func (d *InfoParams) EncodeReq(req *http.Request) error {
+	return codec.EncodeReqQuery(d, req)
+}
 
 // Info acquires some file-specific info
 func (s service) Info(
 	ctx context.Context,
 	fileID string,
+	params *InfoParams,
 ) (data Info, err error) {
+	var reqParams ucare.ReqEncoder
+	if params != nil {
+		reqParams = params
+	}
+
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
 		fmt.Sprintf(infoPathFormat, fileID),
-		nil,
+		reqParams,
 		&data,
 	)
 	return
@@ -222,15 +242,15 @@ type Location struct {
 
 // ContentInfo holds information about file content
 type ContentInfo struct {
-	Mime *Mime `json:"mime"`
+	Mime  *Mime      `json:"mime"`
 	Video *VideoInfo `json:"video"`
 	Image *ImageInfo `json:"image"`
 }
 
 // Mime holds detected and parsed mime type
 type Mime struct {
-	Mime string `json:"mime"`
-	Type string `json:"type"`
+	Mime    string `json:"mime"`
+	Type    string `json:"type"`
 	Subtype string `json:"subtype"`
 }
 

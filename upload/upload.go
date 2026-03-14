@@ -8,11 +8,23 @@ import (
 const DefaultMultipartThreshold int64 = 10 * 1024 * 1024 // 10MB
 
 type UploadParams struct {
-	Data               io.ReadSeeker
-	Name               string
-	ContentType        string
-	Size               int64
-	ToStore            *string
+	// Data (required) reads the data to be uploaded.
+	Data io.ReadSeeker
+	// Name (required) is the original filename.
+	Name string
+	// ContentType is the file MIME-type.
+	ContentType string
+	// Size (required) is the precise file size in bytes.
+	Size int64
+	// ToStore sets the file storing behaviour.
+	ToStore *string
+	// Metadata stores user-defined key-value pairs with the uploaded file.
+	Metadata map[string]string
+	// MultipartThreshold controls the upload method selection:
+	//   nil    → use DefaultMultipartThreshold (10MB)
+	//   > 0   → use as custom threshold
+	//   0     → force direct upload
+	//   < 0   → force multipart upload
 	MultipartThreshold *int64
 }
 
@@ -54,6 +66,7 @@ func (s service) uploadDirect(ctx context.Context, params UploadParams) (FileInf
 		Name:        params.Name,
 		ContentType: params.ContentType,
 		ToStore:     params.ToStore,
+		Metadata:    params.Metadata,
 	})
 	if err != nil {
 		return FileInfo{}, err
@@ -68,6 +81,7 @@ func (s service) uploadMultipart(ctx context.Context, params UploadParams) (File
 		ContentType: params.ContentType,
 		Size:        params.Size,
 		ToStore:     params.ToStore,
+		Metadata:    params.Metadata,
 	})
 	if err != nil {
 		return FileInfo{}, err

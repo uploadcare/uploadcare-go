@@ -28,6 +28,7 @@ func TestEncodeReqQuery(t *testing.T) {
 
 		params        interface{}
 		expectedQuery url.Values
+		wantErr       bool
 	}{{
 		test: "full list of params",
 		params: &file.ListParams{
@@ -43,6 +44,14 @@ func TestEncodeReqQuery(t *testing.T) {
 			"limit":    []string{"500"},
 			"ordering": []string{"datetime_uploaded"},
 			"from":     []string{"2015-01-02T10:00:00"},
+		},
+	}, {
+		test: "include appdata",
+		params: &file.ListParams{
+			Include: ucare.String("appdata"),
+		},
+		expectedQuery: url.Values{
+			"include": []string{"appdata"},
 		},
 	}, {
 		test:          "empty list",
@@ -64,20 +73,28 @@ func TestEncodeReqQuery(t *testing.T) {
 			"stored": ucare.Bool(false),
 		},
 		expectedQuery: url.Values{},
+		wantErr:       true,
 	}, {
 		test: "not struct pointer params type",
 		params: &map[string]*bool{
 			"stored": ucare.Bool(false),
 		},
 		expectedQuery: url.Values{},
+		wantErr:       true,
 	}}
 
 	for _, c := range cases {
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
-			req, _ := http.NewRequest("GET", "", nil)
-			_ = codec.EncodeReqQuery(c.params, req)
+			req, _ := http.NewRequest(http.MethodGet, "https://example.test", nil)
+			err := codec.EncodeReqQuery(c.params, req)
+			if c.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
 			q := req.URL.Query()
 
 			if len(c.expectedQuery) == 0 && req.URL.RawQuery != "" {
@@ -108,8 +125,9 @@ func TestEncodeReqBody(t *testing.T) {
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
-			req, _ := http.NewRequest("PUT", "", nil)
-			_ = codec.EncodeReqBody(c.params, req)
+			req, _ := http.NewRequest(http.MethodPut, "https://example.test", nil)
+			err := codec.EncodeReqBody(c.params, req)
+			assert.NoError(t, err)
 
 			data, err := io.ReadAll(req.Body)
 			require.NoError(t, err)
@@ -200,4 +218,74 @@ func TestEncodeReqFormData(t *testing.T) {
 			require.NoError(t, c.testReq(string(data)))
 		})
 	}
+}
+
+func TestEncodeReqFormData_WithMetadata(t *testing.T) {
+	t.Parallel()
+
+	body, _, err := codec.EncodeReqFormData(&struct {
+		Metadata map[string]string `form:"metadata"`
+	}{
+		Metadata: map[string]string{
+			"key1": "val1",
+			"key2": "val2",
+		},
+	})
+	assert.NoError(t, err)
+
+	data, err := io.ReadAll(body)
+	assert.NoError(t, err)
+
+	written := string(data)
+	assert.Contains(t, written, `name="metadata[key1]"`)
+	assert.Contains(t, written, "val1")
+	assert.Contains(t, written, `name="metadata[key2]"`)
+	assert.Contains(t, written, "val2")
+}
+
+func TestEncodeReqFormData_NilMetadata(t *testing.T) {
+	t.Parallel()
+
+	body, _, err := codec.EncodeReqFormData(&struct {
+		Metadata map[string]string `form:"metadata"`
+	}{})
+	assert.NoError(t, err)
+
+	data, err := io.ReadAll(body)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data), "metadata[")
+}
+
+func TestEncodeReqFormData_EmptyMetadata(t *testing.T) {
+	t.Parallel()
+
+	body, _, err := codec.EncodeReqFormData(&struct {
+		Metadata map[string]string `form:"metadata"`
+	}{
+		Metadata: map[string]string{},
+	})
+	assert.NoError(t, err)
+
+	data, err := io.ReadAll(body)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data), "metadata[")
+}
+
+func TestEncodeReqQuery_WithMetadata(t *testing.T) {
+	t.Parallel()
+
+	req, _ := http.NewRequest(http.MethodGet, "https://example.test", nil)
+	err := codec.EncodeReqQuery(&struct {
+		Metadata map[string]string `form:"metadata"`
+	}{
+		Metadata: map[string]string{
+			"key1": "val1",
+			"key2": "val2",
+		},
+	}, req)
+	assert.NoError(t, err)
+
+	q := req.URL.Query()
+	assert.Equal(t, "val1", q.Get("metadata[key1]"))
+	assert.Equal(t, "val2", q.Get("metadata[key2]"))
 }
