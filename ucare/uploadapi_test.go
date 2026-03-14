@@ -2,6 +2,7 @@ package ucare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -119,6 +120,28 @@ func TestUploadDo_ThrottleRetrySuccess(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "test-id", result["file"])
 	assert.Equal(t, int32(2), count.Load())
+}
+
+func TestUploadDo_SuccessRequiresPointerResdata(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"file":"test-id"}`))
+	}))
+	defer srv.Close()
+
+	client := &uploadAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
+	assert.NoError(t, err)
+
+	result := map[string]string{}
+	err = client.Do(req, result)
+
+	assert.Error(t, err)
+	var invalidUnmarshal *json.InvalidUnmarshalError
+	assert.True(t, errors.As(err, &invalidUnmarshal))
 }
 
 func TestUploadDo_UnhandledStatusPlainTextBody(t *testing.T) {
