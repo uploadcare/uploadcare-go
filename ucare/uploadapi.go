@@ -155,7 +155,7 @@ func (c *uploadAPIClient) handleResponse(
 		return false, nil
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&resdata); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(resdata); err != nil {
 		return false, err
 	}
 
