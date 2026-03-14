@@ -6,9 +6,14 @@ type RetryConfig struct {
 	// MaxRetries is the maximum number of retry attempts.
 	// 0 means no retries even if RetryConfig is set.
 	MaxRetries int
-	// MaxWaitSeconds caps retry waits.
-	// For REST requests, a positive Retry-After above this cap fails fast.
-	// For upload requests, locally computed backoff is clamped to this cap.
+	// MaxWaitSeconds limits retry waits, but the exact behavior depends on
+	// which API returned HTTP 429:
+	//   - REST API: if the server sends a positive Retry-After above this
+	//     value, the request fails fast with ThrottleError instead of retrying.
+	//     Fallback exponential backoff used when Retry-After is absent or
+	//     invalid is not capped by this field.
+	//   - Upload API: locally computed exponential backoff is clamped to this
+	//     value because the upload API does not return Retry-After.
 	// 0 means no cap.
 	MaxWaitSeconds int
 }

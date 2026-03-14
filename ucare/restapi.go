@@ -171,6 +171,8 @@ func (c *restAPIClient) handleResponse(
 		}
 		wait := retryAfter
 		if wait <= 0 {
+			// Without a usable Retry-After from the server, REST retries fall
+			// back to exponential backoff instead of applying MaxWaitSeconds.
 			wait = expBackoff(tries)
 		}
 		select {
