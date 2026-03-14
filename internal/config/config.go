@@ -19,8 +19,6 @@ const (
 
 	AcceptHeaderFormat = "application/vnd.uploadcare-%s+json"
 
-	MaxThrottleRetries = 3
-
 	UCTimeLayout = "2006-01-02T15:04:05"
 )
 
