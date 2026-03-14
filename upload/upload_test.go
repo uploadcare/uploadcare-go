@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -311,4 +313,81 @@ func TestUpload_ForceMultipartUpload(t *testing.T) {
 	assert.Equal(t, "forced-multi.txt", info.FileName)
 	assert.Equal(t, int32(0), directHit.Load())
 	assert.Equal(t, int32(1), multipartHit.Load())
+}
+
+func TestUpload_MetadataPassThrough_DirectUpload(t *testing.T) {
+	t.Parallel()
+
+	fileID := "test-uuid-metadata-direct"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/base/":
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Contains(t, string(body), `name="metadata[source]"`)
+			assert.Contains(t, string(body), "cli")
+			json.NewEncoder(w).Encode(map[string]string{"file": fileID})
+		case "/info/":
+			json.NewEncoder(w).Encode(FileInfo{FileName: "meta.txt"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	client := &mockUploadClient{baseURL: srv.URL, conn: srv.Client()}
+	svc := NewService(client)
+
+	info, err := svc.Upload(context.Background(), UploadParams{
+		Data:     strings.NewReader("hi"),
+		Name:     "meta.txt",
+		Size:     2,
+		Metadata: map[string]string{"source": "cli"},
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "meta.txt", info.FileName)
+}
+
+func TestUpload_MetadataPassThrough_MultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	fileID := "test-uuid-metadata-multipart"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/multipart/start/":
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Contains(t, string(body), `name="metadata[source]"`)
+			assert.Contains(t, string(body), "cli")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"uuid":  fileID,
+				"parts": []string{},
+			})
+		case "/multipart/complete/":
+			json.NewEncoder(w).Encode(FileInfo{FileName: "meta-multi.txt"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	client := &mockUploadClient{baseURL: srv.URL, conn: srv.Client()}
+	svc := NewService(client)
+
+	info, err := svc.Upload(context.Background(), UploadParams{
+		Data:               bytes.NewReader([]byte("hello")),
+		Name:               "meta-multi.txt",
+		ContentType:        "text/plain",
+		Size:               5,
+		Metadata:           map[string]string{"source": "cli"},
+		MultipartThreshold: int64Ptr(-1),
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "meta-multi.txt", info.FileName)
 }

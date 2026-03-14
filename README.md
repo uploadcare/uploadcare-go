@@ -92,7 +92,7 @@ Acquiring file-specific info:
 
 ```go
 fileID := ids[0]
-file, err := fileSvc.Info(context.Background(), fileID)
+file, err := fileSvc.Info(context.Background(), fileID, nil)
 if err != nil {
 	// handle error
 }
