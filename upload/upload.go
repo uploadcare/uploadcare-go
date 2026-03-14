@@ -22,6 +22,8 @@ type UploadParams struct {
 	Size int64
 	// ToStore sets the file storing behaviour.
 	ToStore *string
+	// Metadata stores user-defined key-value pairs with the uploaded file.
+	Metadata map[string]string
 	// MultipartThreshold controls the upload method selection:
 	//   nil    → use DefaultMultipartThreshold (10MB)
 	//   > 0   → use as custom threshold
@@ -59,6 +61,7 @@ func (s service) uploadDirect(ctx context.Context, params UploadParams) (FileInf
 		Name:        params.Name,
 		ContentType: params.ContentType,
 		ToStore:     params.ToStore,
+		Metadata:    params.Metadata,
 	})
 	if err != nil {
 		return FileInfo{}, err
@@ -73,6 +76,7 @@ func (s service) uploadMultipart(ctx context.Context, params UploadParams) (File
 		ContentType: params.ContentType,
 		Size:        params.Size,
 		ToStore:     params.ToStore,
+		Metadata:    params.Metadata,
 	})
 	if err != nil {
 		return FileInfo{}, err
