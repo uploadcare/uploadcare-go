@@ -22,7 +22,8 @@ type restAPIClient struct {
 	acceptHeader  string
 	setAuthHeader restAPIAuthFunc
 
-	conn *http.Client
+	conn  *http.Client
+	retry *RetryConfig
 }
 
 func newRESTAPIClient(creds APICreds, conf *Config) Client {
@@ -32,7 +33,8 @@ func newRESTAPIClient(creds APICreds, conf *Config) Client {
 
 		setAuthHeader: simpleRESTAPIAuth,
 
-		conn: conf.HTTPClient,
+		conn:  conf.HTTPClient,
+		retry: conf.Retry,
 	}
 
 	if conf.SignBasedAuthentication {
@@ -131,45 +133,59 @@ func (c *restAPIClient) handleResponse(
 
 	switch resp.StatusCode {
 	case 400, 404:
-		var err respErr
-		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
+		var apiErr APIError
+		if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil {
 			return false, e
 		}
-		return false, err
+		apiErr.StatusCode = resp.StatusCode
+		return false, apiErr
 	case 401:
-		var err authErr
-		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
+		var authErr AuthError
+		if e := json.NewDecoder(resp.Body).Decode(&authErr); e != nil {
 			return false, e
 		}
-		return false, err
+		authErr.StatusCode = 401
+		return false, authErr
+	case 403:
+		var forbiddenErr ForbiddenError
+		if e := json.NewDecoder(resp.Body).Decode(&forbiddenErr); e != nil {
+			return false, e
+		}
+		forbiddenErr.StatusCode = 403
+		return false, forbiddenErr
 	case 406:
 		return false, ErrInvalidVersion
 	case 429:
 		retryAfter, err := strconv.Atoi(
 			resp.Header.Get("Retry-After"),
 		)
-		if err != nil {
-			retryAfter = 5
-		} else if retryAfter < 0 {
+		if err != nil || retryAfter < 0 {
 			retryAfter = 0
 		}
-
-		if tries > config.MaxThrottleRetries {
-			return false, throttleErr{retryAfter}
+		if c.retry == nil || tries > c.retry.MaxRetries {
+			return false, ThrottleError{RetryAfter: retryAfter}
 		}
-
+		if c.retry.MaxWaitSeconds > 0 &&
+			retryAfter > c.retry.MaxWaitSeconds {
+			return false, ThrottleError{RetryAfter: retryAfter}
+		}
+		wait := retryAfter
+		if wait <= 0 {
+			wait = expBackoff(tries)
+		}
 		select {
 		case <-req.Context().Done():
 			return false, req.Context().Err()
-		case <-time.After(time.Duration(retryAfter) * time.Second):
+		case <-time.After(time.Duration(wait) * time.Second):
 		}
 		return true, nil
 	default:
 		if resp.StatusCode >= 400 {
-			var apiErr respErr
-			if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil || apiErr.Details == "" {
-				return false, unexpectedStatusErr{StatusCode: resp.StatusCode}
+			var apiErr APIError
+			if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil || apiErr.Detail == "" {
+				apiErr.Detail = http.StatusText(resp.StatusCode)
 			}
+			apiErr.StatusCode = resp.StatusCode
 			return false, apiErr
 		}
 	}

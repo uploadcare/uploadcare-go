@@ -40,6 +40,9 @@ type Config struct {
 	// UserAgent is appended to the default User-Agent string.
 	// Use this to identify your application (e.g. "my-app/1.0.0").
 	UserAgent string
+	// Retry controls automatic retry of throttled (HTTP 429) requests.
+	// When nil (the default), throttled requests fail immediately.
+	Retry *RetryConfig
 }
 
 // ReqEncoder exists to encode data into the prepared request.
