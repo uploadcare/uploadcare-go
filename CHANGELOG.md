@@ -29,6 +29,9 @@ FEATURES:
 * Add `conversion.Params.SaveInGroup` for document conversions that should persist image output as a file group
 * Add `conversion.BuildDocumentPath()` and `conversion.BuildVideoPath()` helpers for constructing conversion paths
 * Export structured API error types: `APIError`, `AuthError`, `ThrottleError`, `ValidationError`, and `ForbiddenError`
+* Automatic per-project CDN base URL when `ucare.Config.CDNBase` is empty, with explicit absolute URL override support
+* Apply resolved CDN base to API-returned URLs: `file.Info.OriginalFileURL`, `group.Info.CDNLink`, and `upload.GroupInfo.CDNLink` have their scheme/host rewritten to point at the configured CDN while preserving the full path (e.g. `/{uuid}/pineapple.jpg`)
+* Export `ucare.ClientCDNBase(Client)` and `ucare.RewriteCDNURL(originalURL, cdnBase)` helpers
 
 IMPROVEMENTS:
 

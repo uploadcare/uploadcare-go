@@ -35,11 +35,26 @@ type Service interface {
 	Multipart(context.Context, MultipartParams) (MultipartData, error)
 }
 
-type service struct{ svc svc.Service }
+type service struct {
+	svc     svc.Service
+	cdnBase string
+}
 
 // NewService creates new upload service instance.
 func NewService(client ucare.Client) Service {
-	return service{svc.New(config.UploadAPIEndpoint, client, log)}
+	return service{
+		svc:     svc.New(config.UploadAPIEndpoint, client, log),
+		cdnBase: ucare.ClientCDNBase(client),
+	}
+}
+
+func applyGroupCDNBase(info *GroupInfo, cdnBase string) {
+	if cdnBase == "" || info == nil || info.CDNLink == "" {
+		return
+	}
+	// The embedded group.Info.CDNLink shares the `cdn_url` JSON tag with the
+	// outer CDNLink, so only the outer field is populated on unmarshal.
+	info.CDNLink = ucare.RewriteCDNURL(info.CDNLink, cdnBase)
 }
 
 // Predefined file storing behaviour constants

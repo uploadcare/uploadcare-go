@@ -53,6 +53,9 @@ func (s service) LocalCopy(
 		&params,
 		&data,
 	)
+	if err == nil {
+		applyCDNBase(&data.Result, s.cdnBase)
+	}
 	return
 }
 

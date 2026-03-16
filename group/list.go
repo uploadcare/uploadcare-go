@@ -30,7 +30,8 @@ func (d *ListParams) EncodeReq(req *http.Request) error {
 
 // List holds a list of files
 type List struct {
-	raw codec.NextRawResulter
+	raw     codec.NextRawResulter
+	cdnBase string
 }
 
 // Next indicates if there is a result to read
@@ -39,6 +40,7 @@ func (v *List) Next() bool { return v.raw.Next() }
 // ReadResult returns next Info value. If no results are left to read it
 // returns ucare.ErrEndOfResults.
 // Example usage:
+//
 //	for groupList.Next() {
 //		info, err := groupList.ReadResult()
 //		...
@@ -54,12 +56,17 @@ func (v *List) ReadResult() (*Info, error) {
 
 	log.Debugf("reading group list result: %+v", gi)
 
+	if err == nil {
+		applyCDNBase(&gi, v.cdnBase)
+	}
+
 	return &gi, err
 }
 
 // List returns a list of groups.
 //
 // Example usage:
+//
 //	groupList, err := groupSvc.List(ctx, params)
 //	if err != nil {
 //		// handle error
@@ -70,5 +77,5 @@ func (v *List) ReadResult() (*Info, error) {
 //	}
 func (s service) List(ctx context.Context, params ListParams) (*List, error) {
 	resbuf, err := s.svc.List(ctx, listPathFormat, &params)
-	return &List{raw: resbuf}, err
+	return &List{raw: resbuf, cdnBase: s.cdnBase}, err
 }
