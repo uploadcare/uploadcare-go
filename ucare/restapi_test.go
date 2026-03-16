@@ -52,7 +52,7 @@ func (t trackedReadCloser) Close() error {
 func TestRESTAPIClient(t *testing.T) {
 	t.Parallel()
 
-	client := newRESTAPIClient(testCreds(), resolveConfig(nil))
+	client := newRESTAPIClient(testCreds(), resolveConfig(nil, testCreds()))
 
 	cases := []struct {
 		test string
