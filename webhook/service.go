@@ -14,7 +14,7 @@ type Service interface {
 	List(context.Context) ([]Info, error)
 	Create(context.Context, Params) (Info, error)
 	Update(context.Context, Params) (Info, error)
-	Delete(ctx context.Context, targetURL string) error
+	Delete(ctx context.Context, id int64) error
 }
 
 type service struct {
@@ -25,12 +25,18 @@ const (
 	listPathFormat   = "/webhooks/"
 	createPathFormat = "/webhooks/"
 	updatePathFormat = "/webhooks/%d/"
-	deletePathFormat = "/webhooks/unsubscribe/"
+	deletePathFormat = "/webhooks/%d/"
 )
 
 // Events
 const (
-	EventFileUploaded = "file.uploaded"
+	EventFileUploaded    = "file.uploaded"
+	EventFileStored      = "file.stored"
+	EventFileDeleted     = "file.deleted"
+	EventFileInfoUpdated = "file.info_updated"
+
+	// EventFileInfected is deprecated. Use EventFileInfoUpdated instead.
+	EventFileInfected = "file.infected"
 )
 
 // NewService returns new instance of the Service

@@ -40,6 +40,14 @@ type Config struct {
 	// UserAgent is appended to the default User-Agent string.
 	// Use this to identify your application (e.g. "my-app/1.0.0").
 	UserAgent string
+	// Retry controls automatic retry of throttled (HTTP 429) requests.
+	// When nil (the default), throttled requests fail immediately.
+	// See RetryConfig for REST vs. Upload API differences in MaxWaitSeconds.
+	Retry *RetryConfig
+	// CDNBase is the base URL for CDN file delivery.
+	// When empty (default), it is automatically derived from the public key.
+	// Set this to override the automatic per-project CDN domain.
+	CDNBase string
 }
 
 // ReqEncoder exists to encode data into the prepared request.
@@ -63,7 +71,7 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 		return nil, errors.New("uploadcare: invalid api creds provided")
 	}
 
-	conf = resolveConfig(conf)
+	conf = resolveConfig(conf, creds)
 
 	c := client{
 		backends: map[config.Endpoint]Client{
@@ -102,15 +110,21 @@ func (c *client) Do(req *http.Request, resdata interface{}) error {
 	return b.Do(req, resdata)
 }
 
-func resolveConfig(conf *Config) *Config {
+func resolveConfig(conf *Config, creds APICreds) *Config {
 	if conf == nil {
 		conf = &Config{}
+	} else {
+		copied := *conf
+		conf = &copied
 	}
 	if conf.APIVersion == "" {
 		conf.APIVersion = defaultAPIVersion
 	}
 	if conf.HTTPClient == nil {
 		conf.HTTPClient = http.DefaultClient
+	}
+	if conf.CDNBase == "" {
+		conf.CDNBase = CDNBaseURL(creds.PublicKey)
 	}
 	return conf
 }
