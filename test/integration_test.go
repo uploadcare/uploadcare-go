@@ -108,10 +108,17 @@ func TestProjectAPIIntegration(t *testing.T) {
 
 	// Get the first project's pub_key for further tests
 	list, err := svc.List(context.Background(), nil)
-	if err != nil || len(list.Results) == 0 {
-		t.Fatal("cannot list projects to get pub_key for further tests")
+	if err != nil {
+		t.Fatal("cannot list projects: ", err)
 	}
-	pubKey := list.Results[0].PubKey
+	if !list.Next() {
+		t.Fatal("no projects found")
+	}
+	first, err := list.ReadResult()
+	if err != nil {
+		t.Fatal("cannot read first project: ", err)
+	}
+	pubKey := first.PubKey
 
 	t.Run("get project", func(t *testing.T) { projectAPIGet(t, svc, pubKey) })
 	t.Run("list secrets", func(t *testing.T) { projectAPIListSecrets(t, svc, pubKey) })

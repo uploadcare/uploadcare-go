@@ -9,21 +9,21 @@ import (
 )
 
 const (
-	projectsPath     = "/projects/"
-	projectPathFmt   = "/projects/%s/"
+	projectsPath   = "/projects/"
+	projectPathFmt = "/projects/%s/"
 )
 
-// List returns a paginated list of accessible projects.
+// List returns a paginated iterator over accessible projects.
 func (s service) List(
 	ctx context.Context,
 	params *ListParams,
-) (data ProjectList, err error) {
+) (*ProjectList, error) {
 	var enc ucare.ReqEncoder
 	if params != nil {
 		enc = params
 	}
-	err = s.svc.ResourceOp(ctx, http.MethodGet, projectsPath, enc, &data)
-	return
+	resbuf, err := s.svc.List(ctx, projectsPath, enc)
+	return &ProjectList{raw: resbuf}, err
 }
 
 // Create creates a new project.

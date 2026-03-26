@@ -9,12 +9,14 @@ import (
 )
 
 func projectAPIList(t *testing.T, svc projectapi.Service) {
-	data, err := svc.List(context.Background(), nil)
+	list, err := svc.List(context.Background(), nil)
 	assert.NoError(t, err)
-	assert.True(t, data.Total > 0, "expected at least one project")
-	assert.True(t, len(data.Results) > 0)
-	assert.NotEmpty(t, data.Results[0].PubKey)
-	assert.NotEmpty(t, data.Results[0].Name)
+
+	assert.True(t, list.Next(), "expected at least one project")
+	p, err := list.ReadResult()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, p.PubKey)
+	assert.NotEmpty(t, p.Name)
 }
 
 func projectAPIGet(t *testing.T, svc projectapi.Service, pubKey string) {
@@ -25,12 +27,14 @@ func projectAPIGet(t *testing.T, svc projectapi.Service, pubKey string) {
 }
 
 func projectAPIListSecrets(t *testing.T, svc projectapi.Service, pubKey string) {
-	data, err := svc.ListSecrets(context.Background(), pubKey, nil)
+	list, err := svc.ListSecrets(context.Background(), pubKey, nil)
 	assert.NoError(t, err)
-	if len(data.Results) == 0 {
+
+	if !list.Next() {
 		t.Skip("no secret keys found, skipping assertions")
 	}
-	assert.True(t, data.Total > 0, "expected at least one secret key")
-	assert.NotEmpty(t, data.Results[0].ID)
-	assert.NotEmpty(t, data.Results[0].Hint)
+	s, err := list.ReadResult()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, s.ID)
+	assert.NotEmpty(t, s.Hint)
 }

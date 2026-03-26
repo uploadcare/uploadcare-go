@@ -5,8 +5,18 @@
 //
 //	client, err := ucare.NewBearerClient("your-bearer-token", nil)
 //	svc := projectapi.NewService(client)
-//	projects, err := svc.List(ctx, nil)
+//	list, err := svc.List(ctx, nil)
+//	for list.Next() {
+//		project, err := list.ReadResult()
+//		// ...
+//	}
 package projectapi
+
+import (
+	"encoding/json"
+
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
+)
 
 // Project holds project information.
 type Project struct {
@@ -53,13 +63,31 @@ type UploadSettings struct {
 	IsSignedUploadEnabled *bool  `json:"is_signed_upload_enabled,omitempty"`
 }
 
-// ProjectList is a paginated list of projects.
+// ProjectList is a paginated iterator over projects.
+// Use Next() and ReadResult() to iterate:
+//
+//	list, err := svc.List(ctx, nil)
+//	for list.Next() {
+//		project, err := list.ReadResult()
+//		// ...
+//	}
 type ProjectList struct {
-	Next     *string   `json:"next"`
-	Previous *string   `json:"previous"`
-	Total    int       `json:"total"`
-	PerPage  int       `json:"per_page"`
-	Results  []Project `json:"results"`
+	raw codec.NextRawResulter
+}
+
+// Next indicates if there is a result to read.
+func (v *ProjectList) Next() bool { return v.raw.Next() }
+
+// ReadResult returns the next Project. If no results are left it
+// returns codec.ErrEndOfResults.
+func (v *ProjectList) ReadResult() (*Project, error) {
+	raw, err := v.raw.ReadRawResult()
+	if err != nil {
+		return nil, err
+	}
+	var p Project
+	err = json.Unmarshal(raw, &p)
+	return &p, err
 }
 
 // SecretRevealed is returned when creating a new secret key.
@@ -76,13 +104,24 @@ type SecretListItem struct {
 	LastUsedAt *string `json:"last_used_at"`
 }
 
-// SecretList is a paginated list of secret keys.
+// SecretList is a paginated iterator over secret keys.
 type SecretList struct {
-	Next     *string          `json:"next"`
-	Previous *string          `json:"previous"`
-	Total    int              `json:"total"`
-	PerPage  int              `json:"per_page"`
-	Results  []SecretListItem `json:"results"`
+	raw codec.NextRawResulter
+}
+
+// Next indicates if there is a result to read.
+func (v *SecretList) Next() bool { return v.raw.Next() }
+
+// ReadResult returns the next SecretListItem. If no results are left it
+// returns codec.ErrEndOfResults.
+func (v *SecretList) ReadResult() (*SecretListItem, error) {
+	raw, err := v.raw.ReadRawResult()
+	if err != nil {
+		return nil, err
+	}
+	var s SecretListItem
+	err = json.Unmarshal(raw, &s)
+	return &s, err
 }
 
 // UsageMetric holds daily usage data for a single metric type.

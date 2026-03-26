@@ -120,11 +120,18 @@ func NewBearerClient(token string, conf *Config) (Client, error) {
 
 	conf = resolveBearerConfig(conf)
 
+	pClient := newProjectAPIClient(token, conf)
+
 	c := client{
 		backends: map[config.Endpoint]Client{
-			config.RESTAPIEndpoint: newProjectAPIClient(token, conf),
+			config.RESTAPIEndpoint: pClient,
 		},
-		fallbackDo: fallbackDoFunc(conf.HTTPClient),
+		// Pagination next/previous URLs may point to a different host
+		// (e.g. app.uploadcare.com). Route those through the same
+		// bearer-auth client so auth headers and error handling apply.
+		fallbackDo: func(req *http.Request, resdata interface{}) error {
+			return pClient.Do(req, resdata)
+		},
 	}
 
 	return &c, nil

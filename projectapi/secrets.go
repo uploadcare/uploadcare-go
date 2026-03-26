@@ -13,24 +13,18 @@ const (
 	secretPathFmt  = "/projects/%s/secrets/%s/"
 )
 
-// ListSecrets returns secret keys for a project.
+// ListSecrets returns a paginated iterator over secret keys for a project.
 func (s service) ListSecrets(
 	ctx context.Context,
 	pubKey string,
 	params *ListParams,
-) (data SecretList, err error) {
+) (*SecretList, error) {
 	var enc ucare.ReqEncoder
 	if params != nil {
 		enc = params
 	}
-	err = s.svc.ResourceOp(
-		ctx,
-		http.MethodGet,
-		fmt.Sprintf(secretsPathFmt, pubKey),
-		enc,
-		&data,
-	)
-	return
+	resbuf, err := s.svc.List(ctx, fmt.Sprintf(secretsPathFmt, pubKey), enc)
+	return &SecretList{raw: resbuf}, err
 }
 
 // CreateSecret creates a new secret key for a project.

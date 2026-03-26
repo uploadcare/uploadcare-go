@@ -72,23 +72,23 @@ func TestListProjects(t *testing.T) {
 		assert.Equal(t, "10", r.URL.Query().Get("limit"))
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ProjectList{
-			Total:   2,
-			PerPage: 10,
-			Results: []Project{
-				{PubKey: "pk1", Name: "Project 1"},
-				{PubKey: "pk2", Name: "Project 2"},
-			},
-		})
+		fmt.Fprint(w, `{"next":null,"results":[{"pub_key":"pk1","name":"Project 1"},{"pub_key":"pk2","name":"Project 2"}]}`)
 	}))
 	defer srv.Close()
 
 	limit := uint64(10)
-	data, err := svc.List(context.Background(), &ListParams{Limit: &limit})
+	list, err := svc.List(context.Background(), &ListParams{Limit: &limit})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, data.Total)
-	assert.Len(t, data.Results, 2)
-	assert.Equal(t, "pk1", data.Results[0].PubKey)
+
+	var projects []Project
+	for list.Next() {
+		p, err := list.ReadResult()
+		assert.NoError(t, err)
+		projects = append(projects, *p)
+	}
+	assert.Len(t, projects, 2)
+	assert.Equal(t, "pk1", projects[0].PubKey)
+	assert.Equal(t, "pk2", projects[1].PubKey)
 }
 
 func TestListProjects_NilParams(t *testing.T) {
@@ -99,13 +99,13 @@ func TestListProjects_NilParams(t *testing.T) {
 		assert.Equal(t, "", r.URL.RawQuery)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ProjectList{Total: 0, Results: []Project{}})
+		fmt.Fprint(w, `{"next":null,"results":[]}`)
 	}))
 	defer srv.Close()
 
-	data, err := svc.List(context.Background(), nil)
+	list, err := svc.List(context.Background(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, data.Total)
+	assert.False(t, list.Next())
 }
 
 func TestCreateProject(t *testing.T) {
@@ -211,20 +211,19 @@ func TestListSecrets(t *testing.T) {
 		assert.Equal(t, "/projects/mypk/secrets/", r.URL.Path)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SecretList{
-			Total:   1,
-			PerPage: 20,
-			Results: []SecretListItem{
-				{ID: "sec-id", Hint: "ea94"},
-			},
-		})
+		fmt.Fprint(w, `{"next":null,"results":[{"id":"sec-id","hint":"ea94"}]}`)
 	}))
 	defer srv.Close()
 
-	data, err := svc.ListSecrets(context.Background(), "mypk", nil)
+	list, err := svc.ListSecrets(context.Background(), "mypk", nil)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, data.Total)
-	assert.Equal(t, "ea94", data.Results[0].Hint)
+
+	assert.True(t, list.Next())
+	s, err := list.ReadResult()
+	assert.NoError(t, err)
+	assert.Equal(t, "sec-id", s.ID)
+	assert.Equal(t, "ea94", s.Hint)
+	assert.False(t, list.Next())
 }
 
 func TestCreateSecret(t *testing.T) {

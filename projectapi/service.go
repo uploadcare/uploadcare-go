@@ -11,8 +11,8 @@ import (
 // Service describes all Project API operations.
 // The client passed to NewService must be created with ucare.NewBearerClient.
 type Service interface {
-	// List returns a paginated list of accessible projects.
-	List(ctx context.Context, params *ListParams) (ProjectList, error)
+	// List returns a paginated iterator over accessible projects.
+	List(ctx context.Context, params *ListParams) (*ProjectList, error)
 	// Create creates a new project.
 	Create(ctx context.Context, params CreateProjectParams) (Project, error)
 	// Get returns project info by public key.
@@ -22,8 +22,8 @@ type Service interface {
 	// Delete deletes a project.
 	Delete(ctx context.Context, pubKey string) error
 
-	// ListSecrets returns secret keys for a project.
-	ListSecrets(ctx context.Context, pubKey string, params *ListParams) (SecretList, error)
+	// ListSecrets returns a paginated iterator over secret keys for a project.
+	ListSecrets(ctx context.Context, pubKey string, params *ListParams) (*SecretList, error)
 	// CreateSecret creates a new secret key for a project.
 	CreateSecret(ctx context.Context, pubKey string) (SecretRevealed, error)
 	// DeleteSecret deletes a secret key.
