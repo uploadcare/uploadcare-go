@@ -137,5 +137,21 @@ func TestNewClient_RequiresConfig(t *testing.T) {
 	t.Parallel()
 
 	_, err := NewClient(testCreds(), nil)
-	assert.Error(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "NewConfig")
+}
+
+func TestNewClient_UsesResolvedConfig(t *testing.T) {
+	t.Parallel()
+
+	conf, err := NewConfig(testCreds(), WithSignBasedAuthentication())
+	require.NoError(t, err)
+
+	c, err := NewClient(testCreds(), conf)
+	require.NoError(t, err)
+
+	assert.Equal(t, defaultAPIVersion, conf.APIVersion)
+	assert.Same(t, http.DefaultClient, conf.HTTPClient)
+	assert.Equal(t, cdnBaseURL(testCreds().PublicKey), conf.CDNBase)
+	assert.Equal(t, conf.CDNBase, c.(*client).CDNBase())
 }
