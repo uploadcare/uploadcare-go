@@ -59,8 +59,9 @@ type ReqEncoder interface {
 }
 
 type client struct {
-	backends   map[config.Endpoint]Client
-	fallbackDo func(*http.Request, interface{}) error
+	backends       map[config.Endpoint]Client
+	fallbackDo     func(*http.Request, interface{}) error
+	fallbackNewReq func(context.Context, config.Endpoint, string, string, ReqEncoder) (*http.Request, error)
 }
 
 // NewClient initializes and configures new client for the high level API.
@@ -96,6 +97,9 @@ func (c *client) NewRequest(
 ) (*http.Request, error) {
 	b, ok := c.backends[endpoint]
 	if !ok {
+		if c.fallbackNewReq != nil {
+			return c.fallbackNewReq(ctx, endpoint, method, requrl, data)
+		}
 		return nil, errNoClient
 	}
 	return b.NewRequest(ctx, endpoint, method, requrl, data)
@@ -122,13 +126,16 @@ func NewBearerClient(token string, conf *Config) (Client, error) {
 
 	pClient := newProjectAPIClient(token, conf)
 
+	// Pagination next/previous URLs may point to a different host
+	// (e.g. app.uploadcare.com). Route those through the same
+	// bearer-auth client so auth headers and error handling apply.
 	c := client{
 		backends: map[config.Endpoint]Client{
 			config.RESTAPIEndpoint: pClient,
 		},
-		// Pagination next/previous URLs may point to a different host
-		// (e.g. app.uploadcare.com). Route those through the same
-		// bearer-auth client so auth headers and error handling apply.
+		fallbackNewReq: func(ctx context.Context, endpoint config.Endpoint, method, requrl string, data ReqEncoder) (*http.Request, error) {
+			return pClient.NewRequest(ctx, endpoint, method, requrl, data)
+		},
 		fallbackDo: func(req *http.Request, resdata interface{}) error {
 			return pClient.Do(req, resdata)
 		},

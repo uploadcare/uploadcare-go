@@ -2,6 +2,7 @@ package ucare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -173,6 +174,66 @@ func TestProjectAPIClient_Do_ThrottleNoRetry(t *testing.T) {
 	assert.True(t, errors.As(err, &throttleErr))
 	assert.Equal(t, 5, throttleErr.RetryAfter)
 	assert.Equal(t, int32(1), count.Load())
+}
+
+func TestBearerClient_CrossHostNewRequest(t *testing.T) {
+	t.Parallel()
+
+	c, err := NewBearerClient("tok", nil)
+	assert.NoError(t, err)
+
+	// Simulate what codec.ResultBuf does: NewRequest with an unknown host
+	req, err := c.NewRequest(
+		context.Background(),
+		config.Endpoint("app.uploadcare.com"),
+		http.MethodGet,
+		"https://app.uploadcare.com/apps/api/project-api/v1/projects/?limit=2",
+		nil,
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, "Bearer tok", req.Header.Get("Authorization"))
+	assert.Equal(t, "https://app.uploadcare.com/apps/api/project-api/v1/projects/?limit=2", req.URL.String())
+}
+
+func TestBearerClient_CrossHostDo(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"next":null,"results":[{"pub_key":"pk3"}]}`))
+	}))
+	defer srv.Close()
+
+	pClient := &projectAPIClient{conn: srv.Client(), token: "tok"}
+	c := &client{
+		backends: map[config.Endpoint]Client{
+			config.RESTAPIEndpoint: pClient,
+		},
+		fallbackNewReq: func(ctx context.Context, endpoint config.Endpoint, method, requrl string, data ReqEncoder) (*http.Request, error) {
+			return pClient.NewRequest(ctx, endpoint, method, requrl, data)
+		},
+		fallbackDo: func(req *http.Request, resdata interface{}) error {
+			return pClient.Do(req, resdata)
+		},
+	}
+
+	// NewRequest with unknown host should work via fallback
+	req, err := c.NewRequest(
+		context.Background(),
+		config.Endpoint(srv.Listener.Addr().String()),
+		http.MethodGet,
+		srv.URL+"/page2/",
+		nil,
+	)
+	assert.NoError(t, err)
+
+	var result struct {
+		Next    *string         `json:"next"`
+		Results json.RawMessage `json:"results"`
+	}
+	err = c.Do(req, &result)
+	assert.NoError(t, err)
+	assert.Nil(t, result.Next)
 }
 
 func TestProjectAPIClient_Do_ThrottleRetrySuccess(t *testing.T) {
