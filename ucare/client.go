@@ -110,6 +110,39 @@ func (c *client) Do(req *http.Request, resdata interface{}) error {
 	return b.Do(req, resdata)
 }
 
+// NewBearerClient initializes a client that authenticates with a bearer token.
+// Use this for the Project API, which requires token-based authentication
+// instead of the pub/secret key credentials used by NewClient.
+func NewBearerClient(token string, conf *Config) (Client, error) {
+	if token == "" {
+		return nil, errors.New("uploadcare: bearer token must not be empty")
+	}
+
+	conf = resolveBearerConfig(conf)
+
+	c := client{
+		backends: map[config.Endpoint]Client{
+			config.RESTAPIEndpoint: newProjectAPIClient(token, conf),
+		},
+		fallbackDo: fallbackDoFunc(conf.HTTPClient),
+	}
+
+	return &c, nil
+}
+
+func resolveBearerConfig(conf *Config) *Config {
+	if conf == nil {
+		conf = &Config{}
+	} else {
+		copied := *conf
+		conf = &copied
+	}
+	if conf.HTTPClient == nil {
+		conf.HTTPClient = http.DefaultClient
+	}
+	return conf
+}
+
 func resolveConfig(conf *Config, creds APICreds) *Config {
 	if conf == nil {
 		conf = &Config{}

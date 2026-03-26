@@ -133,5 +133,25 @@ Uploading a file
 	if err != nil {
 		// handle error
 	}
+
+Using the Project API (bearer token authentication):
+
+	import "github.com/uploadcare/uploadcare-go/v2/projectapi"
+
+	client, err := ucare.NewBearerClient("your-bearer-token", nil)
+	if err != nil {
+		// handle error
+	}
+
+	projectSvc := projectapi.NewService(client)
+
+	projects, err := projectSvc.List(context.Background(), nil)
+	if err != nil {
+		// handle error
+	}
+
+	for _, p := range projects.Results {
+		fmt.Printf("project: %s (%s)\n", p.Name, p.PubKey)
+	}
 */
 package ucare

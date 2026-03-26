@@ -33,12 +33,13 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/group"
 	"github.com/uploadcare/uploadcare-go/v2/upload"
 	"github.com/uploadcare/uploadcare-go/v2/conversion"
+	"github.com/uploadcare/uploadcare-go/v2/projectapi"
 )
 ```
 
 ## Configuration
 
-Creating a client:
+### REST & Upload API client
 
 ```go
 creds := ucare.APICreds{
@@ -54,6 +55,19 @@ client, err := ucare.NewClient(creds, conf)
 if err != nil {
 	log.Fatal("creating uploadcare API client: %s", err)
 }
+```
+
+### Project API client
+
+The Project API uses bearer token authentication:
+
+```go
+client, err := ucare.NewBearerClient("your-bearer-token", nil)
+if err != nil {
+	log.Fatal("creating project API client: %s", err)
+}
+
+projectSvc := projectapi.NewService(client)
 ```
 
 ## Usage
@@ -125,12 +139,45 @@ if err != nil {
 }
 ```
 
+Managing projects via the Project API:
+
+```go
+client, err := ucare.NewBearerClient("your-bearer-token", nil)
+if err != nil {
+	// handle error
+}
+
+projectSvc := projectapi.NewService(client)
+
+// List all projects
+projects, err := projectSvc.List(context.Background(), nil)
+if err != nil {
+	// handle error
+}
+
+// Get project details
+proj, err := projectSvc.Get(context.Background(), projects.Results[0].PubKey)
+if err != nil {
+	// handle error
+}
+fmt.Printf("project: %s (%s)\n", proj.Name, proj.PubKey)
+
+// Get usage metrics
+usage, err := projectSvc.GetUsage(context.Background(), proj.PubKey, projectapi.UsageDateRange{
+	From: "2025-01-01",
+	To:   "2025-01-31",
+})
+if err != nil {
+	// handle error
+}
+```
+
 ## Useful links
 
 [Golang API client documentation](https://pkg.go.dev/github.com/uploadcare/uploadcare-go/v2/ucare)  
 [Uploadcare documentation](https://uploadcare.com/docs/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
 [Upload API reference](https://uploadcare.com/api-refs/upload-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
-[REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)  
+[REST API reference](https://uploadcare.com/api-refs/rest-api/?utm_source=github&utm_medium=referral&utm_campaign=uploadcare-go)
 [Changelog](https://github.com/uploadcare/uploadcare-go/blob/master/CHANGELOG.md)  
 [Contributing guide](https://github.com/uploadcare/.github/blob/master/CONTRIBUTING.md)  
 [Security policy](https://github.com/uploadcare/uploadcare-go/security/policy)  

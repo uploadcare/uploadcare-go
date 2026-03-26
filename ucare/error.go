@@ -65,3 +65,18 @@ type ForbiddenError struct{ APIError }
 func (e ForbiddenError) Error() string {
 	return fmt.Sprintf("uploadcare: forbidden: %s", e.Detail)
 }
+
+// ProjectAPIError represents an error response from the Project API.
+// The Project API returns errors as {"message": "...", "code": "..."}.
+type ProjectAPIError struct {
+	StatusCode int    `json:"-"`
+	Message    string `json:"message"`
+	Code       string `json:"code"`
+}
+
+func (e ProjectAPIError) Error() string {
+	if e.Code != "" {
+		return fmt.Sprintf("uploadcare: project api: HTTP %d: %s (%s)", e.StatusCode, e.Message, e.Code)
+	}
+	return fmt.Sprintf("uploadcare: project api: HTTP %d: %s", e.StatusCode, e.Message)
+}
