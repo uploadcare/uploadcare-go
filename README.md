@@ -59,7 +59,8 @@ if err != nil {
 
 ### Project API client
 
-The Project API uses bearer token authentication:
+The Project API uses bearer token authentication. Tokens can be obtained
+via [Uploadcare Support](mailto:help@uploadcare.com).
 
 ```go
 client, err := ucare.NewBearerClient("your-bearer-token", nil)
