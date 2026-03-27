@@ -18,7 +18,7 @@ import (
 // Service describes all file related API
 type Service interface {
 	List(context.Context, ListParams) (*List, error)
-	Info(ctx context.Context, id string) (Info, error)
+	Info(ctx context.Context, id string, params *InfoParams) (Info, error)
 	Store(ctx context.Context, id string) (Info, error)
 	Delete(ctx context.Context, id string) (Info, error)
 	BatchStore(ctx context.Context, ids []string) (BatchInfo, error)

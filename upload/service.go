@@ -26,6 +26,7 @@ import (
 
 // Service describes all upload related API functionality
 type Service interface {
+	Upload(context.Context, UploadParams) (FileInfo, error)
 	File(context.Context, FileParams) (id string, err error)
 	FromURL(context.Context, FromURLParams) (FromURLData, error)
 	FileInfo(ctx context.Context, id string) (FileInfo, error)

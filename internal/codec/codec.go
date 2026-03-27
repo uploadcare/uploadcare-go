@@ -111,12 +111,33 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 
 	q := req.URL.Query()
 	for i := 0; i < t.NumField(); i++ {
-		f := v.Field(i)
+		tf, f := t.Field(i), v.Field(i)
+		formKey := tf.Tag.Get("form")
+		if formKey == "" {
+			continue
+		}
+
 		if f.Kind() == reflect.Ptr && f.IsNil() {
 			continue
 		}
 
-		q.Set(t.Field(i).Tag.Get("form"), fieldValue(f))
+		if f.Kind() == reflect.Map {
+			if f.IsNil() {
+				continue
+			}
+
+			m, ok := f.Interface().(map[string]string)
+			if !ok {
+				panic(wrongMapType)
+			}
+
+			for k, v := range m {
+				q.Set(fmt.Sprintf("%s[%s]", formKey, k), v)
+			}
+			continue
+		}
+
+		q.Set(formKey, fieldValue(f))
 	}
 	req.URL.RawQuery = q.Encode()
 	return nil
@@ -259,18 +280,28 @@ func writeFormField(
 		return
 	}
 
+	formKey := t.Tag.Get("form")
+
 	if f.Kind() == reflect.Map {
+		if f.IsNil() {
+			return
+		}
+
 		m, ok := f.Interface().(map[string]string)
 		if !ok {
 			panic(wrongMapType)
 		}
+
 		for k, v := range m {
-			w.WriteField(k, v)
+			fieldName := k
+			if formKey != "" {
+				fieldName = fmt.Sprintf("%s[%s]", formKey, k)
+			}
+			_ = w.WriteField(fieldName, v)
 		}
 		return
 	}
 
-	formKey := t.Tag.Get("form")
 	if formKey == "" {
 		return
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// API response errors
+// Sentinel errors for specific conditions
 var (
 	ErrInvalidAuthCreds = errors.New("Incorrect authentication credentials")
 	ErrAuthForbidden    = errors.New("Simple authentication over HTTP is " +
@@ -18,35 +18,65 @@ var (
 		"files smaller than 100MB")
 )
 
-type respErr struct {
-	Details string `json:"detail"`
+// APIError represents a generic API error response.
+// Callers can use errors.As to check for this type as a catch-all
+// for any non-specific API error.
+type APIError struct {
+	StatusCode int    `json:"-"`
+	Detail     string `json:"detail"`
 }
 
-// Error implements error interface
-func (e respErr) Error() string {
-	return e.Details
+func (e APIError) Error() string {
+	return fmt.Sprintf("uploadcare: HTTP %d: %s", e.StatusCode, e.Detail)
 }
 
-type authErr struct{ respErr }
+// AuthError represents an authentication failure (HTTP 401).
+type AuthError struct{ APIError }
 
-type throttleErr struct {
+func (e AuthError) Error() string {
+	return fmt.Sprintf("uploadcare: authentication failed: %s", e.Detail)
+}
+
+// ThrottleError represents a throttled request (HTTP 429).
+type ThrottleError struct {
 	RetryAfter int
 }
 
-func (e throttleErr) Error() string {
+func (e ThrottleError) Error() string {
 	if e.RetryAfter == 0 {
-		return "Request was throttled."
+		return "uploadcare: request throttled"
 	}
 	return fmt.Sprintf(
-		"Request was throttled. Expected available in %d second",
+		"uploadcare: request throttled, retry after %d seconds",
 		e.RetryAfter,
 	)
 }
 
-type reqValidationErr struct{ respErr }
+// ValidationError represents a request validation failure (HTTP 400).
+type ValidationError struct{ APIError }
 
-func (e reqValidationErr) Error() string {
-	return fmt.Sprintf("Request parameters validation error: %s", e.Details)
+func (e ValidationError) Error() string {
+	return fmt.Sprintf("uploadcare: validation error: %s", e.Detail)
 }
 
-type reqForbiddenErr struct{ respErr }
+// ForbiddenError represents a forbidden request (HTTP 403).
+type ForbiddenError struct{ APIError }
+
+func (e ForbiddenError) Error() string {
+	return fmt.Sprintf("uploadcare: forbidden: %s", e.Detail)
+}
+
+// ProjectAPIError represents an error response from the Project API.
+// The Project API returns errors as {"message": "...", "code": "..."}.
+type ProjectAPIError struct {
+	StatusCode int    `json:"-"`
+	Message    string `json:"message"`
+	Code       string `json:"code"`
+}
+
+func (e ProjectAPIError) Error() string {
+	if e.Code != "" {
+		return fmt.Sprintf("uploadcare: project api: HTTP %d: %s (%s)", e.StatusCode, e.Message, e.Code)
+	}
+	return fmt.Sprintf("uploadcare: project api: HTTP %d: %s", e.StatusCode, e.Message)
+}

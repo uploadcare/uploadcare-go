@@ -31,6 +31,10 @@ type ListParams struct {
 	// StartingFrom specifies a starting point for filtering files.
 	// The value depends on your ordering parameter value.
 	StartingFrom *time.Time `form:"from"`
+
+	// Include specifies additional fields to include in the response.
+	// Valid value: "appdata".
+	Include *string `form:"include"`
 }
 
 // EncodeReq implements ucare.ReqEncoder
@@ -65,6 +69,7 @@ func (v *List) ReadResult() (*Info, error) {
 // List returns a list of files.
 //
 // Example usage:
+//
 //	fileList, err := fileSvc.List(ctx, params)
 //	if err != nil {
 //		// handle error
