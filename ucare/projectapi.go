@@ -65,7 +65,7 @@ func (c *projectAPIClient) NewRequest(
 	req.Header.Set(userAgentHeaderKey, c.userAgent)
 	req.Header.Set(authHeaderKey, "Bearer "+c.token)
 
-	log.Debugf("created new project api request: %+v", req)
+	log.Debugf("created new project api request: %s %s", req.Method, req.URL)
 	return req, nil
 }
 
@@ -79,7 +79,7 @@ func (c *projectAPIClient) Do(req *http.Request, resdata interface{}) error {
 			}
 		}
 
-		log.Debugf("making %d project api request: %+v", tries, req)
+		log.Debugf("making %d project api request: %s %s", tries, req.Method, req.URL)
 
 		resp, err := c.conn.Do(req)
 		if err != nil {
