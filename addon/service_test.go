@@ -3,211 +3,164 @@ package addon
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uploadcare/uploadcare-go/v2/internal/config"
-	"github.com/uploadcare/uploadcare-go/v2/ucare"
+	"github.com/stretchr/testify/require"
+	"github.com/uploadcare/uploadcare-go/v2/internal/uctest"
 )
 
-type testClient struct {
-	httpClient *http.Client
-	baseURL    string
+func execPath(addon string) string {
+	return "/addons/" + addon + "/execute/"
 }
 
-func (c *testClient) NewRequest(
-	ctx context.Context,
-	_ config.Endpoint,
-	method, requrl string,
-	data ucare.ReqEncoder,
-) (*http.Request, error) {
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+requrl, nil)
-	if err != nil {
-		return nil, err
-	}
-	if data != nil {
-		if err = data.EncodeReq(req); err != nil {
-			return nil, err
-		}
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/vnd.uploadcare-v0.7+json")
-	return req, nil
-}
-
-func (c *testClient) Do(req *http.Request, resdata interface{}) error {
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, body)
-	}
-
-	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
-		return nil
-	}
-	return json.NewDecoder(resp.Body).Decode(resdata)
-}
-
-func newTestService(handler http.Handler) (Service, *httptest.Server) {
-	srv := httptest.NewServer(handler)
-	client := &testClient{httpClient: srv.Client(), baseURL: srv.URL}
-	return NewService(client), srv
+func statusPath(addon string) string {
+	return "/addons/" + addon + "/execute/status/"
 }
 
 func TestExecute(t *testing.T) {
 	t.Parallel()
 
-	svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/addons/remove_bg/execute/", r.URL.Path)
+	t.Run("remove_bg", func(t *testing.T) {
+		t.Parallel()
 
-		body, err := io.ReadAll(r.Body)
-		assert.NoError(t, err)
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, execPath(AddonRemoveBG), r.URL.Path)
 
-		var params ExecuteParams
-		assert.NoError(t, json.Unmarshal(body, &params))
-		assert.Equal(t, "file-uuid-123", params.Target)
+			var params ExecuteParams
+			require.NoError(t, json.Unmarshal(uctest.ReadBody(t, r), &params))
+			assert.Equal(t, "file-uuid-123", params.Target)
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ExecuteResult{RequestID: "req-456"})
-	}))
-	defer srv.Close()
-
-	result, err := svc.Execute(context.Background(), AddonRemoveBG, ExecuteParams{
-		Target: "file-uuid-123",
+			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-456"})
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Execute(context.Background(), AddonRemoveBG, ExecuteParams{
+				Target: "file-uuid-123",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "req-456", result.RequestID)
+		})
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, "req-456", result.RequestID)
-}
 
-func TestExecute_WithRemoveBGParams(t *testing.T) {
-	t.Parallel()
+	t.Run("remove_bg_params", func(t *testing.T) {
+		t.Parallel()
 
-	crop := true
-	typeLevel := "2"
+		crop := true
+		typeLevel := "2"
 
-	svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		assert.NoError(t, err)
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			raw := uctest.ParseJSONMap(t, uctest.ReadBody(t, r))
+			var params RemoveBGParams
+			require.NoError(t, json.Unmarshal(raw["params"], &params))
+			assert.Equal(t, &crop, params.Crop)
+			assert.Equal(t, &typeLevel, params.TypeLevel)
 
-		var raw map[string]json.RawMessage
-		assert.NoError(t, json.Unmarshal(body, &raw))
-
-		var params RemoveBGParams
-		assert.NoError(t, json.Unmarshal(raw["params"], &params))
-		assert.Equal(t, &crop, params.Crop)
-		assert.Equal(t, &typeLevel, params.TypeLevel)
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ExecuteResult{RequestID: "req-789"})
-	}))
-	defer srv.Close()
-
-	result, err := svc.Execute(context.Background(), AddonRemoveBG, ExecuteParams{
-		Target: "file-uuid",
-		Params: RemoveBGParams{
-			Crop:      &crop,
-			TypeLevel: &typeLevel,
-		},
+			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-789"})
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Execute(context.Background(), AddonRemoveBG, ExecuteParams{
+				Target: "file-uuid",
+				Params: RemoveBGParams{Crop: &crop, TypeLevel: &typeLevel},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "req-789", result.RequestID)
+		})
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, "req-789", result.RequestID)
-}
 
-func TestExecute_WithClamAVParams(t *testing.T) {
-	t.Parallel()
+	t.Run("clamav_params", func(t *testing.T) {
+		t.Parallel()
 
-	purge := true
+		purge := true
 
-	svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		assert.NoError(t, err)
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			raw := uctest.ParseJSONMap(t, uctest.ReadBody(t, r))
+			var params ClamAVParams
+			require.NoError(t, json.Unmarshal(raw["params"], &params))
+			assert.Equal(t, &purge, params.PurgeInfected)
 
-		var raw map[string]json.RawMessage
-		assert.NoError(t, json.Unmarshal(body, &raw))
-
-		var params ClamAVParams
-		assert.NoError(t, json.Unmarshal(raw["params"], &params))
-		assert.Equal(t, &purge, params.PurgeInfected)
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ExecuteResult{RequestID: "req-clam"})
-	}))
-	defer srv.Close()
-
-	result, err := svc.Execute(context.Background(), AddonClamAV, ExecuteParams{
-		Target: "file-uuid",
-		Params: ClamAVParams{PurgeInfected: &purge},
+			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-clam"})
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Execute(context.Background(), AddonClamAV, ExecuteParams{
+				Target: "file-uuid",
+				Params: ClamAVParams{PurgeInfected: &purge},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "req-clam", result.RequestID)
+		})
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, "req-clam", result.RequestID)
-}
 
-func TestExecute_NoParams(t *testing.T) {
-	t.Parallel()
+	t.Run("no_params_omitted", func(t *testing.T) {
+		t.Parallel()
 
-	svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		assert.NoError(t, err)
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			raw := uctest.ParseJSONMap(t, uctest.ReadBody(t, r))
+			_, hasParams := raw["params"]
+			assert.False(t, hasParams)
 
-		var raw map[string]json.RawMessage
-		assert.NoError(t, json.Unmarshal(body, &raw))
-
-		// params should be absent when nil
-		_, hasParams := raw["params"]
-		assert.False(t, hasParams)
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ExecuteResult{RequestID: "req-rek"})
-	}))
-	defer srv.Close()
-
-	result, err := svc.Execute(context.Background(), AddonRekognitionLabels, ExecuteParams{
-		Target: "file-uuid",
+			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-rek"})
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Execute(context.Background(), AddonRekognitionLabels, ExecuteParams{
+				Target: "file-uuid",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "req-rek", result.RequestID)
+		})
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, "req-rek", result.RequestID)
 }
 
 func TestStatus(t *testing.T) {
 	t.Parallel()
 
-	svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, "/addons/remove_bg/execute/status/", r.URL.Path)
-		assert.Equal(t, "req-456", r.URL.Query().Get("request_id"))
+	t.Run("done", func(t *testing.T) {
+		t.Parallel()
 
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"done","result":{"foreground_type":"person"}}`))
-	}))
-	defer srv.Close()
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, statusPath(AddonRemoveBG), r.URL.Path)
+			assert.Equal(t, "req-456", r.URL.Query().Get("request_id"))
 
-	result, err := svc.Status(context.Background(), AddonRemoveBG, "req-456")
-	assert.NoError(t, err)
-	assert.Equal(t, StatusDone, result.Status)
-	assert.Contains(t, string(result.Result), "foreground_type")
-}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"done","result":{"foreground_type":"person"}}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Status(context.Background(), AddonRemoveBG, "req-456")
+			require.NoError(t, err)
+			assert.Equal(t, StatusDone, result.Status)
+			assert.Contains(t, string(result.Result), "foreground_type")
+		})
+	})
 
-func TestStatus_InProgress(t *testing.T) {
-	t.Parallel()
+	t.Run("in_progress", func(t *testing.T) {
+		t.Parallel()
 
-	svc, srv := newTestService(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"in_progress"}`))
-	}))
-	defer srv.Close()
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"in_progress"}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Status(context.Background(), AddonClamAV, "req-pending")
+			require.NoError(t, err)
+			assert.Equal(t, StatusInProgress, result.Status)
+		})
+	})
 
-	result, err := svc.Status(context.Background(), AddonClamAV, "req-pending")
-	assert.NoError(t, err)
-	assert.Equal(t, StatusInProgress, result.Status)
+	t.Run("error_details", func(t *testing.T) {
+		t.Parallel()
+
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"error","details":["scan failed","timeout"]}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			svc := NewService(uctest.NewServerClient(srv))
+			result, err := svc.Status(context.Background(), AddonClamAV, "req-err")
+			require.NoError(t, err)
+			assert.Equal(t, StatusError, result.Status)
+			assert.JSONEq(t, `["scan failed","timeout"]`, string(result.Details))
+		})
+	})
 }

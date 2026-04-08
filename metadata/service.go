@@ -14,18 +14,10 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
-// Service describes all file metadata related API
 type Service interface {
-	// List returns all metadata key-value pairs for a file
 	List(ctx context.Context, fileUUID string) (map[string]string, error)
-
-	// Get returns a single metadata value by key
 	Get(ctx context.Context, fileUUID, key string) (string, error)
-
-	// Set creates or updates a metadata key-value pair
 	Set(ctx context.Context, fileUUID, key, value string) (string, error)
-
-	// Delete removes a metadata key
 	Delete(ctx context.Context, fileUUID, key string) error
 }
 
@@ -33,12 +25,10 @@ type service struct {
 	svc svc.Service
 }
 
-// NewService returns new instance of the Service
 func NewService(client ucare.Client) Service {
 	return service{svc.New(config.RESTAPIEndpoint, client, log)}
 }
 
-// List returns all metadata key-value pairs for a file
 func (s service) List(
 	ctx context.Context,
 	fileUUID string,
@@ -50,10 +40,15 @@ func (s service) List(
 		nil,
 		&data,
 	)
+	if err != nil {
+		return
+	}
+	if len(data) > MaxKeysNumber {
+		return nil, fmt.Errorf("%w: %d keys", ErrTooManyKeys, len(data))
+	}
 	return
 }
 
-// Get returns a single metadata value by key
 func (s service) Get(
 	ctx context.Context,
 	fileUUID, key string,
@@ -71,12 +66,14 @@ func (s service) Get(
 	return
 }
 
-// Set creates or updates a metadata key-value pair
 func (s service) Set(
 	ctx context.Context,
 	fileUUID, key, value string,
 ) (data string, err error) {
 	if err = validateKey(key); err != nil {
+		return
+	}
+	if err = validateValue(value); err != nil {
 		return
 	}
 	err = s.svc.ResourceOp(
@@ -89,7 +86,6 @@ func (s service) Set(
 	return
 }
 
-// Delete removes a metadata key
 func (s service) Delete(
 	ctx context.Context,
 	fileUUID, key string,
@@ -107,9 +103,6 @@ func (s service) Delete(
 	return
 }
 
-// stringBody is a ReqEncoder that writes a JSON-encoded string as the
-// request body. This is needed because the metadata Set endpoint expects
-// a plain JSON string (e.g. "value") rather than a JSON object.
 type stringBody string
 
 func (s stringBody) EncodeReq(req *http.Request) error {
