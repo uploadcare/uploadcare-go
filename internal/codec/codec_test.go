@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uploadcare/uploadcare-go/v2/file"
 	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
@@ -17,7 +18,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/upload"
 )
 
-func testEncodeReqQuery(t *testing.T) {
+func TestEncodeReqQuery(t *testing.T) {
 	t.Parallel()
 
 	now, _ := time.Parse(config.UCTimeLayout, "2015-04-02T10:00:00")
@@ -27,6 +28,7 @@ func testEncodeReqQuery(t *testing.T) {
 
 		params        interface{}
 		expectedQuery url.Values
+		wantErr       bool
 	}{{
 		test: "full list of params",
 		params: &file.ListParams{
@@ -62,12 +64,14 @@ func testEncodeReqQuery(t *testing.T) {
 			"stored": ucare.Bool(false),
 		},
 		expectedQuery: url.Values{},
+		wantErr:       true,
 	}, {
 		test: "not struct pointer params type",
 		params: &map[string]*bool{
 			"stored": ucare.Bool(false),
 		},
 		expectedQuery: url.Values{},
+		wantErr:       true,
 	}}
 
 	for _, c := range cases {
@@ -76,7 +80,12 @@ func testEncodeReqQuery(t *testing.T) {
 			t.Parallel()
 
 			req, _ := http.NewRequest("GET", "", nil)
-			codec.EncodeReqQuery(c.params, req)
+			err := codec.EncodeReqQuery(c.params, req)
+			if c.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			q := req.URL.Query()
 
 			if len(c.expectedQuery) == 0 && req.URL.RawQuery != "" {
@@ -89,7 +98,7 @@ func testEncodeReqQuery(t *testing.T) {
 	}
 }
 
-func testEncodeReqBody(t *testing.T) {
+func TestEncodeReqBody(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -109,7 +118,7 @@ func testEncodeReqBody(t *testing.T) {
 			t.Parallel()
 
 			req, _ := http.NewRequest("PUT", "", nil)
-			codec.EncodeReqBody(c.params, req)
+			require.NoError(t, codec.EncodeReqBody(c.params, req))
 
 			data, err := io.ReadAll(req.Body)
 			assert.Equal(t, nil, err)
@@ -118,7 +127,7 @@ func testEncodeReqBody(t *testing.T) {
 	}
 }
 
-func testEncodeReqFormData(t *testing.T) {
+func TestEncodeReqFormData(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {

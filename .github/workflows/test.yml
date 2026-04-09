@@ -16,6 +16,10 @@ jobs:
       uses: actions/checkout@v4
     - name: Vet
       run: go vet ./...
+    - name: Lint
+      uses: golangci/golangci-lint-action@v7
+      with:
+        version: latest
     - name: Test
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}

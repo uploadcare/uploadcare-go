@@ -53,11 +53,11 @@ type ResultBuf struct {
 func (b *ResultBuf) Next() bool {
 	b.Lock()
 	defer b.Unlock()
-	return !(b.at >= len(b.Vals) && b.NextPage == nil)
+	return b.at < len(b.Vals) || b.NextPage != nil
 }
 
 // ErrEndOfResults denotes absence of results
-var ErrEndOfResults = errors.New("No results are left to read")
+var ErrEndOfResults = errors.New("no results are left to read")
 
 // ReadRawResult reads returns next Raw result.
 // It makes paginated requests when all results from the current page
@@ -210,7 +210,7 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 		}
 	}
 	if name == "" {
-		return errors.New("File name can't be empty string")
+		return errors.New("file name can't be empty string")
 	}
 
 	contentType, ok := dataV.
@@ -224,9 +224,13 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 	}
 	if contentType == "" {
 		buf := make([]byte, 2048)
-		data.Read(buf)
+		if _, err := data.Read(buf); err != nil {
+			return err
+		}
 		contentType = http.DetectContentType(buf)
-		data.Seek(0, 0)
+		if _, err := data.Seek(0, 0); err != nil {
+			return err
+		}
 	}
 
 	h := make(textproto.MIMEHeader)
@@ -265,7 +269,7 @@ func writeFormField(
 			panic(wrongMapType)
 		}
 		for k, v := range m {
-			w.WriteField(k, v)
+			_ = w.WriteField(k, v)
 		}
 		return
 	}
