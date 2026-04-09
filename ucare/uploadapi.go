@@ -12,7 +12,8 @@ import (
 )
 
 type uploadAPIClient struct {
-	authFunc UploadAPIAuthFunc
+	authFunc  UploadAPIAuthFunc
+	userAgent string
 
 	conn  *http.Client
 	retry *RetryConfig
@@ -27,6 +28,16 @@ func newUploadAPIClient(creds APICreds, conf *Config) Client {
 
 	if conf.SignBasedAuthentication {
 		c.authFunc = signBasedUploadAPIAuthFunc(creds)
+	}
+
+	c.userAgent = fmt.Sprintf(
+		"%s/%s/%s",
+		config.UserAgentPrefix,
+		config.ClientVersion,
+		creds.PublicKey,
+	)
+	if conf.UserAgent != "" {
+		c.userAgent += " " + conf.UserAgent
 	}
 
 	return &c
@@ -56,6 +67,8 @@ func (c *uploadAPIClient) NewRequest(
 			return nil, err
 		}
 	}
+
+	req.Header.Set(userAgentHeaderKey, c.userAgent)
 
 	log.Debugf(
 		"created new request: %s %+v %+v",

@@ -69,6 +69,40 @@ func TestUploadAPIClient(t *testing.T) {
 	}
 }
 
+func TestUploadAPIClient_UserAgent(t *testing.T) {
+	t.Parallel()
+
+	client := newUploadAPIClient(testCreds(), resolveConfig(nil, testCreds()))
+
+	req, err := client.NewRequest(
+		context.Background(),
+		config.UploadAPIEndpoint,
+		http.MethodPost,
+		"/base/",
+		nil,
+	)
+	assert.NoError(t, err)
+	assert.Contains(t, req.Header.Get("User-Agent"), "UploadcareGo/")
+}
+
+func TestUploadAPIClient_CustomUserAgent(t *testing.T) {
+	t.Parallel()
+
+	conf := resolveConfig(&Config{UserAgent: "MyApp/1.0"}, testCreds())
+	client := newUploadAPIClient(testCreds(), conf)
+
+	req, err := client.NewRequest(
+		context.Background(),
+		config.UploadAPIEndpoint,
+		http.MethodPost,
+		"/base/",
+		nil,
+	)
+	assert.NoError(t, err)
+	assert.Contains(t, req.Header.Get("User-Agent"), "UploadcareGo/")
+	assert.Contains(t, req.Header.Get("User-Agent"), "MyApp/1.0")
+}
+
 func TestUploadDo_ThrottleNoRetryByDefault(t *testing.T) {
 	t.Parallel()
 
