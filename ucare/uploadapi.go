@@ -6,26 +6,38 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"reflect"
 	"time"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
 type uploadAPIClient struct {
-	authFunc UploadAPIAuthFunc
+	authFunc  UploadAPIAuthFunc
+	userAgent string
 
-	conn *http.Client
+	conn  *http.Client
+	retry *RetryConfig
 }
 
 func newUploadAPIClient(creds APICreds, conf *Config) Client {
 	c := uploadAPIClient{
 		authFunc: simpleUploadAPIAuthFunc(creds),
 		conn:     conf.HTTPClient,
+		retry:    conf.Retry,
 	}
 
 	if conf.SignBasedAuthentication {
 		c.authFunc = signBasedUploadAPIAuthFunc(creds)
+	}
+
+	c.userAgent = fmt.Sprintf(
+		"%s/%s/%s",
+		config.UserAgentPrefix,
+		config.ClientVersion,
+		creds.PublicKey,
+	)
+	if conf.UserAgent != "" {
+		c.userAgent += " " + conf.UserAgent
 	}
 
 	return &c
@@ -56,6 +68,8 @@ func (c *uploadAPIClient) NewRequest(
 		}
 	}
 
+	req.Header.Set(userAgentHeaderKey, c.userAgent)
+
 	log.Debugf(
 		"created new request: %s %+v %+v",
 		req.Method,
@@ -70,67 +84,93 @@ func (c *uploadAPIClient) Do(
 	req *http.Request,
 	resdata interface{},
 ) error {
-	tries := 0
-try:
-	tries++
+	for tries := 1; ; tries++ {
+		if tries > 1 && req.GetBody != nil {
+			var err error
+			req.Body, err = req.GetBody()
+			if err != nil {
+				return err
+			}
+		}
 
-	if tries > 1 && req.GetBody != nil {
-		var err error
-		req.Body, err = req.GetBody()
+		log.Debugf("making %d request: %s %+v", tries, req.Method, req.URL)
+
+		resp, err := c.conn.Do(req)
 		if err != nil {
 			return err
 		}
-	}
 
-	log.Debugf("making %d request: %s %+v", tries, req.Method, req.URL)
+		retry, err := c.handleResponse(resp, resdata, tries)
+		if err != nil || !retry {
+			return err
+		}
+	}
+}
 
-	resp, err := c.conn.Do(req)
-	if err != nil {
-		return err
-	}
-	if req.Body != nil {
-		defer req.Body.Close()
-	}
+func (c *uploadAPIClient) handleResponse(
+	resp *http.Response,
+	resdata interface{},
+	tries int,
+) (bool, error) {
+	defer resp.Body.Close()
 
 	log.Debugf("received response: %+v", resp)
 
 	switch resp.StatusCode {
-	case 400, 403:
+	case 400:
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return false, err
 		}
-		resp.Body.Close()
-		switch resp.StatusCode {
-		case 400:
-			return reqValidationErr{respErr{string(data)}}
-		case 403:
-			return reqForbiddenErr{respErr{string(data)}}
+		return false, ValidationError{APIError{StatusCode: 400, Detail: string(data)}}
+	case 403:
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return false, err
 		}
+		return false, ForbiddenError{APIError{StatusCode: 403, Detail: string(data)}}
 	case 413:
-		return ErrFileTooLarge
+		return false, ErrFileTooLarge
 	case 429:
-		if tries > config.MaxThrottleRetries {
-			return throttleErr{}
+		if c.retry == nil || tries > c.retry.MaxRetries {
+			return false, ThrottleError{}
 		}
-		// retry after is not returned from the upload API
+		wait := expBackoff(tries)
+		if c.retry.MaxWaitSeconds > 0 && wait > c.retry.MaxWaitSeconds {
+			wait = c.retry.MaxWaitSeconds
+		}
 		select {
-		case <-req.Context().Done():
-			return req.Context().Err()
-		case <-time.After(5 * time.Second):
+		case <-resp.Request.Context().Done():
+			return false, resp.Request.Context().Err()
+		case <-time.After(time.Duration(wait) * time.Second):
 		}
-		goto try
+		return true, nil
 	default:
+		if resp.StatusCode >= 400 {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return false, err
+			}
+			var apiErr APIError
+			if json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
+				detail := string(body)
+				if detail == "" {
+					detail = http.StatusText(resp.StatusCode)
+				}
+				apiErr.Detail = detail
+			}
+			apiErr.StatusCode = resp.StatusCode
+			return false, apiErr
+		}
 	}
 
-	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
-		return nil
+	if isNilResponseData(resdata) {
+		return false, nil
 	}
-	err = json.NewDecoder(resp.Body).Decode(&resdata)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
 
-	return nil
+	if err := json.NewDecoder(resp.Body).Decode(resdata); err != nil {
+		return false, err
+	}
+
+	return false, nil
 }

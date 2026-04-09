@@ -27,7 +27,7 @@ func listFiles(t *testing.T, r *testenv.Runner) {
 
 func fileInfo(t *testing.T, r *testenv.Runner) {
 	ctx := context.Background()
-	info, err := r.File.Info(ctx, r.Artifacts.Files[0].ID)
+	info, err := r.File.Info(ctx, r.Artifacts.Files[0].ID, nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(
 		t,
