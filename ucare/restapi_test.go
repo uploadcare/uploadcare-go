@@ -178,6 +178,39 @@ func TestDo_UnhandledStatusNilResdata(t *testing.T) {
 	assert.Contains(t, err.Error(), "Conflict")
 }
 
+func TestDo_ThrottleMissingRetryAfter(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			// 429 with no Retry-After header
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"file-123"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+	assert.NoError(t, err)
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader("")), nil
+	}
+
+	var result struct {
+		ID string `json:"id"`
+	}
+	err = client.Do(req, &result)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "file-123", result.ID)
+	assert.Equal(t, 2, calls)
+}
+
 func TestDo_SuccessNilResdataClosesBody(t *testing.T) {
 	t.Parallel()
 

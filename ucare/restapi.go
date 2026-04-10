@@ -149,7 +149,9 @@ func (c *restAPIClient) handleResponse(
 			resp.Header.Get("Retry-After"),
 		)
 		if err != nil {
-			return false, fmt.Errorf("invalid Retry-After: %w", err)
+			retryAfter = 5
+		} else if retryAfter < 0 {
+			retryAfter = 0
 		}
 
 		if tries > config.MaxThrottleRetries {
