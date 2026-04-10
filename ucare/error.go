@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-// Sentinel errors for specific conditions
 var (
 	ErrInvalidAuthCreds = errors.New("incorrect authentication credentials")
 	ErrAuthForbidden    = errors.New("simple authentication over HTTP is " +
@@ -18,9 +17,6 @@ var (
 		"files smaller than 100MB")
 )
 
-// APIError represents a generic API error response.
-// Callers can use errors.As to check for this type as a catch-all
-// for any non-specific API error.
 type APIError struct {
 	StatusCode int    `json:"-"`
 	Detail     string `json:"detail"`
@@ -30,14 +26,12 @@ func (e APIError) Error() string {
 	return fmt.Sprintf("uploadcare: HTTP %d: %s", e.StatusCode, e.Detail)
 }
 
-// AuthError represents an authentication failure (HTTP 401).
 type AuthError struct{ APIError }
 
 func (e AuthError) Error() string {
 	return fmt.Sprintf("uploadcare: authentication failed: %s", e.Detail)
 }
 
-// ThrottleError represents a throttled request (HTTP 429).
 type ThrottleError struct {
 	RetryAfter int
 }
@@ -52,14 +46,12 @@ func (e ThrottleError) Error() string {
 	)
 }
 
-// ValidationError represents a request validation failure (HTTP 400).
 type ValidationError struct{ APIError }
 
 func (e ValidationError) Error() string {
 	return fmt.Sprintf("uploadcare: validation error: %s", e.Detail)
 }
 
-// ForbiddenError represents a forbidden request (HTTP 403).
 type ForbiddenError struct{ APIError }
 
 func (e ForbiddenError) Error() string {

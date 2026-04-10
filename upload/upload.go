@@ -5,33 +5,17 @@ import (
 	"io"
 )
 
-// DefaultMultipartThreshold is the default file size threshold for switching
-// from direct upload to multipart upload. Files larger than this value
-// will use multipart upload.
 const DefaultMultipartThreshold int64 = 10 * 1024 * 1024 // 10MB
 
-// UploadParams holds parameters for the unified Upload method.
 type UploadParams struct {
-	// Data (required) reads the data to be uploaded.
-	Data io.ReadSeeker
-	// Name (required) is the original filename.
-	Name string
-	// ContentType is the file MIME-type.
-	ContentType string
-	// Size (required) is the precise file size in bytes.
-	Size int64
-	// ToStore sets the file storing behaviour.
-	ToStore *string
-	// MultipartThreshold controls the upload method selection:
-	//   nil    → use DefaultMultipartThreshold (10MB)
-	//   > 0   → use as custom threshold
-	//   0     → force direct upload
-	//   < 0   → force multipart upload
+	Data               io.ReadSeeker
+	Name               string
+	ContentType        string
+	Size               int64
+	ToStore            *string
 	MultipartThreshold *int64
 }
 
-// Upload automatically selects direct or multipart upload based on file size
-// and the configured threshold. It returns a FileInfo for the uploaded file.
 func (s service) Upload(ctx context.Context, params UploadParams) (FileInfo, error) {
 	threshold := DefaultMultipartThreshold
 	if params.MultipartThreshold != nil {
