@@ -116,7 +116,7 @@ func TestDo_UnhandledStatusWithDetail(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(`{"detail":"Addon is already running for this file."}`))
+		_, _ = w.Write([]byte(`{"detail":"Addon is already running for this file."}`))
 	}))
 	defer srv.Close()
 
@@ -141,7 +141,7 @@ func TestDo_UnhandledStatusWithoutDetail(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Bad Gateway"))
+		_, _ = w.Write([]byte("Bad Gateway"))
 	}))
 	defer srv.Close()
 
@@ -164,7 +164,7 @@ func TestDo_UnhandledStatusNilResdata(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(`{"detail":"Conflict"}`))
+		_, _ = w.Write([]byte(`{"detail":"Conflict"}`))
 	}))
 	defer srv.Close()
 

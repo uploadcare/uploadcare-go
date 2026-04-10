@@ -181,7 +181,6 @@ loop:
 	}
 
 	d.done <- fileInfo
-	return
 }
 
 func (d *multipartData) tryUploadPart(

@@ -46,7 +46,7 @@ func signBasedRESTAPIAuthParam(creds APICreds, req *http.Request) string {
 	if bodyReader == nil {
 		bodyReader = strings.NewReader("")
 	}
-	io.Copy(bodyBuf, bodyReader)
+	_, _ = io.Copy(bodyBuf, bodyReader)
 	bodyHash := fmt.Sprintf("%x", md5.Sum(bodyBuf.Bytes()))
 
 	req.Body = io.NopCloser(bodyBuf)

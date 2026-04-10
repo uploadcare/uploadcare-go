@@ -17,7 +17,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/upload"
 )
 
-func testEncodeReqQuery(t *testing.T) {
+func TestEncodeReqQuery(t *testing.T) {
 	t.Parallel()
 
 	now, _ := time.Parse(config.UCTimeLayout, "2015-04-02T10:00:00")
@@ -76,7 +76,7 @@ func testEncodeReqQuery(t *testing.T) {
 			t.Parallel()
 
 			req, _ := http.NewRequest("GET", "", nil)
-			codec.EncodeReqQuery(c.params, req)
+			_ = codec.EncodeReqQuery(c.params, req)
 			q := req.URL.Query()
 
 			if len(c.expectedQuery) == 0 && req.URL.RawQuery != "" {
@@ -89,7 +89,7 @@ func testEncodeReqQuery(t *testing.T) {
 	}
 }
 
-func testEncodeReqBody(t *testing.T) {
+func TestEncodeReqBody(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -109,7 +109,7 @@ func testEncodeReqBody(t *testing.T) {
 			t.Parallel()
 
 			req, _ := http.NewRequest("PUT", "", nil)
-			codec.EncodeReqBody(c.params, req)
+			_ = codec.EncodeReqBody(c.params, req)
 
 			data, err := io.ReadAll(req.Body)
 			assert.Equal(t, nil, err)
@@ -118,7 +118,7 @@ func testEncodeReqBody(t *testing.T) {
 	}
 }
 
-func testEncodeReqFormData(t *testing.T) {
+func TestEncodeReqFormData(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {

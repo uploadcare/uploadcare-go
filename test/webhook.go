@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
@@ -20,7 +19,6 @@ var (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	webhookURLSuffix = rand.Intn(1000)
 
 	webhookURL = fmt.Sprintf(

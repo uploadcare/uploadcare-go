@@ -215,7 +215,7 @@ func (d *fromURLData) wait() {
 			}
 			log.Errorf(
 				"stopped waiting for the file: %s: %+v",
-				d.Token,
+				*d.Token,
 				err,
 			)
 			return
