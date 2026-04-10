@@ -26,12 +26,12 @@ func TestUpload(t *testing.T) {
 			switch r.URL.Path {
 			case "/base/":
 				directHit.Add(1)
-				uctest.RespondJSON(w, map[string]string{"file": "test-uuid-123"})
+				uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-123"})
 			case "/info/":
-				uctest.RespondJSON(w, FileInfo{FileName: "small.txt"})
+				uctest.RespondJSON(t, w, FileInfo{FileName: "small.txt"})
 			case "/multipart/start/":
 				multipartHit.Add(1)
-				uctest.RespondJSON(w, map[string]interface{}{"uuid": "test-uuid-123", "parts": []string{}})
+				uctest.RespondJSON(t, w, map[string]interface{}{"uuid": "test-uuid-123", "parts": []string{}})
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
@@ -60,12 +60,12 @@ func TestUpload(t *testing.T) {
 			switch r.URL.Path {
 			case "/base/":
 				directHit.Add(1)
-				uctest.RespondJSON(w, map[string]string{"file": "test-uuid-exact"})
+				uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-exact"})
 			case "/info/":
-				uctest.RespondJSON(w, FileInfo{FileName: "exact.bin"})
+				uctest.RespondJSON(t, w, FileInfo{FileName: "exact.bin"})
 			case "/multipart/start/":
 				multipartHit.Add(1)
-				uctest.RespondJSON(w, map[string]interface{}{"uuid": "test-uuid-exact", "parts": []string{}})
+				uctest.RespondJSON(t, w, map[string]interface{}{"uuid": "test-uuid-exact", "parts": []string{}})
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
@@ -94,13 +94,13 @@ func TestUpload(t *testing.T) {
 			switch r.URL.Path {
 			case "/base/":
 				directHit.Add(1)
-				uctest.RespondJSON(w, map[string]string{"file": "test-uuid-456"})
+				uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-456"})
 			case "/multipart/start/":
 				multipartHit.Add(1)
-				uctest.RespondJSON(w, map[string]interface{}{"uuid": "test-uuid-456", "parts": []string{}})
+				uctest.RespondJSON(t, w, map[string]interface{}{"uuid": "test-uuid-456", "parts": []string{}})
 			case "/multipart/complete/":
 				completeHit.Add(1)
-				uctest.RespondJSON(w, FileInfo{FileName: "large.bin"})
+				uctest.RespondJSON(t, w, FileInfo{FileName: "large.bin"})
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
@@ -131,12 +131,12 @@ func TestUpload(t *testing.T) {
 			switch r.URL.Path {
 			case "/base/":
 				directHit.Add(1)
-				uctest.RespondJSON(w, map[string]string{"file": "test-uuid-789"})
+				uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-789"})
 			case "/multipart/start/":
 				multipartHit.Add(1)
-				uctest.RespondJSON(w, map[string]interface{}{"uuid": "test-uuid-789", "parts": []string{}})
+				uctest.RespondJSON(t, w, map[string]interface{}{"uuid": "test-uuid-789", "parts": []string{}})
 			case "/multipart/complete/":
-				uctest.RespondJSON(w, FileInfo{FileName: "medium.bin"})
+				uctest.RespondJSON(t, w, FileInfo{FileName: "medium.bin"})
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
@@ -168,12 +168,12 @@ func TestUpload(t *testing.T) {
 			switch r.URL.Path {
 			case "/base/":
 				directHit.Add(1)
-				uctest.RespondJSON(w, map[string]string{"file": "test-uuid-force-direct"})
+				uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-force-direct"})
 			case "/info/":
-				uctest.RespondJSON(w, FileInfo{FileName: "forced-direct.bin"})
+				uctest.RespondJSON(t, w, FileInfo{FileName: "forced-direct.bin"})
 			case "/multipart/start/":
 				multipartHit.Add(1)
-				uctest.RespondJSON(w, map[string]interface{}{"uuid": "test-uuid-force-direct", "parts": []string{}})
+				uctest.RespondJSON(t, w, map[string]interface{}{"uuid": "test-uuid-force-direct", "parts": []string{}})
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
@@ -203,12 +203,12 @@ func TestUpload(t *testing.T) {
 			switch r.URL.Path {
 			case "/base/":
 				directHit.Add(1)
-				uctest.RespondJSON(w, map[string]string{"file": "test-uuid-force-multi"})
+				uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-force-multi"})
 			case "/multipart/start/":
 				multipartHit.Add(1)
-				uctest.RespondJSON(w, map[string]interface{}{"uuid": "test-uuid-force-multi", "parts": []string{}})
+				uctest.RespondJSON(t, w, map[string]interface{}{"uuid": "test-uuid-force-multi", "parts": []string{}})
 			case "/multipart/complete/":
-				uctest.RespondJSON(w, FileInfo{FileName: "forced-multi.txt"})
+				uctest.RespondJSON(t, w, FileInfo{FileName: "forced-multi.txt"})
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
