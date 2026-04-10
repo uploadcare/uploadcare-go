@@ -50,7 +50,7 @@ func TestList(t *testing.T) {
 		})
 	})
 
-	t.Run("too_many_keys", func(t *testing.T) {
+	t.Run("many_keys", func(t *testing.T) {
 		t.Parallel()
 
 		payload := make(map[string]string)
@@ -62,8 +62,9 @@ func TestList(t *testing.T) {
 			uctest.RespondJSON(w, payload)
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
-			_, err := svc.List(context.Background(), testFileUUID)
-			assert.ErrorIs(t, err, ErrTooManyKeys)
+			data, err := svc.List(context.Background(), testFileUUID)
+			require.NoError(t, err)
+			assert.Len(t, data, MaxKeysNumber+1)
 		})
 	})
 }
