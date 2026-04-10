@@ -10,9 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func RespondJSON(w http.ResponseWriter, v interface{}) {
+func RespondJSON(t *testing.T, w http.ResponseWriter, v interface{}) {
+	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
+	require.NoError(t, json.NewEncoder(w).Encode(v))
 }
 
 func ReadBody(t *testing.T, r *http.Request) []byte {

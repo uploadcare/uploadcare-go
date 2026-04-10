@@ -41,7 +41,7 @@ func TestList(t *testing.T) {
 		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodGet, r.Method)
 			assert.Equal(t, testPathList(), r.URL.Path)
-			uctest.RespondJSON(w, map[string]string{"key1": "value1", "key2": "value2"})
+			uctest.RespondJSON(t, w, map[string]string{"key1": "value1", "key2": "value2"})
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			data, err := svc.List(context.Background(), testFileUUID)
@@ -59,7 +59,7 @@ func TestList(t *testing.T) {
 		}
 
 		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			uctest.RespondJSON(w, payload)
+			uctest.RespondJSON(t, w, payload)
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			data, err := svc.List(context.Background(), testFileUUID)
@@ -78,7 +78,7 @@ func TestGet(t *testing.T) {
 		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodGet, r.Method)
 			assert.Equal(t, testPathKey("mykey"), r.URL.Path)
-			uctest.RespondJSON(w, "my-value")
+			uctest.RespondJSON(t, w, "my-value")
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			val, err := svc.Get(context.Background(), testFileUUID, "mykey")
@@ -119,7 +119,7 @@ func TestSet(t *testing.T) {
 			require.NoError(t, json.Unmarshal(body, &got))
 			assert.Equal(t, "new-value", got)
 
-			uctest.RespondJSON(w, "new-value")
+			uctest.RespondJSON(t, w, "new-value")
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			val, err := svc.Set(context.Background(), testFileUUID, "mykey", "new-value")
@@ -134,7 +134,7 @@ func TestSet(t *testing.T) {
 		val := strings.Repeat("a", MaxValueLength)
 		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodPut, r.Method)
-			uctest.RespondJSON(w, val)
+			uctest.RespondJSON(t, w, val)
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			got, err := svc.Set(context.Background(), testFileUUID, "k", val)

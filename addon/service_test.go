@@ -34,7 +34,7 @@ func TestExecute(t *testing.T) {
 			require.NoError(t, json.Unmarshal(uctest.ReadBody(t, r), &params))
 			assert.Equal(t, "file-uuid-123", params.Target)
 
-			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-456"})
+			uctest.RespondJSON(t, w, ExecuteResult{RequestID: "req-456"})
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			result, err := svc.Execute(context.Background(), AddonRemoveBG, ExecuteParams{
@@ -58,7 +58,7 @@ func TestExecute(t *testing.T) {
 			assert.Equal(t, &crop, params.Crop)
 			assert.Equal(t, &typeLevel, params.TypeLevel)
 
-			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-789"})
+			uctest.RespondJSON(t, w, ExecuteResult{RequestID: "req-789"})
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			result, err := svc.Execute(context.Background(), AddonRemoveBG, ExecuteParams{
@@ -81,7 +81,7 @@ func TestExecute(t *testing.T) {
 			require.NoError(t, json.Unmarshal(raw["params"], &params))
 			assert.Equal(t, &purge, params.PurgeInfected)
 
-			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-clam"})
+			uctest.RespondJSON(t, w, ExecuteResult{RequestID: "req-clam"})
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			result, err := svc.Execute(context.Background(), AddonClamAV, ExecuteParams{
@@ -101,7 +101,7 @@ func TestExecute(t *testing.T) {
 			_, hasParams := raw["params"]
 			assert.False(t, hasParams)
 
-			uctest.RespondJSON(w, ExecuteResult{RequestID: "req-rek"})
+			uctest.RespondJSON(t, w, ExecuteResult{RequestID: "req-rek"})
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
 			result, err := svc.Execute(context.Background(), AddonRekognitionLabels, ExecuteParams{
