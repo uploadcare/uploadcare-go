@@ -99,7 +99,7 @@ func (c *uploadAPIClient) handleResponse(
 	resdata interface{},
 	tries int,
 ) (bool, error) {
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	log.Debugf("received response: %+v", resp)
 

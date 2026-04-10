@@ -10,7 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
@@ -29,7 +30,7 @@ func TestUploadAPIClient(t *testing.T) {
 
 		checkReq func(*http.Request) error
 	}{{
-		test:     "simple case ",
+		test:     "form_data",
 		endpoint: config.UploadAPIEndpoint,
 		method:   http.MethodPost,
 		requrl:   "/base/",
@@ -38,21 +39,18 @@ func TestUploadAPIClient(t *testing.T) {
 			query: "qparam1=qparamvalue1&qparam2=qparamvalue2",
 		},
 		checkReq: func(r *http.Request) error {
-			// check only data in this test case
 			data, _ := io.ReadAll(r.Body)
 			if string(data) != "formkey=formvalue" {
 				return errors.New("invalid req body data")
 			}
-			qr := r.URL.RawQuery
-			if qr != "qparam1=qparamvalue1&qparam2=qparamvalue2" {
-				return errors.New("invlid req query")
+			if r.URL.RawQuery != "qparam1=qparamvalue1&qparam2=qparamvalue2" {
+				return errors.New("invalid req query")
 			}
 			return nil
 		},
 	}}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
@@ -63,105 +61,101 @@ func TestUploadAPIClient(t *testing.T) {
 				c.requrl,
 				c.data,
 			)
-			assert.Equal(t, nil, err)
-			assert.Equal(t, nil, c.checkReq(req))
+			require.NoError(t, err)
+			require.NoError(t, c.checkReq(req))
 		})
 	}
 }
 
-func TestUploadDo_ThrottleNoRetryByDefault(t *testing.T) {
+func TestUploadDo(t *testing.T) {
 	t.Parallel()
 
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count.Add(1)
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer srv.Close()
+	t.Run("throttle_no_retry_by_default", func(t *testing.T) {
+		t.Parallel()
 
-	client := &uploadAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
-	assert.NoError(t, err)
-
-	err = client.Do(req, nil)
-
-	assert.Error(t, err)
-	var throttleErr ThrottleError
-	assert.True(t, errors.As(err, &throttleErr))
-	assert.Equal(t, int32(1), count.Load())
-}
-
-func TestUploadDo_ThrottleRetrySuccess(t *testing.T) {
-	t.Parallel()
-
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := count.Add(1)
-		if n < 2 {
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count.Add(1)
 			w.WriteHeader(http.StatusTooManyRequests)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"file":"test-id"}`))
-	}))
-	defer srv.Close()
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &uploadAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
+			require.NoError(t, err)
 
-	client := &uploadAPIClient{
-		conn:  srv.Client(),
-		retry: &RetryConfig{MaxRetries: 3},
-	}
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
-	assert.NoError(t, err)
+			err = client.Do(req, nil)
 
-	var result map[string]string
-	err = client.Do(req, &result)
+			require.Error(t, err)
+			var throttleErr ThrottleError
+			assert.True(t, errors.As(err, &throttleErr))
+			assert.Equal(t, int32(1), count.Load())
+		})
+	})
 
-	assert.NoError(t, err)
-	assert.Equal(t, "test-id", result["file"])
-	assert.Equal(t, int32(2), count.Load())
-}
+	t.Run("throttle_retry_success", func(t *testing.T) {
+		t.Parallel()
 
-func TestUploadDo_SuccessRequiresPointerResdata(t *testing.T) {
-	t.Parallel()
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			n := count.Add(1)
+			if n < 2 {
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
+			respondJSON(w, map[string]string{"file": "test-id"})
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &uploadAPIClient{
+				conn:  srv.Client(),
+				retry: &RetryConfig{MaxRetries: 3},
+			}
+			req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
+			require.NoError(t, err)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"file":"test-id"}`))
-	}))
-	defer srv.Close()
+			var result map[string]string
+			err = client.Do(req, &result)
 
-	client := &uploadAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
-	assert.NoError(t, err)
+			require.NoError(t, err)
+			assert.Equal(t, "test-id", result["file"])
+			assert.Equal(t, int32(2), count.Load())
+		})
+	})
 
-	result := map[string]string{}
-	err = client.Do(req, result)
+	t.Run("requires_pointer_resdata", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Error(t, err)
-	var invalidUnmarshal *json.InvalidUnmarshalError
-	assert.True(t, errors.As(err, &invalidUnmarshal))
-}
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			respondJSON(w, map[string]string{"file": "test-id"})
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &uploadAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
+			require.NoError(t, err)
 
-func TestUploadDo_UnhandledStatusPlainTextBody(t *testing.T) {
-	t.Parallel()
+			result := map[string]string{}
+			err = client.Do(req, result)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("upstream connect error"))
-	}))
-	defer srv.Close()
+			require.Error(t, err)
+			var invalidUnmarshal *json.InvalidUnmarshalError
+			assert.True(t, errors.As(err, &invalidUnmarshal))
+		})
+	})
 
-	client := &uploadAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
-	assert.NoError(t, err)
+	t.Run("unhandled_status_plain_text", func(t *testing.T) {
+		t.Parallel()
 
-	err = client.Do(req, nil)
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = w.Write([]byte("upstream connect error"))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &uploadAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodPost, srv.URL+"/base/", nil)
+			require.NoError(t, err)
 
-	assert.Error(t, err)
-	var apiErr APIError
-	assert.True(t, errors.As(err, &apiErr))
-	assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
-	assert.Equal(t, "upstream connect error", apiErr.Detail)
+			err = client.Do(req, nil)
+
+			require.Error(t, err)
+			var apiErr APIError
+			assert.True(t, errors.As(err, &apiErr))
+			assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
+			assert.Equal(t, "upstream connect error", apiErr.Detail)
+		})
+	})
 }

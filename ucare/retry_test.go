@@ -1,9 +1,10 @@
 package ucare
 
 import (
+	"fmt"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExpBackoff(t *testing.T) {
@@ -24,6 +25,9 @@ func TestExpBackoff(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		assert.Equal(t, c.want, expBackoff(c.attempt), "attempt %d", c.attempt)
+		t.Run(fmt.Sprintf("attempt_%d", c.attempt), func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, c.want, expBackoff(c.attempt))
+		})
 	}
 }

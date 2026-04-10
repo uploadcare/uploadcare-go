@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// Public configuration constants
 const (
 	APIv07 = "v0.7"
 

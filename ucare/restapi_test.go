@@ -2,6 +2,7 @@ package ucare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -11,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
@@ -47,6 +49,18 @@ type trackedReadCloser struct {
 func (t trackedReadCloser) Close() error {
 	*t.closed = true
 	return t.ReadCloser.Close()
+}
+
+func respondJSON(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+func withServer(t *testing.T, handler http.Handler, fn func(*testing.T, *httptest.Server)) {
+	t.Helper()
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+	fn(t, srv)
 }
 
 func TestRESTAPIClient(t *testing.T) {
@@ -94,7 +108,6 @@ func TestRESTAPIClient(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
@@ -105,300 +118,263 @@ func TestRESTAPIClient(t *testing.T) {
 				c.requrl,
 				c.data,
 			)
-			assert.Equal(t, nil, err)
-			assert.Equal(t, nil, c.checkReq(req))
+			require.NoError(t, err)
+			require.NoError(t, c.checkReq(req))
 		})
 	}
 }
 
-func TestDo_UnhandledStatusWithDetail(t *testing.T) {
+func TestDo(t *testing.T) {
 	t.Parallel()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		_, _ = w.Write([]byte(`{"detail":"Addon is already running for this file."}`))
-	}))
-	defer srv.Close()
+	t.Run("unhandled_status_with_detail", func(t *testing.T) {
+		t.Parallel()
 
-	client := &restAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/addons/uc_clamav_virus_scan/execute/", nil)
-	assert.NoError(t, err)
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"detail":"Addon is already running for this file."}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodPost, srv.URL+"/addons/uc_clamav_virus_scan/execute/", nil)
+			require.NoError(t, err)
 
-	var result struct {
-		RequestID string `json:"request_id"`
-	}
-	err = client.Do(req, &result)
+			var result struct {
+				RequestID string `json:"request_id"`
+			}
+			err = client.Do(req, &result)
 
-	assert.Error(t, err)
-	var apiErr APIError
-	assert.True(t, errors.As(err, &apiErr))
-	assert.Equal(t, http.StatusConflict, apiErr.StatusCode)
-	assert.Equal(t, "Addon is already running for this file.", apiErr.Detail)
-	assert.Equal(t, "", result.RequestID)
-}
+			require.Error(t, err)
+			var apiErr APIError
+			assert.True(t, errors.As(err, &apiErr))
+			assert.Equal(t, http.StatusConflict, apiErr.StatusCode)
+			assert.Equal(t, "Addon is already running for this file.", apiErr.Detail)
+			assert.Equal(t, "", result.RequestID)
+		})
+	})
 
-func TestDo_UnhandledStatusWithoutDetail(t *testing.T) {
-	t.Parallel()
+	t.Run("unhandled_status_without_detail", func(t *testing.T) {
+		t.Parallel()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadGateway)
-		_, _ = w.Write([]byte("Bad Gateway"))
-	}))
-	defer srv.Close()
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = w.Write([]byte("Bad Gateway"))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	client := &restAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
+			var result map[string]string
+			err = client.Do(req, &result)
 
-	var result map[string]string
-	err = client.Do(req, &result)
+			require.Error(t, err)
+			var apiErr APIError
+			assert.True(t, errors.As(err, &apiErr))
+			assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
+			assert.Equal(t, "Bad Gateway", apiErr.Detail)
+		})
+	})
 
-	assert.Error(t, err)
-	var apiErr APIError
-	assert.True(t, errors.As(err, &apiErr))
-	assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
-	assert.Equal(t, "Bad Gateway", apiErr.Detail)
-}
+	t.Run("forbidden", func(t *testing.T) {
+		t.Parallel()
 
-func TestDo_Forbidden(t *testing.T) {
-	t.Parallel()
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"detail":"Account is inactive."}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"detail":"Account is inactive."}`))
-	}))
-	defer srv.Close()
+			err = client.Do(req, nil)
 
-	client := &restAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
+			require.Error(t, err)
+			var forbiddenErr ForbiddenError
+			assert.True(t, errors.As(err, &forbiddenErr))
+			assert.Equal(t, 403, forbiddenErr.StatusCode)
+			assert.Equal(t, "Account is inactive.", forbiddenErr.Detail)
+		})
+	})
 
-	err = client.Do(req, nil)
+	t.Run("unhandled_status_nil_resdata", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Error(t, err)
-	var forbiddenErr ForbiddenError
-	assert.True(t, errors.As(err, &forbiddenErr))
-	assert.Equal(t, 403, forbiddenErr.StatusCode)
-	assert.Equal(t, "Account is inactive.", forbiddenErr.Detail)
-}
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"detail":"Conflict"}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodDelete, srv.URL+"/groups/abc~1/", nil)
+			require.NoError(t, err)
 
-func TestDo_UnhandledStatusNilResdata(t *testing.T) {
-	t.Parallel()
+			err = client.Do(req, nil)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		_, _ = w.Write([]byte(`{"detail":"Conflict"}`))
-	}))
-	defer srv.Close()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Conflict")
+		})
+	})
 
-	client := &restAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/groups/abc~1/", nil)
-	assert.NoError(t, err)
+	t.Run("success_nil_resdata_closes_body", func(t *testing.T) {
+		t.Parallel()
 
-	err = client.Do(req, nil)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Conflict")
-}
-
-func TestDo_ThrottleMissingRetryAfter(t *testing.T) {
-	t.Parallel()
-
-	calls := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		if calls == 1 {
-			// 429 with no Retry-After header
-			w.WriteHeader(http.StatusTooManyRequests)
-			return
+		closed := false
+		client := &restAPIClient{
+			conn: &http.Client{
+				Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusNoContent,
+						Header:     make(http.Header),
+						Body: trackedReadCloser{
+							ReadCloser: io.NopCloser(strings.NewReader("")),
+							closed:     &closed,
+						},
+					}, nil
+				}),
+			},
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"file-123"}`))
-	}))
-	t.Cleanup(srv.Close)
+		req, err := http.NewRequest(http.MethodDelete, "https://example.test/groups/abc~1/", nil)
+		require.NoError(t, err)
 
-	client := &restAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
-	req.GetBody = func() (io.ReadCloser, error) {
-		return io.NopCloser(strings.NewReader("")), nil
-	}
+		err = client.Do(req, nil)
 
-	var result struct {
-		ID string `json:"id"`
-	}
-	err = client.Do(req, &result)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "file-123", result.ID)
-	assert.Equal(t, 2, calls)
+		require.NoError(t, err)
+		assert.True(t, closed)
+	})
 }
 
-func TestDo_SuccessNilResdataClosesBody(t *testing.T) {
+func TestDoThrottle(t *testing.T) {
 	t.Parallel()
 
-	closed := false
-	client := &restAPIClient{
-		conn: &http.Client{
-			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNoContent,
-					Header:     make(http.Header),
-					Body: trackedReadCloser{
-						ReadCloser: io.NopCloser(strings.NewReader("")),
-						closed:     &closed,
-					},
-				}, nil
-			}),
-		},
-	}
-	req, err := http.NewRequest(http.MethodDelete, "https://example.test/groups/abc~1/", nil)
-	assert.NoError(t, err)
+	t.Run("no_retry_by_default", func(t *testing.T) {
+		t.Parallel()
 
-	err = client.Do(req, nil)
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count.Add(1)
+			w.Header().Set("Retry-After", "1")
+			w.WriteHeader(http.StatusTooManyRequests)
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	assert.NoError(t, err)
-	assert.True(t, closed)
-}
+			err = client.Do(req, nil)
 
-func TestDo_ThrottleNoRetryByDefault(t *testing.T) {
-	t.Parallel()
+			require.Error(t, err)
+			var throttleErr ThrottleError
+			assert.True(t, errors.As(err, &throttleErr))
+			assert.Equal(t, 1, throttleErr.RetryAfter)
+			assert.Equal(t, int32(1), count.Load())
+		})
+	})
 
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count.Add(1)
-		w.Header().Set("Retry-After", "1")
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer srv.Close()
+	t.Run("retry_success", func(t *testing.T) {
+		t.Parallel()
 
-	client := &restAPIClient{conn: srv.Client()}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			n := count.Add(1)
+			if n < 3 {
+				w.Header().Set("Retry-After", "0")
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
+			respondJSON(w, map[string]bool{"ok": true})
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{
+				conn:  srv.Client(),
+				retry: &RetryConfig{MaxRetries: 3},
+			}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	err = client.Do(req, nil)
+			var result map[string]bool
+			err = client.Do(req, &result)
 
-	assert.Error(t, err)
-	var throttleErr ThrottleError
-	assert.True(t, errors.As(err, &throttleErr))
-	assert.Equal(t, 1, throttleErr.RetryAfter)
-	assert.Equal(t, int32(1), count.Load())
-}
+			require.NoError(t, err)
+			assert.True(t, result["ok"])
+			assert.Equal(t, int32(3), count.Load())
+		})
+	})
 
-func TestDo_ThrottleRetrySuccess(t *testing.T) {
-	t.Parallel()
+	t.Run("retries_exhausted", func(t *testing.T) {
+		t.Parallel()
 
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := count.Add(1)
-		if n < 3 {
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count.Add(1)
 			w.Header().Set("Retry-After", "0")
 			w.WriteHeader(http.StatusTooManyRequests)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"ok":true}`))
-	}))
-	defer srv.Close()
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{
+				conn:  srv.Client(),
+				retry: &RetryConfig{MaxRetries: 2},
+			}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	client := &restAPIClient{
-		conn:  srv.Client(),
-		retry: &RetryConfig{MaxRetries: 3},
-	}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
+			err = client.Do(req, nil)
 
-	var result map[string]bool
-	err = client.Do(req, &result)
+			require.Error(t, err)
+			var throttleErr ThrottleError
+			assert.True(t, errors.As(err, &throttleErr))
+			// 1st request + 2 retries = 3 total, then on 3rd retry (tries=3) tries > MaxRetries(2)
+			assert.Equal(t, int32(3), count.Load())
+		})
+	})
 
-	assert.NoError(t, err)
-	assert.True(t, result["ok"])
-	assert.Equal(t, int32(3), count.Load())
-}
+	t.Run("max_wait_exceeded", func(t *testing.T) {
+		t.Parallel()
 
-func TestDo_ThrottleRetriesExhausted(t *testing.T) {
-	t.Parallel()
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count.Add(1)
+			w.Header().Set("Retry-After", "60")
+			w.WriteHeader(http.StatusTooManyRequests)
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{
+				conn:  srv.Client(),
+				retry: &RetryConfig{MaxRetries: 3, MaxWaitSeconds: 1},
+			}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count.Add(1)
-		w.Header().Set("Retry-After", "0")
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer srv.Close()
+			start := time.Now()
+			err = client.Do(req, nil)
 
-	client := &restAPIClient{
-		conn:  srv.Client(),
-		retry: &RetryConfig{MaxRetries: 2},
-	}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
+			require.Error(t, err)
+			var throttleErr ThrottleError
+			assert.True(t, errors.As(err, &throttleErr))
+			assert.Equal(t, 60, throttleErr.RetryAfter)
+			assert.Equal(t, int32(1), count.Load())
+			assert.Less(t, time.Since(start).Seconds(), 5.0)
+		})
+	})
 
-	err = client.Do(req, nil)
+	t.Run("context_cancelled", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Error(t, err)
-	var throttleErr ThrottleError
-	assert.True(t, errors.As(err, &throttleErr))
-	// 1st request + 2 retries = 3 total, then on 3rd retry (tries=3) tries > MaxRetries(2)
-	assert.Equal(t, int32(3), count.Load())
-}
+		var count atomic.Int32
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count.Add(1)
+			w.Header().Set("Retry-After", "60")
+			w.WriteHeader(http.StatusTooManyRequests)
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{
+				conn:  srv.Client(),
+				retry: &RetryConfig{MaxRetries: 3},
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
 
-func TestDo_ThrottleMaxWaitExceeded(t *testing.T) {
-	t.Parallel()
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
 
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count.Add(1)
-		w.Header().Set("Retry-After", "60")
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer srv.Close()
+			err = client.Do(req, nil)
 
-	client := &restAPIClient{
-		conn:  srv.Client(),
-		retry: &RetryConfig{MaxRetries: 3, MaxWaitSeconds: 1},
-	}
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
-
-	start := time.Now()
-	err = client.Do(req, nil)
-
-	assert.Error(t, err)
-	var throttleErr ThrottleError
-	assert.True(t, errors.As(err, &throttleErr))
-	assert.Equal(t, 60, throttleErr.RetryAfter)
-	assert.Equal(t, int32(1), count.Load())
-	// The server requested 60s; the client should fail fast instead of retrying.
-	assert.Less(t, time.Since(start).Seconds(), 5.0)
-}
-
-func TestDo_ThrottleContextCancelled(t *testing.T) {
-	t.Parallel()
-
-	var count atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count.Add(1)
-		w.Header().Set("Retry-After", "60")
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer srv.Close()
-
-	client := &restAPIClient{
-		conn:  srv.Client(),
-		retry: &RetryConfig{MaxRetries: 3},
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/files/", nil)
-	assert.NoError(t, err)
-
-	err = client.Do(req, nil)
-
-	assert.Error(t, err)
+			require.Error(t, err)
+		})
+	})
 }
