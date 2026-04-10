@@ -28,16 +28,19 @@ const (
 	deletePathFormat = "/webhooks/unsubscribe/"
 )
 
-// Events
+type Event string
+
 const (
-	EventFileUploaded    = "file.uploaded"
-	EventFileStored      = "file.stored"
-	EventFileDeleted     = "file.deleted"
-	EventFileInfoUpdated = "file.info_updated"
+	EventFileUploaded    Event = "file.uploaded"
+	EventFileStored      Event = "file.stored"
+	EventFileDeleted     Event = "file.deleted"
+	EventFileInfoUpdated Event = "file.info_updated"
 
 	// EventFileInfected is deprecated. Use EventFileInfoUpdated instead.
-	EventFileInfected = "file.infected"
+	EventFileInfected Event = "file.infected"
 )
+
+func EventPtr(v Event) *Event { return &v }
 
 // NewService returns new instance of the Service
 func NewService(client ucare.Client) Service {

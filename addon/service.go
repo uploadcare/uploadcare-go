@@ -14,10 +14,10 @@ import (
 // Service describes all addon related API
 type Service interface {
 	// Execute starts an addon execution on a file
-	Execute(ctx context.Context, addonName string, params ExecuteParams) (ExecuteResult, error)
+	Execute(ctx context.Context, addonName Name, params ExecuteParams) (ExecuteResult, error)
 
 	// Status checks the execution status of an addon request
-	Status(ctx context.Context, addonName string, requestID string) (StatusResult, error)
+	Status(ctx context.Context, addonName Name, requestID string) (StatusResult, error)
 }
 
 type service struct {
@@ -32,7 +32,7 @@ func NewService(client ucare.Client) Service {
 // Execute starts an addon execution on a file
 func (s service) Execute(
 	ctx context.Context,
-	addonName string,
+	addonName Name,
 	params ExecuteParams,
 ) (data ExecuteResult, err error) {
 	err = s.svc.ResourceOp(
@@ -48,7 +48,7 @@ func (s service) Execute(
 // Status checks the execution status of an addon request
 func (s service) Status(
 	ctx context.Context,
-	addonName string,
+	addonName Name,
 	requestID string,
 ) (data StatusResult, err error) {
 	err = s.svc.ResourceOp(

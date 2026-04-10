@@ -12,12 +12,12 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/internal/uctest"
 )
 
-func execPath(addon string) string {
-	return "/addons/" + addon + "/execute/"
+func execPath(addon Name) string {
+	return "/addons/" + string(addon) + "/execute/"
 }
 
-func statusPath(addon string) string {
-	return "/addons/" + addon + "/execute/status/"
+func statusPath(addon Name) string {
+	return "/addons/" + string(addon) + "/execute/status/"
 }
 
 func TestExecute(t *testing.T) {

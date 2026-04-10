@@ -95,7 +95,7 @@ type Info struct {
 	UpdatedAt *config.Time `json:"updated"`
 
 	// Webhook event.
-	Event string `json:"event"`
+	Event Event `json:"event"`
 
 	// Where webhook data will be posted.
 	TargetURL string `json:"target_url"`
@@ -121,7 +121,7 @@ type Params struct {
 	SigningSecret *string `json:"signing_secret"`
 	// An event you subscribe to. See Event* constants for supported values.
 	// Will not be changed if set to nil.
-	Event *string `json:"event,omitempty"`
+	Event *Event `json:"event,omitempty"`
 	// Marks a subscription as either active or not, defaults to true, otherwise false.
 	// Will not be changed if set to nil.
 	IsActive *bool `json:"is_active,omitempty"`

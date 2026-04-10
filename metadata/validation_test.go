@@ -15,6 +15,33 @@ func metadataMap(n int) map[string]string {
 	return m
 }
 
+func TestValidateFileUUID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		uuid    string
+		wantErr bool
+	}{
+		{"valid", "550e8400-e29b-41d4-a716-446655440000", false},
+		{"empty", "", true},
+		{"contains slash", "abc/def", true},
+		{"path traversal", "../../../etc", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateFileUUID(tt.uuid)
+			if tt.wantErr {
+				assert.ErrorIs(t, err, ErrInvalidFileUUID)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestWouldExceedKeyLimit(t *testing.T) {
 	t.Parallel()
 

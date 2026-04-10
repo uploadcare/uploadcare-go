@@ -11,12 +11,12 @@ import (
 // Info acquires some group-specific info
 func (s service) Info(
 	ctx context.Context,
-	groupID string,
+	id string,
 ) (data Info, err error) {
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
-		fmt.Sprintf(infoPathFormat, groupID),
+		fmt.Sprintf(infoPathFormat, id),
 		nil,
 		&data,
 	)
