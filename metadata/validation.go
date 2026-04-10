@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -14,14 +15,22 @@ const (
 )
 
 var (
-	keyPattern      *regexp.Regexp
-	ErrInvalidKey   = errors.New("metadata key must match FILE_METADATA_KEY_PATTERN and FILE_METADATA_MAX_KEY_LENGTH")
-	ErrValueTooLong = errors.New("metadata value exceeds FILE_METADATA_MAX_VALUE_LENGTH")
-	ErrTooManyKeys  = errors.New("metadata exceeds FILE_METADATA_MAX_KEYS_NUMBER")
+	keyPattern         *regexp.Regexp
+	ErrInvalidKey      = errors.New("metadata key must match FILE_METADATA_KEY_PATTERN and FILE_METADATA_MAX_KEY_LENGTH")
+	ErrInvalidFileUUID = errors.New("file UUID must be a non-empty string without slashes")
+	ErrValueTooLong    = errors.New("metadata value exceeds FILE_METADATA_MAX_VALUE_LENGTH")
+	ErrTooManyKeys     = errors.New("metadata exceeds FILE_METADATA_MAX_KEYS_NUMBER")
 )
 
 func init() {
 	keyPattern = regexp.MustCompile(fmt.Sprintf(`^[\w.:-]{1,%d}$`, MaxKeyLength))
+}
+
+func validateFileUUID(fileUUID string) error {
+	if fileUUID == "" || strings.Contains(fileUUID, "/") {
+		return fmt.Errorf("%w: %q", ErrInvalidFileUUID, fileUUID)
+	}
+	return nil
 }
 
 func validateKey(key string) error {

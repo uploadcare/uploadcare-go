@@ -1,14 +1,12 @@
 package metadata
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
+	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 	"github.com/uploadcare/uploadcare-go/v2/internal/svc"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
@@ -33,6 +31,9 @@ func (s service) List(
 	ctx context.Context,
 	fileUUID string,
 ) (data map[string]string, err error) {
+	if err = validateFileUUID(fileUUID); err != nil {
+		return
+	}
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
@@ -47,6 +48,9 @@ func (s service) Get(
 	ctx context.Context,
 	fileUUID, key string,
 ) (data string, err error) {
+	if err = validateFileUUID(fileUUID); err != nil {
+		return
+	}
 	if err = validateKey(key); err != nil {
 		return
 	}
@@ -64,6 +68,9 @@ func (s service) Set(
 	ctx context.Context,
 	fileUUID, key, value string,
 ) (data string, err error) {
+	if err = validateFileUUID(fileUUID); err != nil {
+		return
+	}
 	if err = validateKey(key); err != nil {
 		return
 	}
@@ -84,6 +91,9 @@ func (s service) Delete(
 	ctx context.Context,
 	fileUUID, key string,
 ) (err error) {
+	if err = validateFileUUID(fileUUID); err != nil {
+		return
+	}
 	if err = validateKey(key); err != nil {
 		return
 	}
@@ -100,14 +110,7 @@ func (s service) Delete(
 type stringBody string
 
 func (s stringBody) EncodeReq(req *http.Request) error {
-	raw, err := json.Marshal(string(s))
-	if err != nil {
-		return err
-	}
-	buf := bytes.NewBuffer(raw)
-	req.Body = io.NopCloser(buf)
-	req.ContentLength = int64(buf.Len())
-	return nil
+	return codec.EncodeReqBody(string(s), req)
 }
 
 func metadataKeyPath(fileUUID, key string) string {

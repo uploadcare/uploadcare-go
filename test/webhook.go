@@ -36,7 +36,7 @@ func webhookCreate(t *testing.T, r *testenv.Runner) {
 		)),
 		SigningSecret: ucare.String("test_signing_secret"),
 		IsActive:      ucare.Bool(true),
-		Event:         ucare.String(webhook.EventFileUploaded),
+		Event:         webhook.EventPtr(webhook.EventFileUploaded),
 	}
 	info, err := r.Webhook.Create(context.Background(), params)
 	assert.Equal(t, nil, err)

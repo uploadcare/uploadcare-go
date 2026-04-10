@@ -3,11 +3,13 @@ package addon
 
 import "encoding/json"
 
+type Name string
+
 const (
-	AddonRemoveBG              = "remove_bg"
-	AddonClamAV                = "uc_clamav_virus_scan"
-	AddonRekognitionLabels     = "aws_rekognition_detect_labels"
-	AddonRekognitionModeration = "aws_rekognition_detect_moderation_labels"
+	AddonRemoveBG              Name = "remove_bg"
+	AddonClamAV                Name = "uc_clamav_virus_scan"
+	AddonRekognitionLabels     Name = "aws_rekognition_detect_labels"
+	AddonRekognitionModeration Name = "aws_rekognition_detect_moderation_labels"
 )
 
 const (
@@ -18,8 +20,8 @@ const (
 )
 
 type ExecuteParams struct {
-	Target string      `json:"target"`
-	Params interface{} `json:"params,omitempty"`
+	Target string `json:"target"`
+	Params any    `json:"params,omitempty"`
 }
 
 type ExecuteResult struct {
