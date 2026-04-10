@@ -40,12 +40,6 @@ func (s service) List(
 		nil,
 		&data,
 	)
-	if err != nil {
-		return
-	}
-	if len(data) > MaxKeysNumber {
-		return nil, fmt.Errorf("%w: %d keys", ErrTooManyKeys, len(data))
-	}
 	return
 }
 
