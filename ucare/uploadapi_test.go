@@ -86,7 +86,7 @@ func TestUploadDo(t *testing.T) {
 
 			require.Error(t, err)
 			var throttleErr ThrottleError
-			assert.True(t, errors.As(err, &throttleErr))
+			require.True(t, errors.As(err, &throttleErr))
 			assert.Equal(t, int32(1), count.Load())
 		})
 	})
@@ -134,7 +134,7 @@ func TestUploadDo(t *testing.T) {
 
 			require.Error(t, err)
 			var invalidUnmarshal *json.InvalidUnmarshalError
-			assert.True(t, errors.As(err, &invalidUnmarshal))
+			require.True(t, errors.As(err, &invalidUnmarshal))
 		})
 	})
 
@@ -153,7 +153,7 @@ func TestUploadDo(t *testing.T) {
 
 			require.Error(t, err)
 			var apiErr APIError
-			assert.True(t, errors.As(err, &apiErr))
+			require.True(t, errors.As(err, &apiErr))
 			assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
 			assert.Equal(t, "upstream connect error", apiErr.Detail)
 		})

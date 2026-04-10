@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestError(t *testing.T) {
@@ -54,7 +55,7 @@ func TestErrorsAs(t *testing.T) {
 		t.Parallel()
 		var target APIError
 		err := error(APIError{StatusCode: 409, Detail: "conflict"})
-		assert.True(t, errors.As(err, &target))
+		require.True(t, errors.As(err, &target))
 		assert.Equal(t, 409, target.StatusCode)
 	})
 
@@ -62,7 +63,7 @@ func TestErrorsAs(t *testing.T) {
 		t.Parallel()
 		var target AuthError
 		err := error(AuthError{APIError{StatusCode: 401, Detail: "bad creds"}})
-		assert.True(t, errors.As(err, &target))
+		require.True(t, errors.As(err, &target))
 		assert.Equal(t, 401, target.StatusCode)
 	})
 
@@ -70,7 +71,7 @@ func TestErrorsAs(t *testing.T) {
 		t.Parallel()
 		var target ThrottleError
 		err := error(ThrottleError{RetryAfter: 10})
-		assert.True(t, errors.As(err, &target))
+		require.True(t, errors.As(err, &target))
 		assert.Equal(t, 10, target.RetryAfter)
 	})
 
@@ -87,7 +88,7 @@ func TestErrorsAs(t *testing.T) {
 		t.Parallel()
 		var target ValidationError
 		err := error(ValidationError{APIError{StatusCode: 400, Detail: "bad input"}})
-		assert.True(t, errors.As(err, &target))
+		require.True(t, errors.As(err, &target))
 		assert.Equal(t, 400, target.StatusCode)
 	})
 
@@ -95,7 +96,7 @@ func TestErrorsAs(t *testing.T) {
 		t.Parallel()
 		var target ForbiddenError
 		err := error(ForbiddenError{APIError{StatusCode: 403, Detail: "no"}})
-		assert.True(t, errors.As(err, &target))
+		require.True(t, errors.As(err, &target))
 		assert.Equal(t, 403, target.StatusCode)
 	})
 }

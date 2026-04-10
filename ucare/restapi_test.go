@@ -146,7 +146,7 @@ func TestDo(t *testing.T) {
 
 			require.Error(t, err)
 			var apiErr APIError
-			assert.True(t, errors.As(err, &apiErr))
+			require.True(t, errors.As(err, &apiErr))
 			assert.Equal(t, http.StatusConflict, apiErr.StatusCode)
 			assert.Equal(t, "Addon is already running for this file.", apiErr.Detail)
 			assert.Equal(t, "", result.RequestID)
@@ -169,7 +169,7 @@ func TestDo(t *testing.T) {
 
 			require.Error(t, err)
 			var apiErr APIError
-			assert.True(t, errors.As(err, &apiErr))
+			require.True(t, errors.As(err, &apiErr))
 			assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
 			assert.Equal(t, "Bad Gateway", apiErr.Detail)
 		})
@@ -191,7 +191,7 @@ func TestDo(t *testing.T) {
 
 			require.Error(t, err)
 			var forbiddenErr ForbiddenError
-			assert.True(t, errors.As(err, &forbiddenErr))
+			require.True(t, errors.As(err, &forbiddenErr))
 			assert.Equal(t, 403, forbiddenErr.StatusCode)
 			assert.Equal(t, "Account is inactive.", forbiddenErr.Detail)
 		})
@@ -264,7 +264,7 @@ func TestDoThrottle(t *testing.T) {
 
 			require.Error(t, err)
 			var throttleErr ThrottleError
-			assert.True(t, errors.As(err, &throttleErr))
+			require.True(t, errors.As(err, &throttleErr))
 			assert.Equal(t, 1, throttleErr.RetryAfter)
 			assert.Equal(t, int32(1), count.Load())
 		})
@@ -319,7 +319,7 @@ func TestDoThrottle(t *testing.T) {
 
 			require.Error(t, err)
 			var throttleErr ThrottleError
-			assert.True(t, errors.As(err, &throttleErr))
+			require.True(t, errors.As(err, &throttleErr))
 			// 1st request + 2 retries = 3 total, then on 3rd retry (tries=3) tries > MaxRetries(2)
 			assert.Equal(t, int32(3), count.Load())
 		})
@@ -346,7 +346,7 @@ func TestDoThrottle(t *testing.T) {
 
 			require.Error(t, err)
 			var throttleErr ThrottleError
-			assert.True(t, errors.As(err, &throttleErr))
+			require.True(t, errors.As(err, &throttleErr))
 			assert.Equal(t, 60, throttleErr.RetryAfter)
 			assert.Equal(t, int32(1), count.Load())
 			assert.Less(t, time.Since(start).Seconds(), 5.0)
