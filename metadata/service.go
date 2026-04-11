@@ -37,7 +37,7 @@ func (s service) List(
 	err = s.svc.ResourceOp(
 		ctx,
 		http.MethodGet,
-		fmt.Sprintf("/files/%s/metadata/", fileUUID),
+		fmt.Sprintf("/files/%s/metadata/", url.PathEscape(fileUUID)),
 		nil,
 		&data,
 	)
@@ -116,7 +116,7 @@ func (s stringBody) EncodeReq(req *http.Request) error {
 func metadataKeyPath(fileUUID, key string) string {
 	return fmt.Sprintf(
 		"/files/%s/metadata/%s/",
-		fileUUID,
+		url.PathEscape(fileUUID),
 		escapeKeyPathSegment(key),
 	)
 }
