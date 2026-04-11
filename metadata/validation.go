@@ -17,7 +17,7 @@ const (
 var (
 	keyPattern         *regexp.Regexp
 	ErrInvalidKey      = errors.New("metadata key must match FILE_METADATA_KEY_PATTERN and FILE_METADATA_MAX_KEY_LENGTH")
-	ErrInvalidFileUUID = errors.New("file UUID must be a non-empty string without slashes")
+	ErrInvalidFileUUID = errors.New("file UUID must be a non-empty string without slashes or dot segments")
 	ErrValueTooLong    = errors.New("metadata value exceeds FILE_METADATA_MAX_VALUE_LENGTH")
 	ErrTooManyKeys     = errors.New("metadata exceeds FILE_METADATA_MAX_KEYS_NUMBER")
 )
@@ -27,7 +27,8 @@ func init() {
 }
 
 func validateFileUUID(fileUUID string) error {
-	if fileUUID == "" || strings.Contains(fileUUID, "/") {
+	if fileUUID == "" || fileUUID == "." || fileUUID == ".." ||
+		strings.Contains(fileUUID, "/") {
 		return fmt.Errorf("%w: %q", ErrInvalidFileUUID, fileUUID)
 	}
 	return nil

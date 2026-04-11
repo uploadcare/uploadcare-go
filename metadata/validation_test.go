@@ -23,8 +23,11 @@ func TestValidateFileUUID(t *testing.T) {
 		uuid    string
 		wantErr bool
 	}{
-		{"valid", "550e8400-e29b-41d4-a716-446655440000", false},
+		{"valid uuid", "550e8400-e29b-41d4-a716-446655440000", false},
+		{"valid arbitrary", "my-file-id", false},
 		{"empty", "", true},
+		{"single dot", ".", true},
+		{"dotdot", "..", true},
 		{"contains slash", "abc/def", true},
 		{"path traversal", "../../../etc", true},
 	}
