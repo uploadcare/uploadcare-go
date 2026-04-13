@@ -23,6 +23,22 @@ func (s service) Info(
 	return
 }
 
+// Delete removes a group by its id.
+// This only deletes the group metadata, not the files within.
+func (s service) Delete(
+	ctx context.Context,
+	id string,
+) (err error) {
+	err = s.svc.ResourceOp(
+		ctx,
+		http.MethodDelete,
+		fmt.Sprintf(deletePathFormat, id),
+		nil,
+		nil,
+	)
+	return
+}
+
 // Info holds group specific information
 type Info struct {
 	// ID is a group identifier

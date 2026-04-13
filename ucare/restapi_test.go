@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +30,22 @@ func testCreds() APICreds {
 		SecretKey: "testsecretkey",
 		PublicKey: "testpublickey",
 	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+type trackedReadCloser struct {
+	io.ReadCloser
+	closed *bool
+}
+
+func (t trackedReadCloser) Close() error {
+	*t.closed = true
+	return t.ReadCloser.Close()
 }
 
 func TestRESTAPIClient(t *testing.T) {
@@ -91,4 +108,132 @@ func TestRESTAPIClient(t *testing.T) {
 			assert.Equal(t, nil, c.checkReq(req))
 		})
 	}
+}
+
+func TestDo_UnhandledStatusWithDetail(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"detail":"Addon is already running for this file."}`))
+	}))
+	defer srv.Close()
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/addons/uc_clamav_virus_scan/execute/", nil)
+	assert.NoError(t, err)
+
+	var result struct {
+		RequestID string `json:"request_id"`
+	}
+	err = client.Do(req, &result)
+
+	assert.Error(t, err)
+	var apiErr respErr
+	assert.True(t, errors.As(err, &apiErr))
+	assert.Equal(t, "Addon is already running for this file.", apiErr.Details)
+	assert.Equal(t, "", result.RequestID)
+}
+
+func TestDo_UnhandledStatusWithoutDetail(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte("Bad Gateway"))
+	}))
+	defer srv.Close()
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+	assert.NoError(t, err)
+
+	var result map[string]string
+	err = client.Do(req, &result)
+
+	assert.Error(t, err)
+	var statusErr unexpectedStatusErr
+	assert.True(t, errors.As(err, &statusErr))
+	assert.Equal(t, http.StatusBadGateway, statusErr.StatusCode)
+}
+
+func TestDo_UnhandledStatusNilResdata(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"detail":"Conflict"}`))
+	}))
+	defer srv.Close()
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/groups/abc~1/", nil)
+	assert.NoError(t, err)
+
+	err = client.Do(req, nil)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Conflict")
+}
+
+func TestDo_ThrottleMissingRetryAfter(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			// 429 with no Retry-After header
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"file-123"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := &restAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+	assert.NoError(t, err)
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader("")), nil
+	}
+
+	var result struct {
+		ID string `json:"id"`
+	}
+	err = client.Do(req, &result)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "file-123", result.ID)
+	assert.Equal(t, 2, calls)
+}
+
+func TestDo_SuccessNilResdataClosesBody(t *testing.T) {
+	t.Parallel()
+
+	closed := false
+	client := &restAPIClient{
+		conn: &http.Client{
+			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNoContent,
+					Header:     make(http.Header),
+					Body: trackedReadCloser{
+						ReadCloser: io.NopCloser(strings.NewReader("")),
+						closed:     &closed,
+					},
+				}, nil
+			}),
+		},
+	}
+	req, err := http.NewRequest(http.MethodDelete, "https://example.test/groups/abc~1/", nil)
+	assert.NoError(t, err)
+
+	err = client.Do(req, nil)
+
+	assert.NoError(t, err)
+	assert.True(t, closed)
 }

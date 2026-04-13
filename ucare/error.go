@@ -7,14 +7,14 @@ import (
 
 // API response errors
 var (
-	ErrInvalidAuthCreds = errors.New("Incorrect authentication credentials")
-	ErrAuthForbidden    = errors.New("Simple authentication over HTTP is " +
-		"forbidden. Please, use HTTPS or signed requests instead")
-	ErrInvalidVersion = errors.New("This feature is not supported. " +
-		"Try to change the version (refer to " +
+	ErrInvalidAuthCreds = errors.New("incorrect authentication credentials")
+	ErrAuthForbidden    = errors.New("simple authentication over HTTP is " +
+		"forbidden, use HTTPS or signed requests instead")
+	ErrInvalidVersion = errors.New("this feature is not supported, " +
+		"try to change the version (refer to " +
 		"https://uploadcare.com/api-refs/rest-api/v0.7.0/ for " +
-		"more information on which methods belong to which version).")
-	ErrFileTooLarge = errors.New("Direct uploads only support " +
+		"more information on which methods belong to which version)")
+	ErrFileTooLarge = errors.New("direct uploads only support " +
 		"files smaller than 100MB")
 )
 
@@ -50,3 +50,11 @@ func (e reqValidationErr) Error() string {
 }
 
 type reqForbiddenErr struct{ respErr }
+
+type unexpectedStatusErr struct {
+	StatusCode int
+}
+
+func (e unexpectedStatusErr) Error() string {
+	return fmt.Sprintf("unexpected HTTP status: %d", e.StatusCode)
+}

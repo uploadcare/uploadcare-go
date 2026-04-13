@@ -96,28 +96,36 @@ func (c *restAPIClient) NewRequest(
 }
 
 func (c *restAPIClient) Do(req *http.Request, resdata interface{}) error {
-	tries := 0
+	for tries := 1; ; tries++ {
+		if tries > 1 && req.GetBody != nil {
+			var err error
+			req.Body, err = req.GetBody()
+			if err != nil {
+				return err
+			}
+		}
 
-try:
-	tries++
+		log.Debugf("making %d request: %+v", tries, req)
 
-	if tries > 1 && req.GetBody != nil {
-		var err error
-		req.Body, err = req.GetBody()
+		resp, err := c.conn.Do(req)
 		if err != nil {
 			return err
 		}
-	}
 
-	log.Debugf("making %d request: %+v", tries, req)
+		retry, err := c.handleResponse(resp, req, resdata, tries)
+		if err != nil || !retry {
+			return err
+		}
+	}
+}
 
-	resp, err := c.conn.Do(req)
-	if err != nil {
-		return err
-	}
-	if req.Body != nil {
-		defer req.Body.Close()
-	}
+func (c *restAPIClient) handleResponse(
+	resp *http.Response,
+	req *http.Request,
+	resdata interface{},
+	tries int,
+) (bool, error) {
+	defer func() { _ = resp.Body.Close() }()
 
 	log.Debugf("received response: %+v", resp)
 
@@ -125,51 +133,71 @@ try:
 	case 400, 404:
 		var err respErr
 		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
-			return e
+			return false, e
 		}
-		resp.Body.Close()
-		return err
+		return false, err
 	case 401:
 		var err authErr
 		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
-			return e
+			return false, e
 		}
-		resp.Body.Close()
-		return err
+		return false, err
 	case 406:
-		return ErrInvalidVersion
+		return false, ErrInvalidVersion
 	case 429:
 		retryAfter, err := strconv.Atoi(
 			resp.Header.Get("Retry-After"),
 		)
 		if err != nil {
-			return fmt.Errorf("invalid Retry-After: %w", err)
+			retryAfter = 5
+		} else if retryAfter < 0 {
+			retryAfter = 0
 		}
 
 		if tries > config.MaxThrottleRetries {
-			return throttleErr{retryAfter}
+			return false, throttleErr{retryAfter}
 		}
 
 		select {
 		case <-req.Context().Done():
-			return req.Context().Err()
+			return false, req.Context().Err()
 		case <-time.After(time.Duration(retryAfter) * time.Second):
 		}
-		goto try
+		return true, nil
 	default:
+		if resp.StatusCode >= 400 {
+			var apiErr respErr
+			if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil || apiErr.Details == "" {
+				return false, unexpectedStatusErr{StatusCode: resp.StatusCode}
+			}
+			return false, apiErr
+		}
 	}
 
-	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
-		return nil
+	if isNilResponseData(resdata) {
+		return false, nil
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(&resdata)
-	if err != nil {
-		return err
+	if err := json.NewDecoder(resp.Body).Decode(resdata); err != nil {
+		return false, err
 	}
-	resp.Body.Close()
 
-	return nil
+	return false, nil
+}
+
+func isNilResponseData(resdata interface{}) bool {
+	if resdata == nil {
+		return true
+	}
+
+	v := reflect.ValueOf(resdata)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map,
+		reflect.Ptr, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 func resolveReqURL(endpoint config.Endpoint, requrl string) (string, error) {

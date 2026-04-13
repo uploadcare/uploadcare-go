@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
@@ -20,7 +19,6 @@ var (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	webhookURLSuffix = rand.Intn(1000)
 
 	webhookURL = fmt.Sprintf(
@@ -38,7 +36,7 @@ func webhookCreate(t *testing.T, r *testenv.Runner) {
 		)),
 		SigningSecret: ucare.String("test_signing_secret"),
 		IsActive:      ucare.Bool(true),
-		Event:         ucare.String(webhook.EventFileUploaded),
+		Event:         webhook.EventPtr(webhook.EventFileUploaded),
 	}
 	info, err := r.Webhook.Create(context.Background(), params)
 	assert.Equal(t, nil, err)

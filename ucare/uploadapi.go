@@ -89,7 +89,7 @@ try:
 		return err
 	}
 	if req.Body != nil {
-		defer req.Body.Close()
+		defer func() { _ = req.Body.Close() }()
 	}
 
 	log.Debugf("received response: %+v", resp)
@@ -100,7 +100,7 @@ try:
 		if err != nil {
 			return err
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		switch resp.StatusCode {
 		case 400:
 			return reqValidationErr{respErr{string(data)}}
@@ -130,7 +130,7 @@ try:
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	return nil
 }
