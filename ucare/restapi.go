@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -154,31 +153,7 @@ func (c *restAPIClient) handleResponse(
 	case 406:
 		return false, ErrInvalidVersion
 	case 429:
-		retryAfter, err := strconv.Atoi(
-			resp.Header.Get("Retry-After"),
-		)
-		if err != nil || retryAfter < 0 {
-			retryAfter = 0
-		}
-		if c.retry == nil || tries > c.retry.MaxRetries {
-			return false, ThrottleError{RetryAfter: retryAfter}
-		}
-		if c.retry.MaxWaitSeconds > 0 &&
-			retryAfter > c.retry.MaxWaitSeconds {
-			return false, ThrottleError{RetryAfter: retryAfter}
-		}
-		wait := retryAfter
-		if wait <= 0 {
-			// Without a usable Retry-After from the server, REST retries fall
-			// back to exponential backoff instead of applying MaxWaitSeconds.
-			wait = expBackoff(tries)
-		}
-		select {
-		case <-req.Context().Done():
-			return false, req.Context().Err()
-		case <-time.After(time.Duration(wait) * time.Second):
-		}
-		return true, nil
+		return handleThrottle(req.Context(), resp, c.retry, tries)
 	default:
 		if resp.StatusCode >= 400 {
 			apiErr := APIError{StatusCode: resp.StatusCode}

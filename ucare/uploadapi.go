@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
@@ -119,19 +118,7 @@ func (c *uploadAPIClient) handleResponse(
 	case 413:
 		return false, ErrFileTooLarge
 	case 429:
-		if c.retry == nil || tries > c.retry.MaxRetries {
-			return false, ThrottleError{}
-		}
-		wait := expBackoff(tries)
-		if c.retry.MaxWaitSeconds > 0 && wait > c.retry.MaxWaitSeconds {
-			wait = c.retry.MaxWaitSeconds
-		}
-		select {
-		case <-resp.Request.Context().Done():
-			return false, resp.Request.Context().Err()
-		case <-time.After(time.Duration(wait) * time.Second):
-		}
-		return true, nil
+		return handleThrottle(resp.Request.Context(), resp, c.retry, tries)
 	default:
 		if resp.StatusCode >= 400 {
 			body, err := io.ReadAll(resp.Body)
