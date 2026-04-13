@@ -17,6 +17,17 @@ type UploadParams struct {
 }
 
 func (s service) Upload(ctx context.Context, params UploadParams) (FileInfo, error) {
+	if params.Size == 0 && params.Data != nil {
+		end, err := params.Data.Seek(0, io.SeekEnd)
+		if err != nil {
+			return FileInfo{}, err
+		}
+		if _, err := params.Data.Seek(0, io.SeekStart); err != nil {
+			return FileInfo{}, err
+		}
+		params.Size = end
+	}
+
 	threshold := DefaultMultipartThreshold
 	if params.MultipartThreshold != nil {
 		threshold = *params.MultipartThreshold
