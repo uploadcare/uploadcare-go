@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
@@ -133,25 +134,22 @@ func (c *restAPIClient) handleResponse(
 
 	switch resp.StatusCode {
 	case 400, 404:
-		var apiErr APIError
-		if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil {
-			return false, e
+		apiErr := APIError{StatusCode: resp.StatusCode}
+		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &apiErr) != nil {
+			apiErr.Detail = stringOrStatus(body, resp.StatusCode)
 		}
-		apiErr.StatusCode = resp.StatusCode
 		return false, apiErr
 	case 401:
-		var authErr AuthError
-		if e := json.NewDecoder(resp.Body).Decode(&authErr); e != nil {
-			return false, e
+		authErr := AuthError{APIError: APIError{StatusCode: 401}}
+		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &authErr) != nil {
+			authErr.Detail = stringOrStatus(body, 401)
 		}
-		authErr.StatusCode = 401
 		return false, authErr
 	case 403:
-		var forbiddenErr ForbiddenError
-		if e := json.NewDecoder(resp.Body).Decode(&forbiddenErr); e != nil {
-			return false, e
+		forbiddenErr := ForbiddenError{APIError: APIError{StatusCode: 403}}
+		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &forbiddenErr) != nil {
+			forbiddenErr.Detail = stringOrStatus(body, 403)
 		}
-		forbiddenErr.StatusCode = 403
 		return false, forbiddenErr
 	case 406:
 		return false, ErrInvalidVersion
@@ -183,11 +181,10 @@ func (c *restAPIClient) handleResponse(
 		return true, nil
 	default:
 		if resp.StatusCode >= 400 {
-			var apiErr APIError
-			if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil || apiErr.Detail == "" {
-				apiErr.Detail = http.StatusText(resp.StatusCode)
+			apiErr := APIError{StatusCode: resp.StatusCode}
+			if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
+				apiErr.Detail = stringOrStatus(body, resp.StatusCode)
 			}
-			apiErr.StatusCode = resp.StatusCode
 			return false, apiErr
 		}
 	}
@@ -201,6 +198,13 @@ func (c *restAPIClient) handleResponse(
 	}
 
 	return false, nil
+}
+
+func stringOrStatus(body []byte, statusCode int) string {
+	if s := strings.TrimSpace(string(body)); s != "" {
+		return s
+	}
+	return http.StatusText(statusCode)
 }
 
 func isNilResponseData(resdata interface{}) bool {
