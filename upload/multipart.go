@@ -83,6 +83,10 @@ func (s service) Multipart(
 		return nil, err
 	}
 
+	if d.ID == "" {
+		return nil, errors.New("multipart start: server returned empty upload ID")
+	}
+
 	go d.uploadParts()
 
 	return &d, nil
@@ -121,10 +125,6 @@ const (
 )
 
 func (d *multipartData) uploadParts() {
-	if d == nil || d.ID == "" {
-		return
-	}
-
 	var wg sync.WaitGroup
 	uploadSem := make(chan struct{}, concurrentUploads)
 

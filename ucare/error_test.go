@@ -75,13 +75,31 @@ func TestErrorsAs(t *testing.T) {
 		assert.Equal(t, 10, target.RetryAfter)
 	})
 
-	t.Run("auth_does_not_match_api_error", func(t *testing.T) {
+	t.Run("auth_unwraps_to_api_error", func(t *testing.T) {
 		t.Parallel()
 		var target APIError
 		err := error(AuthError{APIError{StatusCode: 401, Detail: "bad creds"}})
-		// AuthError embeds APIError as a value, not a pointer.
-		// errors.As does not unwrap embedded value types, so this does NOT match.
-		assert.False(t, errors.As(err, &target))
+		require.True(t, errors.As(err, &target))
+		assert.Equal(t, 401, target.StatusCode)
+		assert.Equal(t, "bad creds", target.Detail)
+	})
+
+	t.Run("validation_unwraps_to_api_error", func(t *testing.T) {
+		t.Parallel()
+		var target APIError
+		err := error(ValidationError{APIError{StatusCode: 400, Detail: "bad input"}})
+		require.True(t, errors.As(err, &target))
+		assert.Equal(t, 400, target.StatusCode)
+		assert.Equal(t, "bad input", target.Detail)
+	})
+
+	t.Run("forbidden_unwraps_to_api_error", func(t *testing.T) {
+		t.Parallel()
+		var target APIError
+		err := error(ForbiddenError{APIError{StatusCode: 403, Detail: "no"}})
+		require.True(t, errors.As(err, &target))
+		assert.Equal(t, 403, target.StatusCode)
+		assert.Equal(t, "no", target.Detail)
 	})
 
 	t.Run("validation_error", func(t *testing.T) {

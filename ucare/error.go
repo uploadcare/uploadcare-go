@@ -32,6 +32,8 @@ func (e AuthError) Error() string {
 	return fmt.Sprintf("uploadcare: authentication failed: %s", e.Detail)
 }
 
+func (e AuthError) Unwrap() error { return e.APIError }
+
 type ThrottleError struct {
 	RetryAfter int
 }
@@ -52,8 +54,12 @@ func (e ValidationError) Error() string {
 	return fmt.Sprintf("uploadcare: validation error: %s", e.Detail)
 }
 
+func (e ValidationError) Unwrap() error { return e.APIError }
+
 type ForbiddenError struct{ APIError }
 
 func (e ForbiddenError) Error() string {
 	return fmt.Sprintf("uploadcare: forbidden: %s", e.Detail)
 }
+
+func (e ForbiddenError) Unwrap() error { return e.APIError }
