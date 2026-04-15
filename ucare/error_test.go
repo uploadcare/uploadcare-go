@@ -11,110 +11,76 @@ import (
 func TestError(t *testing.T) {
 	t.Parallel()
 
-	t.Run("api_error", func(t *testing.T) {
-		t.Parallel()
-		err := APIError{StatusCode: 404, Detail: "not found"}
-		assert.Equal(t, "uploadcare: HTTP 404: not found", err.Error())
-	})
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"api_error", APIError{StatusCode: 404, Detail: "not found"}, "uploadcare: HTTP 404: not found"},
+		{"auth_error", AuthError{APIError{StatusCode: 401, Detail: "invalid token"}}, "uploadcare: authentication failed: invalid token"},
+		{"throttle_error", ThrottleError{RetryAfter: 5}, "uploadcare: request throttled, retry after 5 seconds"},
+		{"throttle_error_zero", ThrottleError{}, "uploadcare: request throttled"},
+		{"validation_error", ValidationError{APIError{StatusCode: 400, Detail: "bad field"}}, "uploadcare: validation error: bad field"},
+		{"forbidden_error", ForbiddenError{APIError{StatusCode: 403, Detail: "denied"}}, "uploadcare: forbidden: denied"},
+	}
 
-	t.Run("auth_error", func(t *testing.T) {
-		t.Parallel()
-		err := AuthError{APIError{StatusCode: 401, Detail: "invalid token"}}
-		assert.Equal(t, "uploadcare: authentication failed: invalid token", err.Error())
-	})
-
-	t.Run("throttle_error", func(t *testing.T) {
-		t.Parallel()
-		err := ThrottleError{RetryAfter: 5}
-		assert.Equal(t, "uploadcare: request throttled, retry after 5 seconds", err.Error())
-	})
-
-	t.Run("throttle_error_zero_retry", func(t *testing.T) {
-		t.Parallel()
-		err := ThrottleError{}
-		assert.Equal(t, "uploadcare: request throttled", err.Error())
-	})
-
-	t.Run("validation_error", func(t *testing.T) {
-		t.Parallel()
-		err := ValidationError{APIError{StatusCode: 400, Detail: "bad field"}}
-		assert.Equal(t, "uploadcare: validation error: bad field", err.Error())
-	})
-
-	t.Run("forbidden_error", func(t *testing.T) {
-		t.Parallel()
-		err := ForbiddenError{APIError{StatusCode: 403, Detail: "denied"}}
-		assert.Equal(t, "uploadcare: forbidden: denied", err.Error())
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, tt.err.Error())
+		})
+	}
 }
 
 func TestErrorsAs(t *testing.T) {
 	t.Parallel()
 
-	t.Run("api_error", func(t *testing.T) {
+	t.Run("errors_as_own_type", func(t *testing.T) {
 		t.Parallel()
-		var target APIError
-		err := error(APIError{StatusCode: 409, Detail: "conflict"})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 409, target.StatusCode)
+
+		tests := []struct {
+			name   string
+			err    error
+			target any
+			check  func(t *testing.T)
+		}{
+			{"api_error", APIError{StatusCode: 409, Detail: "conflict"}, new(APIError), nil},
+			{"auth_error", AuthError{APIError{StatusCode: 401, Detail: "bad creds"}}, new(AuthError), nil},
+			{"throttle_error", ThrottleError{RetryAfter: 10}, new(ThrottleError), nil},
+			{"validation_error", ValidationError{APIError{StatusCode: 400, Detail: "bad input"}}, new(ValidationError), nil},
+			{"forbidden_error", ForbiddenError{APIError{StatusCode: 403, Detail: "no"}}, new(ForbiddenError), nil},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				require.True(t, errors.As(tt.err, tt.target))
+			})
+		}
 	})
 
-	t.Run("auth_error", func(t *testing.T) {
+	t.Run("unwraps_to_api_error", func(t *testing.T) {
 		t.Parallel()
-		var target AuthError
-		err := error(AuthError{APIError{StatusCode: 401, Detail: "bad creds"}})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 401, target.StatusCode)
-	})
 
-	t.Run("throttle_error", func(t *testing.T) {
-		t.Parallel()
-		var target ThrottleError
-		err := error(ThrottleError{RetryAfter: 10})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 10, target.RetryAfter)
-	})
+		tests := []struct {
+			name       string
+			err        error
+			wantStatus int
+			wantDetail string
+		}{
+			{"auth", AuthError{APIError{StatusCode: 401, Detail: "bad creds"}}, 401, "bad creds"},
+			{"validation", ValidationError{APIError{StatusCode: 400, Detail: "bad input"}}, 400, "bad input"},
+			{"forbidden", ForbiddenError{APIError{StatusCode: 403, Detail: "no"}}, 403, "no"},
+		}
 
-	t.Run("auth_unwraps_to_api_error", func(t *testing.T) {
-		t.Parallel()
-		var target APIError
-		err := error(AuthError{APIError{StatusCode: 401, Detail: "bad creds"}})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 401, target.StatusCode)
-		assert.Equal(t, "bad creds", target.Detail)
-	})
-
-	t.Run("validation_unwraps_to_api_error", func(t *testing.T) {
-		t.Parallel()
-		var target APIError
-		err := error(ValidationError{APIError{StatusCode: 400, Detail: "bad input"}})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 400, target.StatusCode)
-		assert.Equal(t, "bad input", target.Detail)
-	})
-
-	t.Run("forbidden_unwraps_to_api_error", func(t *testing.T) {
-		t.Parallel()
-		var target APIError
-		err := error(ForbiddenError{APIError{StatusCode: 403, Detail: "no"}})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 403, target.StatusCode)
-		assert.Equal(t, "no", target.Detail)
-	})
-
-	t.Run("validation_error", func(t *testing.T) {
-		t.Parallel()
-		var target ValidationError
-		err := error(ValidationError{APIError{StatusCode: 400, Detail: "bad input"}})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 400, target.StatusCode)
-	})
-
-	t.Run("forbidden_error", func(t *testing.T) {
-		t.Parallel()
-		var target ForbiddenError
-		err := error(ForbiddenError{APIError{StatusCode: 403, Detail: "no"}})
-		require.True(t, errors.As(err, &target))
-		assert.Equal(t, 403, target.StatusCode)
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				var target APIError
+				require.True(t, errors.As(tt.err, &target))
+				assert.Equal(t, tt.wantStatus, target.StatusCode)
+				assert.Equal(t, tt.wantDetail, target.Detail)
+			})
+		}
 	})
 }
