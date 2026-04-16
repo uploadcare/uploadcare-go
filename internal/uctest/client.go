@@ -62,3 +62,50 @@ func (c *Client) Do(req *http.Request, resdata interface{}) error {
 	}
 	return json.NewDecoder(resp.Body).Decode(resdata)
 }
+
+type UploadClient struct {
+	HTTP    *http.Client
+	BaseURL string
+}
+
+func NewUploadServerClient(srv *httptest.Server) *UploadClient {
+	return &UploadClient{
+		HTTP:    srv.Client(),
+		BaseURL: srv.URL,
+	}
+}
+
+func (c *UploadClient) NewRequest(
+	ctx context.Context,
+	_ config.Endpoint,
+	method, requrl string,
+	data ucare.ReqEncoder,
+) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, c.BaseURL+requrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(req.Context(), config.CtxAuthFuncKey, ucare.UploadAPIAuthFunc(
+		func() (string, *string, *int64) { return "testpubkey", nil, nil },
+	))
+	req = req.WithContext(ctx)
+	if data != nil {
+		if err := data.EncodeReq(req); err != nil {
+			return nil, err
+		}
+	}
+	return req, nil
+}
+
+func (c *UploadClient) Do(req *http.Request, resdata interface{}) error {
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resdata == nil || reflect.ValueOf(resdata).IsNil() {
+		return nil
+	}
+	return json.NewDecoder(resp.Body).Decode(resdata)
+}

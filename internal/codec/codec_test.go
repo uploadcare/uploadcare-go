@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uploadcare/uploadcare-go/v2/file"
 	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
@@ -46,7 +47,8 @@ func TestEncodeReqQuery(t *testing.T) {
 	}, {
 		test:          "empty list",
 		params:        &file.ListParams{},
-		expectedQuery: url.Values{}}, {
+		expectedQuery: url.Values{},
+	}, {
 		test: "part of the params are filled",
 		params: &file.ListParams{
 			Stored:  ucare.Bool(false),
@@ -71,7 +73,6 @@ func TestEncodeReqQuery(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
@@ -83,7 +84,7 @@ func TestEncodeReqQuery(t *testing.T) {
 				t.Error("should have no qparams")
 			}
 			for k, v := range c.expectedQuery {
-				assert.Equal(t, q[k], v)
+				assert.Equal(t, v, q[k])
 			}
 		})
 	}
@@ -98,13 +99,12 @@ func TestEncodeReqBody(t *testing.T) {
 		params           interface{}
 		expectedBodyData string
 	}{{
-		test: "slice data",
-
+		test:             "slice data",
 		params:           []string{"test1", "test2"},
 		expectedBodyData: "[\"test1\",\"test2\"]",
 	}}
+
 	for _, c := range cases {
-		c := c
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
@@ -112,7 +112,7 @@ func TestEncodeReqBody(t *testing.T) {
 			_ = codec.EncodeReqBody(c.params, req)
 
 			data, err := io.ReadAll(req.Body)
-			assert.Equal(t, nil, err)
+			require.NoError(t, err)
 			assert.Equal(t, c.expectedBodyData, string(data))
 		})
 	}
@@ -124,9 +124,7 @@ func TestEncodeReqFormData(t *testing.T) {
 	cases := []struct {
 		test string
 
-		data interface{}
-		// not validating the form data request
-		// just checking if stuff is there
+		data    interface{}
 		testReq func(written string) error
 		err     bool
 	}{{
@@ -142,23 +140,20 @@ func TestEncodeReqFormData(t *testing.T) {
 			}
 			return nil
 		},
-		err: false,
 	}, {
 		test: "nil data",
 		data: &upload.FileParams{
 			Data: nil,
 			Name: "test_file_name",
 		},
-		testReq: nil,
-		err:     true,
+		err: true,
 	}, {
 		test: "empty file name",
 		data: &upload.FileParams{
 			Data: strings.NewReader("test"),
 			Name: "",
 		},
-		testReq: nil,
-		err:     true,
+		err: true,
 	}, {
 		test: "random data with form value",
 		data: &struct {
@@ -173,7 +168,6 @@ func TestEncodeReqFormData(t *testing.T) {
 			}
 			return nil
 		},
-		err: false,
 	}, {
 		test: "random data holding map",
 		data: &struct {
@@ -188,29 +182,22 @@ func TestEncodeReqFormData(t *testing.T) {
 			}
 			return nil
 		},
-		err: false,
 	}}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
 			body, _, err := codec.EncodeReqFormData(c.data)
-			if err != nil && !c.err {
-				t.Fatal(err)
-			} else if err == nil && c.err {
-				t.Fatal("error must be returned")
-			}
-
-			if body == nil {
+			if c.err {
+				require.Error(t, err)
 				return
 			}
+			require.NoError(t, err)
 
-			data, _ := io.ReadAll(body)
-
-			assert.Equal(t, nil, err)
-			assert.Equal(t, nil, c.testReq(string(data)))
+			data, err := io.ReadAll(body)
+			require.NoError(t, err)
+			require.NoError(t, c.testReq(string(data)))
 		})
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
@@ -22,7 +22,8 @@ type restAPIClient struct {
 	acceptHeader  string
 	setAuthHeader restAPIAuthFunc
 
-	conn *http.Client
+	conn  *http.Client
+	retry *RetryConfig
 }
 
 func newRESTAPIClient(creds APICreds, conf *Config) Client {
@@ -32,7 +33,8 @@ func newRESTAPIClient(creds APICreds, conf *Config) Client {
 
 		setAuthHeader: simpleRESTAPIAuth,
 
-		conn: conf.HTTPClient,
+		conn:  conf.HTTPClient,
+		retry: conf.Retry,
 	}
 
 	if conf.SignBasedAuthentication {
@@ -131,44 +133,32 @@ func (c *restAPIClient) handleResponse(
 
 	switch resp.StatusCode {
 	case 400, 404:
-		var err respErr
-		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
-			return false, e
+		apiErr := APIError{StatusCode: resp.StatusCode}
+		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &apiErr) != nil {
+			apiErr.Detail = stringOrStatus(body, resp.StatusCode)
 		}
-		return false, err
+		return false, apiErr
 	case 401:
-		var err authErr
-		if e := json.NewDecoder(resp.Body).Decode(&err); e != nil {
-			return false, e
+		authErr := AuthError{APIError: APIError{StatusCode: 401}}
+		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &authErr) != nil {
+			authErr.Detail = stringOrStatus(body, 401)
 		}
-		return false, err
+		return false, authErr
+	case 403:
+		forbiddenErr := ForbiddenError{APIError: APIError{StatusCode: 403}}
+		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &forbiddenErr) != nil {
+			forbiddenErr.Detail = stringOrStatus(body, 403)
+		}
+		return false, forbiddenErr
 	case 406:
 		return false, ErrInvalidVersion
 	case 429:
-		retryAfter, err := strconv.Atoi(
-			resp.Header.Get("Retry-After"),
-		)
-		if err != nil {
-			retryAfter = 5
-		} else if retryAfter < 0 {
-			retryAfter = 0
-		}
-
-		if tries > config.MaxThrottleRetries {
-			return false, throttleErr{retryAfter}
-		}
-
-		select {
-		case <-req.Context().Done():
-			return false, req.Context().Err()
-		case <-time.After(time.Duration(retryAfter) * time.Second):
-		}
-		return true, nil
+		return handleThrottle(req.Context(), resp, c.retry, tries)
 	default:
 		if resp.StatusCode >= 400 {
-			var apiErr respErr
-			if e := json.NewDecoder(resp.Body).Decode(&apiErr); e != nil || apiErr.Details == "" {
-				return false, unexpectedStatusErr{StatusCode: resp.StatusCode}
+			apiErr := APIError{StatusCode: resp.StatusCode}
+			if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
+				apiErr.Detail = stringOrStatus(body, resp.StatusCode)
 			}
 			return false, apiErr
 		}
@@ -183,6 +173,13 @@ func (c *restAPIClient) handleResponse(
 	}
 
 	return false, nil
+}
+
+func stringOrStatus(body []byte, statusCode int) string {
+	if s := strings.TrimSpace(string(body)); s != "" {
+		return s
+	}
+	return http.StatusText(statusCode)
 }
 
 func isNilResponseData(resdata interface{}) bool {

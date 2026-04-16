@@ -11,6 +11,7 @@ BREAKING CHANGES:
 * Remove `file.OrderBySizeAsc` and `file.OrderBySizeDesc` constants (not supported in v0.7)
 * Remove `APIv05` and `APIv06` constants
 * Minimum Go version is now 1.25
+* Throttled requests no longer retry by default — automatic retries are now opt-in via `ucare.Config.Retry`
 
 FEATURES:
 
@@ -19,12 +20,17 @@ FEATURES:
 * Add `metadata` package with file metadata CRUD operations
 * Add `group.Delete()` for deleting group metadata without deleting files
 * Add webhook event constants for `file.stored`, `file.deleted`, `file.info_updated`, and deprecated `file.infected`
+* Add `ucare.Config.Retry` and `RetryConfig` for configurable throttling retries
+* Add `upload.Service.Upload()` for automatic direct-vs-multipart upload selection
+* Export structured API error types: `APIError`, `AuthError`, `ThrottleError`, `ValidationError`, and `ForbiddenError`
 
 IMPROVEMENTS:
 
 * Add `UserAgent` field to `ucare.Config` for custom agent identification
 * Replace `http.NewRequest` + `WithContext` with `http.NewRequestWithContext`
 * Throttle retry loops now respect context cancellation
+* Throttle retries use server `Retry-After` when present, falling back to exponential backoff (capped at 30s); `MaxWaitSeconds` caps the effective wait from either source
+* Error values now expose HTTP status details for caller inspection
 * Replace `ioutil` usage with `io` equivalents
 * Replace `go-env` dependency with `os.Getenv`
 * Update `stretchr/testify` to v1.10.0
