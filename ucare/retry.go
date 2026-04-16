@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+// RetryConfig controls automatic retry of throttled (HTTP 429) requests.
+//
+// MaxRetries limits how many times a request is retried.
+// MaxWaitSeconds caps the per-retry wait time. When the effective wait
+// (either the server's Retry-After value or the computed exponential
+// backoff) exceeds this cap, the request fails immediately with a
+// ThrottleError instead of sleeping. Set to 0 to disable the cap.
 type RetryConfig struct {
 	MaxRetries     int
 	MaxWaitSeconds int
@@ -33,17 +40,13 @@ func handleThrottle(
 		return false, ThrottleError{RetryAfter: retryAfter}
 	}
 
-	// Only bail out when the server explicitly asks for a wait that
-	// exceeds our cap. Locally computed backoff is already bounded
-	// by expBackoff's hardcoded ceiling and does not need capping.
-	if retry.MaxWaitSeconds > 0 &&
-		retryAfter > retry.MaxWaitSeconds {
-		return false, ThrottleError{RetryAfter: retryAfter}
-	}
-
 	wait := retryAfter
 	if wait <= 0 {
 		wait = expBackoff(tries)
+	}
+
+	if retry.MaxWaitSeconds > 0 && wait > retry.MaxWaitSeconds {
+		return false, ThrottleError{RetryAfter: wait}
 	}
 
 	select {

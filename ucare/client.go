@@ -42,7 +42,7 @@ type Config struct {
 	UserAgent string
 	// Retry controls automatic retry of throttled (HTTP 429) requests.
 	// When nil (the default), throttled requests fail immediately.
-	// See RetryConfig for REST vs. Upload API differences in MaxWaitSeconds.
+	// See RetryConfig for details on MaxRetries and MaxWaitSeconds.
 	Retry *RetryConfig
 }
 

@@ -29,8 +29,7 @@ IMPROVEMENTS:
 * Add `UserAgent` field to `ucare.Config` for custom agent identification
 * Replace `http.NewRequest` + `WithContext` with `http.NewRequestWithContext`
 * Throttle retry loops now respect context cancellation
-* REST throttling retries now honor `Retry-After` with configurable fail-fast limits and fallback exponential backoff
-* Upload throttling retries now use configurable exponential backoff capping
+* Throttle retries use server `Retry-After` when present, falling back to exponential backoff (capped at 30s); `MaxWaitSeconds` caps the effective wait from either source
 * Error values now expose HTTP status details for caller inspection
 * Replace `ioutil` usage with `io` equivalents
 * Replace `go-env` dependency with `os.Getenv`
