@@ -38,3 +38,24 @@ const (
 	ToStoreTrue  = "1"
 	ToStoreFalse = "0"
 )
+
+// ResizeMode defines how a video is resized to fit the target dimensions.
+type ResizeMode string
+
+const (
+	ResizeModePreserveRatio ResizeMode = "preserve_ratio"
+	ResizeModeChangeRatio   ResizeMode = "change_ratio"
+	ResizeModeScaleCrop     ResizeMode = "scale_crop"
+	ResizeModeAddPadding    ResizeMode = "add_padding"
+)
+
+// Quality defines the output quality for video conversion.
+type Quality string
+
+const (
+	QualityNormal  Quality = "normal"
+	QualityBetter  Quality = "better"
+	QualityBest    Quality = "best"
+	QualityLighter Quality = "lighter"
+	QualityLightest Quality = "lightest"
+)
