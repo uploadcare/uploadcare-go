@@ -1,8 +1,15 @@
 package conversion
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+)
+
+var (
+	errEmptyUUID        = errors.New("conversion: UUID must not be empty")
+	errIncompleteCut    = errors.New("conversion: CutStart and CutLength must both be set")
+	errResizeModeNoSize = errors.New("conversion: ResizeMode requires Size to be set")
 )
 
 type DocumentPathOptions struct {
@@ -15,7 +22,11 @@ type DocumentPathOptions struct {
 	Page int
 }
 
-func BuildDocumentPath(opts DocumentPathOptions) string {
+func BuildDocumentPath(opts DocumentPathOptions) (string, error) {
+	if opts.UUID == "" {
+		return "", errEmptyUUID
+	}
+
 	format := opts.Format
 	if format == "" {
 		if opts.Page > 0 {
@@ -32,7 +43,7 @@ func BuildDocumentPath(opts DocumentPathOptions) string {
 		fmt.Fprintf(&b, "-/page/%d/", opts.Page)
 	}
 
-	return b.String()
+	return b.String(), nil
 }
 
 type VideoPathOptions struct {
@@ -41,15 +52,19 @@ type VideoPathOptions struct {
 	Format string
 	// Output dimensions, for example "640x480".
 	Size       string
-	ResizeMode string
-	Quality    string
+	ResizeMode ResizeMode
+	Quality    Quality
 	CutStart   string
 	CutLength  string
 	// Number of thumbnails to generate.
 	Thumbs int
 }
 
-func BuildVideoPath(opts VideoPathOptions) string {
+func BuildVideoPath(opts VideoPathOptions) (string, error) {
+	if opts.UUID == "" {
+		return "", errEmptyUUID
+	}
+
 	format := opts.Format
 	if format == "" {
 		format = "mp4"
@@ -58,6 +73,9 @@ func BuildVideoPath(opts VideoPathOptions) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s/video/-/format/%s/", opts.UUID, format)
 
+	if opts.ResizeMode != "" && opts.Size == "" {
+		return "", errResizeModeNoSize
+	}
 	if opts.Size != "" {
 		fmt.Fprintf(&b, "-/size/%s/", opts.Size)
 		if opts.ResizeMode != "" {
@@ -69,7 +87,10 @@ func BuildVideoPath(opts VideoPathOptions) string {
 		fmt.Fprintf(&b, "-/quality/%s/", opts.Quality)
 	}
 
-	if opts.CutStart != "" && opts.CutLength != "" {
+	if (opts.CutStart != "") != (opts.CutLength != "") {
+		return "", errIncompleteCut
+	}
+	if opts.CutStart != "" {
 		fmt.Fprintf(&b, "-/cut/%s/%s/", opts.CutStart, opts.CutLength)
 	}
 
@@ -77,5 +98,5 @@ func BuildVideoPath(opts VideoPathOptions) string {
 		fmt.Fprintf(&b, "-/thumbs~%d/", opts.Thumbs)
 	}
 
-	return b.String()
+	return b.String(), nil
 }

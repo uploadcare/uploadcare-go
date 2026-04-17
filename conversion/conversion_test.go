@@ -23,7 +23,7 @@ func TestConversionParams_Encode(t *testing.T) {
 			params: Params{
 				Paths:       []string{"uuid/document/-/format/png/"},
 				ToStore:     ucare.String(ToStoreTrue),
-				SaveInGroup: ucare.String("1"),
+				SaveInGroup: "1",
 			},
 			want: `{
 				"paths": ["uuid/document/-/format/png/"],
