@@ -25,6 +25,11 @@ func TestBuildDocumentPath(t *testing.T) {
 			want: "abc-123/document/-/format/pdf/",
 		},
 		{
+			name: "default_format_with_page",
+			opts: DocumentPathOptions{UUID: "abc-123", Page: 1},
+			want: "abc-123/document/-/format/png/-/page/1/",
+		},
+		{
 			name: "with_page",
 			opts: DocumentPathOptions{UUID: "abc-123", Format: "png", Page: 3},
 			want: "abc-123/document/-/format/png/-/page/3/",
@@ -50,6 +55,11 @@ func TestBuildVideoPath(t *testing.T) {
 		{
 			name: "basic",
 			opts: VideoPathOptions{UUID: "abc-123", Format: "mp4"},
+			want: "abc-123/video/-/format/mp4/",
+		},
+		{
+			name: "default_format",
+			opts: VideoPathOptions{UUID: "abc-123"},
 			want: "abc-123/video/-/format/mp4/",
 		},
 		{

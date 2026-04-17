@@ -7,16 +7,22 @@ import (
 
 type DocumentPathOptions struct {
 	UUID string
-	// Format is the target document format. Defaults to "pdf" when empty.
+	// Target document format. When empty, defaults to "png" if Page > 0
+	// (the backend only accepts /page/ for image formats) and "pdf" otherwise.
 	Format string
-	// Page extracts a single page when greater than zero.
+	// Page extracts a single page when greater than zero. Requires Format
+	// to be an image format (jpg, png, tiff, webp, enhanced.jpg).
 	Page int
 }
 
 func BuildDocumentPath(opts DocumentPathOptions) string {
 	format := opts.Format
 	if format == "" {
-		format = "pdf"
+		if opts.Page > 0 {
+			format = "png"
+		} else {
+			format = "pdf"
+		}
 	}
 
 	var b strings.Builder
@@ -30,7 +36,8 @@ func BuildDocumentPath(opts DocumentPathOptions) string {
 }
 
 type VideoPathOptions struct {
-	UUID   string
+	UUID string
+	// Target video format. Defaults to "mp4".
 	Format string
 	// Output dimensions, for example "640x480".
 	Size       string
@@ -43,8 +50,13 @@ type VideoPathOptions struct {
 }
 
 func BuildVideoPath(opts VideoPathOptions) string {
+	format := opts.Format
+	if format == "" {
+		format = "mp4"
+	}
+
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s/video/-/format/%s/", opts.UUID, opts.Format)
+	fmt.Fprintf(&b, "%s/video/-/format/%s/", opts.UUID, format)
 
 	if opts.Size != "" {
 		fmt.Fprintf(&b, "-/size/%s/", opts.Size)
