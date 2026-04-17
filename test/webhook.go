@@ -66,6 +66,6 @@ func webhookList(t *testing.T, r *testenv.Runner) {
 }
 
 func webhookDelete(t *testing.T, r *testenv.Runner) {
-	err := r.Webhook.Delete(context.Background(), webhookURL)
+	err := r.Webhook.Delete(context.Background(), r.Artifacts.Webhook.ID)
 	assert.Equal(t, nil, err)
 }

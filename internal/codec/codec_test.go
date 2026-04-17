@@ -28,6 +28,7 @@ func TestEncodeReqQuery(t *testing.T) {
 
 		params        interface{}
 		expectedQuery url.Values
+		wantErr       bool
 	}{{
 		test: "full list of params",
 		params: &file.ListParams{
@@ -43,6 +44,25 @@ func TestEncodeReqQuery(t *testing.T) {
 			"limit":    []string{"500"},
 			"ordering": []string{"datetime_uploaded"},
 			"from":     []string{"2015-01-02T10:00:00"},
+		},
+	}, {
+		test: "include appdata",
+		params: &file.ListParams{
+			Include: ucare.String("appdata"),
+		},
+		expectedQuery: url.Values{
+			"include": []string{"appdata"},
+		},
+	}, {
+		test: "metadata bracket keys",
+		params: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{
+			Metadata: map[string]string{"key1": "val1", "key2": "val2"},
+		},
+		expectedQuery: url.Values{
+			"metadata[key1]": []string{"val1"},
+			"metadata[key2]": []string{"val2"},
 		},
 	}, {
 		test:          "empty list",
@@ -64,20 +84,28 @@ func TestEncodeReqQuery(t *testing.T) {
 			"stored": ucare.Bool(false),
 		},
 		expectedQuery: url.Values{},
+		wantErr:       true,
 	}, {
 		test: "not struct pointer params type",
 		params: &map[string]*bool{
 			"stored": ucare.Bool(false),
 		},
 		expectedQuery: url.Values{},
+		wantErr:       true,
 	}}
 
 	for _, c := range cases {
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
-			req, _ := http.NewRequest("GET", "", nil)
-			_ = codec.EncodeReqQuery(c.params, req)
+			req, _ := http.NewRequest(http.MethodGet, "https://example.test", nil)
+			err := codec.EncodeReqQuery(c.params, req)
+			if c.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
 			q := req.URL.Query()
 
 			if len(c.expectedQuery) == 0 && req.URL.RawQuery != "" {
@@ -108,8 +136,8 @@ func TestEncodeReqBody(t *testing.T) {
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
 
-			req, _ := http.NewRequest("PUT", "", nil)
-			_ = codec.EncodeReqBody(c.params, req)
+			req, _ := http.NewRequest(http.MethodPut, "https://example.test", nil)
+			require.NoError(t, codec.EncodeReqBody(c.params, req))
 
 			data, err := io.ReadAll(req.Body)
 			require.NoError(t, err)
@@ -179,6 +207,46 @@ func TestEncodeReqFormData(t *testing.T) {
 			if !strings.Contains(written, "key") ||
 				!strings.Contains(written, "testdata") {
 				return errors.New("did not work at all")
+			}
+			return nil
+		},
+	}, {
+		test: "metadata bracket keys",
+		data: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{
+			Metadata: map[string]string{"key1": "val1", "key2": "val2"},
+		},
+		testReq: func(written string) error {
+			if !strings.Contains(written, `name="metadata[key1]"`) ||
+				!strings.Contains(written, "val1") ||
+				!strings.Contains(written, `name="metadata[key2]"`) ||
+				!strings.Contains(written, "val2") {
+				return errors.New("metadata bracket keys not written")
+			}
+			return nil
+		},
+	}, {
+		test: "nil metadata omitted",
+		data: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{},
+		testReq: func(written string) error {
+			if strings.Contains(written, "metadata[") {
+				return errors.New("nil metadata should not be written")
+			}
+			return nil
+		},
+	}, {
+		test: "empty metadata omitted",
+		data: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{
+			Metadata: map[string]string{},
+		},
+		testReq: func(written string) error {
+			if strings.Contains(written, "metadata[") {
+				return errors.New("empty metadata should not be written")
 			}
 			return nil
 		},

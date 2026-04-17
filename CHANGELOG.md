@@ -10,6 +10,8 @@ BREAKING CHANGES:
 * Remove `file.Copy()` method and `file.CopyParams` type — use `LocalCopy()` and `RemoteCopy()`
 * Remove `file.OrderBySizeAsc` and `file.OrderBySizeDesc` constants (not supported in v0.7)
 * Remove `APIv05` and `APIv06` constants
+* Change `file.Service.Info()` signature to accept `*file.InfoParams` for optional `include` query parameters
+* Change `webhook.Service.Delete()` to delete by webhook ID instead of target URL
 * Minimum Go version is now 1.25
 * Throttled requests no longer retry by default — automatic retries are now opt-in via `ucare.Config.Retry`
 
@@ -22,11 +24,16 @@ FEATURES:
 * Add webhook event constants for `file.stored`, `file.deleted`, `file.info_updated`, and deprecated `file.infected`
 * Add `ucare.Config.Retry` and `RetryConfig` for configurable throttling retries
 * Add `upload.Service.Upload()` for automatic direct-vs-multipart upload selection
+* Add upload metadata support for direct, multipart, from-URL, and unified uploads
+* Add `file.InfoParams.Include` and `file.ListParams.Include` for `include=appdata`
+* Add `conversion.Params.SaveInGroup` for document conversions that should persist image output as a file group
+* Add `conversion.BuildDocumentPath()` and `conversion.BuildVideoPath()` helpers for constructing conversion paths
 * Export structured API error types: `APIError`, `AuthError`, `ThrottleError`, `ValidationError`, and `ForbiddenError`
 
 IMPROVEMENTS:
 
 * Add `UserAgent` field to `ucare.Config` for custom agent identification
+* Extend form/query encoding to support Upload API metadata fields in `metadata[key]=value` bracket notation
 * Replace `http.NewRequest` + `WithContext` with `http.NewRequestWithContext`
 * Throttle retry loops now respect context cancellation
 * Throttle retries use server `Retry-After` when present, falling back to exponential backoff (capped at 30s); `MaxWaitSeconds` caps the effective wait from either source
@@ -36,7 +43,7 @@ IMPROVEMENTS:
 * Update `stretchr/testify` to v1.10.0
 * Update CI: Go 1.25, modern GitHub Actions versions, remove deprecated golint
 * Integration tests skip gracefully when credentials are not set
-* Fix errors in package documentation examples
+* Fix errors in package documentation examples and update public examples for the new `file.Info()` signature
 
 ## 1.2.1 (September 1, 2020)
 

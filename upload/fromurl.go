@@ -44,6 +44,9 @@ type FromURLParams struct {
 	//	upload.URLDuplicatesTrue
 	//	upload.URLDuplicatesFalse
 	SaveURLDuplicates *string `form:"save_URL_duplicates"`
+
+	// Metadata stores user-defined key-value pairs with the uploaded file.
+	Metadata map[string]string `form:"metadata"`
 }
 
 type fromURLAuthParams struct {
@@ -185,6 +188,7 @@ func (d *fromURLData) Info() (FileInfo, bool) {
 
 // Done is used to wait for uploading to be done. If uploading fails it will
 // never receive FileInfo value:
+//
 //	select {
 //	case fileinfo := <-res.Done():
 //		// file info received

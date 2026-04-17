@@ -123,16 +123,13 @@ func TestDelete(t *testing.T) {
 
 	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodDelete, r.Method)
-		assert.Equal(t, "/webhooks/unsubscribe/", r.URL.Path)
-
-		var body deleteParams
-		require.NoError(t, json.Unmarshal(uctest.ReadBody(t, r), &body))
-		assert.Equal(t, "https://example.com/hook", body.TargetURL)
+		assert.Equal(t, "/webhooks/123/", r.URL.Path)
+		assert.Empty(t, uctest.ReadBody(t, r))
 
 		w.WriteHeader(http.StatusNoContent)
 	}), func(t *testing.T, srv *httptest.Server) {
 		svc := NewService(uctest.NewServerClient(srv))
-		err := svc.Delete(context.Background(), "https://example.com/hook")
+		err := svc.Delete(context.Background(), 123)
 		require.NoError(t, err)
 	})
 }

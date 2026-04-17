@@ -14,7 +14,7 @@ type Service interface {
 	List(context.Context) ([]Info, error)
 	Create(context.Context, Params) (Info, error)
 	Update(context.Context, Params) (Info, error)
-	Delete(ctx context.Context, targetURL string) error
+	Delete(ctx context.Context, id int64) error
 }
 
 type service struct {
@@ -25,7 +25,7 @@ const (
 	listPathFormat   = "/webhooks/"
 	createPathFormat = "/webhooks/"
 	updatePathFormat = "/webhooks/%d/"
-	deletePathFormat = "/webhooks/unsubscribe/"
+	deletePathFormat = "/webhooks/%d/"
 )
 
 type Event string

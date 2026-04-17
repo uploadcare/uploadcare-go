@@ -146,3 +146,55 @@ func TestUpload(t *testing.T) {
 		})
 	})
 }
+
+func TestUpload_Metadata(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		threshold    *int64
+		metadataPath string
+		fileName     string
+	}{
+		{"direct", int64Ptr(0), "/base/", "meta.txt"},
+		{"multipart", int64Ptr(-1), "/multipart/start/", "meta-multi.txt"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case tt.metadataPath:
+					body := uctest.ReadBody(t, r)
+					assert.Contains(t, string(body), `name="metadata[source]"`)
+					assert.Contains(t, string(body), "cli")
+					if tt.metadataPath == "/multipart/start/" {
+						uctest.RespondJSON(t, w, map[string]any{"uuid": "test-uuid", "parts": []string{}})
+					} else {
+						uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid"})
+					}
+				case "/info/", "/multipart/complete/":
+					uctest.RespondJSON(t, w, FileInfo{FileName: tt.fileName})
+				default:
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}), func(t *testing.T, srv *httptest.Server) {
+				svc := NewService(uctest.NewUploadServerClient(srv))
+
+				info, err := svc.Upload(context.Background(), UploadParams{
+					Data:               bytes.NewReader([]byte("hello")),
+					Name:               tt.fileName,
+					ContentType:        "text/plain",
+					Size:               5,
+					Metadata:           map[string]string{"source": "cli"},
+					MultipartThreshold: tt.threshold,
+				})
+
+				require.NoError(t, err)
+				assert.Equal(t, tt.fileName, info.FileName)
+			})
+		})
+	}
+}
