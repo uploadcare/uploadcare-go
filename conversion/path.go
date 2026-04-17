@@ -5,9 +5,7 @@ import (
 	"strings"
 )
 
-// DocumentPathOptions holds options for building a document conversion path.
 type DocumentPathOptions struct {
-	// UUID is the source file UUID.
 	UUID string
 	// Format is the target document format. Defaults to "pdf" when empty.
 	Format string
@@ -15,7 +13,6 @@ type DocumentPathOptions struct {
 	Page int
 }
 
-// BuildDocumentPath constructs a document conversion path.
 func BuildDocumentPath(opts DocumentPathOptions) string {
 	format := opts.Format
 	if format == "" {
@@ -32,27 +29,19 @@ func BuildDocumentPath(opts DocumentPathOptions) string {
 	return b.String()
 }
 
-// VideoPathOptions holds options for building a video conversion path.
 type VideoPathOptions struct {
-	// UUID is the source file UUID.
-	UUID string
-	// Format is the target video format.
+	UUID   string
 	Format string
-	// Size is the output dimensions, for example "640x480".
-	Size string
-	// ResizeMode controls how the video is resized.
+	// Output dimensions, for example "640x480".
+	Size       string
 	ResizeMode string
-	// Quality controls output quality.
-	Quality string
-	// CutStart is the start time for cutting.
-	CutStart string
-	// CutLength is the duration to cut.
-	CutLength string
-	// Thumbs is the number of thumbnails to generate.
+	Quality    string
+	CutStart   string
+	CutLength  string
+	// Number of thumbnails to generate.
 	Thumbs int
 }
 
-// BuildVideoPath constructs a video conversion path.
 func BuildVideoPath(opts VideoPathOptions) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s/video/-/format/%s/", opts.UUID, opts.Format)

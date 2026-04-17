@@ -3,10 +3,8 @@ package upload
 import (
 	"bytes"
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -149,69 +147,54 @@ func TestUpload(t *testing.T) {
 	})
 }
 
-func TestUpload_MetadataPassThrough_DirectUpload(t *testing.T) {
+func TestUpload_Metadata(t *testing.T) {
 	t.Parallel()
 
-	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/base/":
-			body, err := io.ReadAll(r.Body)
-			assert.NoError(t, err)
-			assert.Contains(t, string(body), `name="metadata[source]"`)
-			assert.Contains(t, string(body), "cli")
-			uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid-metadata-direct"})
-		case "/info/":
-			uctest.RespondJSON(t, w, FileInfo{FileName: "meta.txt"})
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}), func(t *testing.T, srv *httptest.Server) {
-		svc := NewService(uctest.NewUploadServerClient(srv))
+	tests := []struct {
+		name         string
+		threshold    *int64
+		metadataPath string
+		fileName     string
+	}{
+		{"direct", int64Ptr(0), "/base/", "meta.txt"},
+		{"multipart", int64Ptr(-1), "/multipart/start/", "meta-multi.txt"},
+	}
 
-		info, err := svc.Upload(context.Background(), UploadParams{
-			Data:     strings.NewReader("hi"),
-			Name:     "meta.txt",
-			Size:     2,
-			Metadata: map[string]string{"source": "cli"},
-		})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		require.NoError(t, err)
-		assert.Equal(t, "meta.txt", info.FileName)
-	})
-}
+			uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case tt.metadataPath:
+					body := uctest.ReadBody(t, r)
+					assert.Contains(t, string(body), `name="metadata[source]"`)
+					assert.Contains(t, string(body), "cli")
+					if tt.metadataPath == "/multipart/start/" {
+						uctest.RespondJSON(t, w, map[string]any{"uuid": "test-uuid", "parts": []string{}})
+					} else {
+						uctest.RespondJSON(t, w, map[string]string{"file": "test-uuid"})
+					}
+				case "/info/", "/multipart/complete/":
+					uctest.RespondJSON(t, w, FileInfo{FileName: tt.fileName})
+				default:
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}), func(t *testing.T, srv *httptest.Server) {
+				svc := NewService(uctest.NewUploadServerClient(srv))
 
-func TestUpload_MetadataPassThrough_MultipartUpload(t *testing.T) {
-	t.Parallel()
+				info, err := svc.Upload(context.Background(), UploadParams{
+					Data:               bytes.NewReader([]byte("hello")),
+					Name:               tt.fileName,
+					ContentType:        "text/plain",
+					Size:               5,
+					Metadata:           map[string]string{"source": "cli"},
+					MultipartThreshold: tt.threshold,
+				})
 
-	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/multipart/start/":
-			body, err := io.ReadAll(r.Body)
-			assert.NoError(t, err)
-			assert.Contains(t, string(body), `name="metadata[source]"`)
-			assert.Contains(t, string(body), "cli")
-			uctest.RespondJSON(t, w, map[string]interface{}{
-				"uuid":  "test-uuid-metadata-multipart",
-				"parts": []string{},
+				require.NoError(t, err)
+				assert.Equal(t, tt.fileName, info.FileName)
 			})
-		case "/multipart/complete/":
-			uctest.RespondJSON(t, w, FileInfo{FileName: "meta-multi.txt"})
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}), func(t *testing.T, srv *httptest.Server) {
-		svc := NewService(uctest.NewUploadServerClient(srv))
-
-		info, err := svc.Upload(context.Background(), UploadParams{
-			Data:               bytes.NewReader([]byte("hello")),
-			Name:               "meta-multi.txt",
-			ContentType:        "text/plain",
-			Size:               5,
-			Metadata:           map[string]string{"source": "cli"},
-			MultipartThreshold: int64Ptr(-1),
 		})
-
-		require.NoError(t, err)
-		assert.Equal(t, "meta-multi.txt", info.FileName)
-	})
+	}
 }

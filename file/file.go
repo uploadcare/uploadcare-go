@@ -11,14 +11,10 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
-// InfoParams holds optional parameters for the Info method.
 type InfoParams struct {
-	// Include specifies additional fields to include in the response.
-	// Valid value: "appdata".
 	Include *string `form:"include"`
 }
 
-// EncodeReq implements ucare.ReqEncoder.
 func (d *InfoParams) EncodeReq(req *http.Request) error {
 	return codec.EncodeReqQuery(d, req)
 }

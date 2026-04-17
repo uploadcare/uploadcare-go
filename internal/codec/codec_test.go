@@ -54,6 +54,17 @@ func TestEncodeReqQuery(t *testing.T) {
 			"include": []string{"appdata"},
 		},
 	}, {
+		test: "metadata bracket keys",
+		params: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{
+			Metadata: map[string]string{"key1": "val1", "key2": "val2"},
+		},
+		expectedQuery: url.Values{
+			"metadata[key1]": []string{"val1"},
+			"metadata[key2]": []string{"val2"},
+		},
+	}, {
 		test:          "empty list",
 		params:        &file.ListParams{},
 		expectedQuery: url.Values{},
@@ -126,8 +137,7 @@ func TestEncodeReqBody(t *testing.T) {
 			t.Parallel()
 
 			req, _ := http.NewRequest(http.MethodPut, "https://example.test", nil)
-			err := codec.EncodeReqBody(c.params, req)
-			assert.NoError(t, err)
+			require.NoError(t, codec.EncodeReqBody(c.params, req))
 
 			data, err := io.ReadAll(req.Body)
 			require.NoError(t, err)
@@ -200,6 +210,46 @@ func TestEncodeReqFormData(t *testing.T) {
 			}
 			return nil
 		},
+	}, {
+		test: "metadata bracket keys",
+		data: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{
+			Metadata: map[string]string{"key1": "val1", "key2": "val2"},
+		},
+		testReq: func(written string) error {
+			if !strings.Contains(written, `name="metadata[key1]"`) ||
+				!strings.Contains(written, "val1") ||
+				!strings.Contains(written, `name="metadata[key2]"`) ||
+				!strings.Contains(written, "val2") {
+				return errors.New("metadata bracket keys not written")
+			}
+			return nil
+		},
+	}, {
+		test: "nil metadata omitted",
+		data: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{},
+		testReq: func(written string) error {
+			if strings.Contains(written, "metadata[") {
+				return errors.New("nil metadata should not be written")
+			}
+			return nil
+		},
+	}, {
+		test: "empty metadata omitted",
+		data: &struct {
+			Metadata map[string]string `form:"metadata"`
+		}{
+			Metadata: map[string]string{},
+		},
+		testReq: func(written string) error {
+			if strings.Contains(written, "metadata[") {
+				return errors.New("empty metadata should not be written")
+			}
+			return nil
+		},
 	}}
 
 	for _, c := range cases {
@@ -218,74 +268,4 @@ func TestEncodeReqFormData(t *testing.T) {
 			require.NoError(t, c.testReq(string(data)))
 		})
 	}
-}
-
-func TestEncodeReqFormData_WithMetadata(t *testing.T) {
-	t.Parallel()
-
-	body, _, err := codec.EncodeReqFormData(&struct {
-		Metadata map[string]string `form:"metadata"`
-	}{
-		Metadata: map[string]string{
-			"key1": "val1",
-			"key2": "val2",
-		},
-	})
-	assert.NoError(t, err)
-
-	data, err := io.ReadAll(body)
-	assert.NoError(t, err)
-
-	written := string(data)
-	assert.Contains(t, written, `name="metadata[key1]"`)
-	assert.Contains(t, written, "val1")
-	assert.Contains(t, written, `name="metadata[key2]"`)
-	assert.Contains(t, written, "val2")
-}
-
-func TestEncodeReqFormData_NilMetadata(t *testing.T) {
-	t.Parallel()
-
-	body, _, err := codec.EncodeReqFormData(&struct {
-		Metadata map[string]string `form:"metadata"`
-	}{})
-	assert.NoError(t, err)
-
-	data, err := io.ReadAll(body)
-	assert.NoError(t, err)
-	assert.NotContains(t, string(data), "metadata[")
-}
-
-func TestEncodeReqFormData_EmptyMetadata(t *testing.T) {
-	t.Parallel()
-
-	body, _, err := codec.EncodeReqFormData(&struct {
-		Metadata map[string]string `form:"metadata"`
-	}{
-		Metadata: map[string]string{},
-	})
-	assert.NoError(t, err)
-
-	data, err := io.ReadAll(body)
-	assert.NoError(t, err)
-	assert.NotContains(t, string(data), "metadata[")
-}
-
-func TestEncodeReqQuery_WithMetadata(t *testing.T) {
-	t.Parallel()
-
-	req, _ := http.NewRequest(http.MethodGet, "https://example.test", nil)
-	err := codec.EncodeReqQuery(&struct {
-		Metadata map[string]string `form:"metadata"`
-	}{
-		Metadata: map[string]string{
-			"key1": "val1",
-			"key2": "val2",
-		},
-	}, req)
-	assert.NoError(t, err)
-
-	q := req.URL.Query()
-	assert.Equal(t, "val1", q.Get("metadata[key1]"))
-	assert.Equal(t, "val2", q.Get("metadata[key2]"))
 }

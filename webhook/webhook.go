@@ -10,7 +10,6 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 )
 
-// List of project webhooks
 func (s service) List(
 	ctx context.Context,
 ) (data []Info, err error) {
@@ -24,7 +23,6 @@ func (s service) List(
 	return
 }
 
-// Create and subscribe to webhook
 func (s service) Create(
 	ctx context.Context,
 	params Params,
@@ -39,7 +37,6 @@ func (s service) Create(
 	return
 }
 
-// Update webhook attributes
 func (s service) Update(
 	ctx context.Context,
 	params Params,
@@ -58,7 +55,6 @@ func (s service) Update(
 	return
 }
 
-// Delete removes a webhook by ID.
 func (s service) Delete(
 	ctx context.Context,
 	id int64,
@@ -73,7 +69,6 @@ func (s service) Delete(
 	return
 }
 
-// Info holds webhook related information
 type Info struct {
 	// Webhook ID
 	ID int64 `json:"id"`

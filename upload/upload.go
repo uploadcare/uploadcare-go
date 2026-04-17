@@ -8,19 +8,13 @@ import (
 const DefaultMultipartThreshold int64 = 10 * 1024 * 1024 // 10MB
 
 type UploadParams struct {
-	// Data (required) reads the data to be uploaded.
-	Data io.ReadSeeker
-	// Name (required) is the original filename.
-	Name string
-	// ContentType is the file MIME-type.
+	Data        io.ReadSeeker
+	Name        string
 	ContentType string
-	// Size (required) is the precise file size in bytes.
-	Size int64
-	// ToStore sets the file storing behaviour.
-	ToStore *string
-	// Metadata stores user-defined key-value pairs with the uploaded file.
-	Metadata map[string]string
-	// MultipartThreshold controls the upload method selection:
+	Size        int64
+	ToStore     *string
+	Metadata    map[string]string
+	// Controls the upload method selection:
 	//   nil    → use DefaultMultipartThreshold (10MB)
 	//   > 0   → use as custom threshold
 	//   0     → force direct upload
