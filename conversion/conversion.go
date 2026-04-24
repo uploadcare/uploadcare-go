@@ -44,7 +44,7 @@ type Params struct {
 	ToStore *string `json:"store"`
 
 	// SaveInGroup saves a multi-page image conversion result as a file group.
-	SaveInGroup *string `json:"save_in_group,omitempty"`
+	SaveInGroup string `json:"save_in_group,omitempty"`
 }
 
 // EncodeReq implements ucare.ReqEncoder
