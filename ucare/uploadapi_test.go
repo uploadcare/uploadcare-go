@@ -18,7 +18,9 @@ import (
 func TestUploadAPIClient(t *testing.T) {
 	t.Parallel()
 
-	client := newUploadAPIClient(testCreds(), resolveConfig(nil))
+	conf, err := resolveConfig(nil, testCreds().PublicKey)
+	require.NoError(t, err)
+	client := newUploadAPIClient(testCreds(), conf)
 
 	cases := []struct {
 		test string

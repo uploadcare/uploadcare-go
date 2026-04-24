@@ -12,6 +12,7 @@
 // A group ID consists of a UUID followed by a “~” tilde character and a group size:
 // integer number of files in group.
 // For example, here is an identifier for a group holding 12 files:
+//
 //	badfc9f7-f88f-4921-9cc0-22e2c08aa2da~12
 package group
 
@@ -31,7 +32,15 @@ type Service interface {
 }
 
 type service struct {
-	svc svc.Service
+	svc     svc.Service
+	cdnBase string
+}
+
+func applyCDNBase(info *Info, cdnBase string) {
+	if cdnBase == "" || info == nil || info.CDNLink == "" {
+		return
+	}
+	info.CDNLink = ucare.RewriteCDNURL(info.CDNLink, cdnBase)
 }
 
 const (
@@ -48,5 +57,8 @@ const (
 
 // NewService returns new instance of the Service
 func NewService(client ucare.Client) Service {
-	return service{svc.New(config.RESTAPIEndpoint, client, log)}
+	return service{
+		svc:     svc.New(config.RESTAPIEndpoint, client, log),
+		cdnBase: ucare.ClientCDNBase(client),
+	}
 }

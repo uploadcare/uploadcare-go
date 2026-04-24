@@ -44,6 +44,11 @@ type Config struct {
 	// When nil (the default), throttled requests fail immediately.
 	// See RetryConfig for details on MaxRetries and MaxWaitSeconds.
 	Retry *RetryConfig
+	// CDNBase is the base URL for CDN file delivery.
+	// When empty (default), it is automatically derived from the public key.
+	// Set this to an absolute http(s) URL to override the automatic
+	// per-project CDN domain.
+	CDNBase string
 }
 
 // ReqEncoder exists to encode data into the prepared request.
@@ -57,6 +62,7 @@ type ReqEncoder interface {
 type client struct {
 	backends   map[config.Endpoint]Client
 	fallbackDo func(*http.Request, interface{}) error
+	cdnBase    string
 }
 
 // NewClient initializes and configures new client for the high level API.
@@ -67,7 +73,10 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 		return nil, errors.New("uploadcare: invalid api creds provided")
 	}
 
-	conf = resolveConfig(conf)
+	conf, err := resolveConfig(conf, creds.PublicKey)
+	if err != nil {
+		return nil, err
+	}
 
 	c := client{
 		backends: map[config.Endpoint]Client{
@@ -75,10 +84,18 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 			config.UploadAPIEndpoint: newUploadAPIClient(creds, conf),
 		},
 		fallbackDo: fallbackDoFunc(conf.HTTPClient),
+		cdnBase:    conf.CDNBase,
 	}
 
 	return &c, nil
 }
+
+// CDNBase returns the CDN base URL resolved by NewClient. It is either the
+// explicit Config.CDNBase (normalised) or the per-project URL derived from
+// the public key. Services read this to rewrite API-returned CDN URLs, which
+// otherwise always point at the legacy ucarecdn.com domain regardless of the
+// project's configured CDN.
+func (c *client) CDNBase() string { return c.cdnBase }
 
 var errNoClient = errors.New("no client for such endpoint")
 
@@ -106,9 +123,12 @@ func (c *client) Do(req *http.Request, resdata interface{}) error {
 	return b.Do(req, resdata)
 }
 
-func resolveConfig(conf *Config) *Config {
+func resolveConfig(conf *Config, publicKey string) (*Config, error) {
 	if conf == nil {
 		conf = &Config{}
+	} else {
+		copied := *conf
+		conf = &copied
 	}
 	if conf.APIVersion == "" {
 		conf.APIVersion = defaultAPIVersion
@@ -116,5 +136,11 @@ func resolveConfig(conf *Config) *Config {
 	if conf.HTTPClient == nil {
 		conf.HTTPClient = http.DefaultClient
 	}
-	return conf
+
+	var err error
+	conf.CDNBase, err = resolveCDNBase(conf.CDNBase, publicKey)
+	if err != nil {
+		return nil, err
+	}
+	return conf, nil
 }

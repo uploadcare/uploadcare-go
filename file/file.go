@@ -37,6 +37,9 @@ func (s service) Info(
 		reqParams,
 		&data,
 	)
+	if err == nil {
+		applyCDNBase(&data, s.cdnBase)
+	}
 	return
 }
 
@@ -52,6 +55,9 @@ func (s service) Store(
 		nil,
 		&data,
 	)
+	if err == nil {
+		applyCDNBase(&data, s.cdnBase)
+	}
 	return
 }
 
@@ -67,6 +73,9 @@ func (s service) Delete(
 		nil,
 		&data,
 	)
+	if err == nil {
+		applyCDNBase(&data, s.cdnBase)
+	}
 	return
 }
 
