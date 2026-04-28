@@ -1,8 +1,13 @@
 package ucare
 
 import (
+	"crypto/sha256"
 	"errors"
+	"fmt"
+	"math/big"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -14,6 +19,9 @@ const (
 	dateHeaderFormat    = time.RFC1123
 
 	signedUploadTTL = 60 * time.Second
+
+	defaultCDNDomain     = "ucarecd.net"
+	cdnCNAMEPrefixLength = 10
 )
 
 var (
@@ -23,6 +31,8 @@ var (
 	userAgentHeaderKey = http.CanonicalHeaderKey("User-Agent")
 
 	dateHeaderLocation = time.FixedZone("GMT", 0)
+
+	errInvalidCDNBase = errors.New("uploadcare: invalid CDN base URL")
 )
 
 // Config holds configuration for the client
@@ -98,4 +108,39 @@ func NewConfig(creds APICreds, opts ...Option) (*Config, error) {
 	}
 	cfg.CDNBase = cdnBase
 	return cfg, nil
+}
+
+func cdnCNAMEPrefix(publicKey string) string {
+	hash := sha256.Sum256([]byte(publicKey))
+	prefix := new(big.Int).SetBytes(hash[:]).Text(36)
+	if len(prefix) < cdnCNAMEPrefixLength {
+		return prefix
+	}
+	return prefix[:cdnCNAMEPrefixLength]
+}
+
+func cdnBaseURL(publicKey string) string {
+	return "https://" + cdnCNAMEPrefix(publicKey) + "." + defaultCDNDomain
+}
+
+func resolveCDNBase(raw, publicKey string) (string, error) {
+	raw = strings.TrimRight(strings.TrimSpace(raw), "/")
+	if raw == "" {
+		return cdnBaseURL(publicKey), nil
+	}
+	if !isValidCDNBase(raw) {
+		return "", fmt.Errorf("%w: %q", errInvalidCDNBase, raw)
+	}
+	return raw, nil
+}
+
+func isValidCDNBase(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	return u.Host != "" && u.RawQuery == "" && u.Fragment == ""
 }

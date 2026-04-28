@@ -1,20 +1,9 @@
 package ucare
 
 import (
-	"crypto/sha256"
-	"errors"
-	"fmt"
-	"math/big"
 	"net/url"
 	"strings"
 )
-
-const (
-	defaultCDNDomain     = "ucarecd.net"
-	cdnCNAMEPrefixLength = 10
-)
-
-var errInvalidCDNBase = errors.New("uploadcare: invalid CDN base URL")
 
 // cdnBaseProvider is an optional capability discovered via type assertion in
 // ClientCDNBase. It is intentionally not part of the public Client interface:
@@ -22,41 +11,6 @@ var errInvalidCDNBase = errors.New("uploadcare: invalid CDN base URL")
 // (test doubles, custom wrappers).
 type cdnBaseProvider interface {
 	CDNBase() string
-}
-
-func cdnCNAMEPrefix(publicKey string) string {
-	hash := sha256.Sum256([]byte(publicKey))
-	prefix := new(big.Int).SetBytes(hash[:]).Text(36)
-	if len(prefix) < cdnCNAMEPrefixLength {
-		return prefix
-	}
-	return prefix[:cdnCNAMEPrefixLength]
-}
-
-func cdnBaseURL(publicKey string) string {
-	return "https://" + cdnCNAMEPrefix(publicKey) + "." + defaultCDNDomain
-}
-
-func resolveCDNBase(raw, publicKey string) (string, error) {
-	raw = strings.TrimRight(strings.TrimSpace(raw), "/")
-	if raw == "" {
-		return cdnBaseURL(publicKey), nil
-	}
-	if !isValidCDNBase(raw) {
-		return "", fmt.Errorf("%w: %q", errInvalidCDNBase, raw)
-	}
-	return raw, nil
-}
-
-func isValidCDNBase(raw string) bool {
-	u, err := url.Parse(raw)
-	if err != nil {
-		return false
-	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return false
-	}
-	return u.Host != "" && u.RawQuery == "" && u.Fragment == ""
 }
 
 // ClientCDNBase returns the CDN base URL associated with the client, if any.
