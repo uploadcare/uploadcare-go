@@ -113,13 +113,14 @@ func TestRewriteCDNURL(t *testing.T) {
 	}
 }
 
-func TestResolveConfig(t *testing.T) {
+func TestNewConfig(t *testing.T) {
 	t.Parallel()
 
 	httpClient := &http.Client{}
+	creds := APICreds{PublicKey: "demopublickey"}
 	tests := []struct {
 		name           string
-		conf           *Config
+		opts           []Option
 		wantAPIVersion string
 		wantHTTPClient *http.Client
 		wantCDNBase    string
@@ -132,10 +133,10 @@ func TestResolveConfig(t *testing.T) {
 		},
 		{
 			name: "preserves_explicit_values",
-			conf: &Config{
-				APIVersion: "v0.6",
-				HTTPClient: httpClient,
-				CDNBase:    "https://cdn.example.com",
+			opts: []Option{
+				WithAPIVersion("v0.6"),
+				WithHTTPClient(httpClient),
+				WithCDNBase("https://cdn.example.com"),
 			},
 			wantAPIVersion: "v0.6",
 			wantHTTPClient: httpClient,
@@ -143,21 +144,21 @@ func TestResolveConfig(t *testing.T) {
 		},
 		{
 			name:           "normalizes_explicit_cdn_base",
-			conf:           &Config{CDNBase: " https://cdn.example.com/ "},
+			opts:           []Option{WithCDNBase(" https://cdn.example.com/ ")},
 			wantAPIVersion: defaultAPIVersion,
 			wantHTTPClient: http.DefaultClient,
 			wantCDNBase:    "https://cdn.example.com",
 		},
 		{
 			name:           "defaults_blank_cdn_base",
-			conf:           &Config{CDNBase: " \t\n "},
+			opts:           []Option{WithCDNBase(" \t\n ")},
 			wantAPIVersion: defaultAPIVersion,
 			wantHTTPClient: http.DefaultClient,
 			wantCDNBase:    "https://1s4oyld5dc.ucarecd.net",
 		},
 		{
 			name:           "keeps_path_prefix",
-			conf:           &Config{CDNBase: "https://cdn.example.com/media/"},
+			opts:           []Option{WithCDNBase("https://cdn.example.com/media/")},
 			wantAPIVersion: defaultAPIVersion,
 			wantHTTPClient: http.DefaultClient,
 			wantCDNBase:    "https://cdn.example.com/media",
@@ -168,30 +169,19 @@ func TestResolveConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			conf, err := resolveConfig(tt.conf, "demopublickey")
+			conf, err := NewConfig(creds, tt.opts...)
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantAPIVersion, conf.APIVersion)
 			assert.Same(t, tt.wantHTTPClient, conf.HTTPClient)
 			assert.Equal(t, tt.wantCDNBase, conf.CDNBase)
 		})
 	}
-
-	t.Run("does_not_mutate_input", func(t *testing.T) {
-		t.Parallel()
-		original := &Config{CDNBase: " https://cdn.example.com/ "}
-		conf, err := resolveConfig(original, "demopublickey")
-		require.NoError(t, err)
-		assert.NotSame(t, original, conf)
-		assert.Empty(t, original.APIVersion)
-		assert.Nil(t, original.HTTPClient)
-		assert.Equal(t, " https://cdn.example.com/ ", original.CDNBase)
-		assert.Equal(t, "https://cdn.example.com", conf.CDNBase)
-	})
 }
 
-func TestResolveConfig_InvalidCDNBase(t *testing.T) {
+func TestNewConfig_InvalidCDNBase(t *testing.T) {
 	t.Parallel()
 
+	creds := APICreds{PublicKey: "demopublickey"}
 	tests := []struct {
 		name    string
 		cdnBase string
@@ -206,15 +196,22 @@ func TestResolveConfig_InvalidCDNBase(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := resolveConfig(&Config{CDNBase: tt.cdnBase}, "demopublickey")
+			_, err := NewConfig(creds, WithCDNBase(tt.cdnBase))
 			assert.ErrorIs(t, err, errInvalidCDNBase)
 		})
 	}
 }
 
-func TestNewClient_InvalidCDNBase(t *testing.T) {
+func TestNewConfig_RequiresPublicKey(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewClient(testCreds(), &Config{CDNBase: "cdn.example.com"})
-	assert.ErrorIs(t, err, errInvalidCDNBase)
+	_, err := NewConfig(APICreds{SecretKey: "x"})
+	assert.Error(t, err)
+}
+
+func TestNewClient_RequiresConfig(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewClient(testCreds(), nil)
+	assert.Error(t, err)
 }

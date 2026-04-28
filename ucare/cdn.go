@@ -16,6 +16,10 @@ const (
 
 var errInvalidCDNBase = errors.New("uploadcare: invalid CDN base URL")
 
+// cdnBaseProvider is an optional capability discovered via type assertion in
+// ClientCDNBase. It is intentionally not part of the public Client interface:
+// adding a method there would break every external Client implementation
+// (test doubles, custom wrappers).
 type cdnBaseProvider interface {
 	CDNBase() string
 }
@@ -38,16 +42,21 @@ func resolveCDNBase(raw, publicKey string) (string, error) {
 	if raw == "" {
 		return cdnBaseURL(publicKey), nil
 	}
-
-	u, err := url.Parse(raw)
-	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+	if !isValidCDNBase(raw) {
 		return "", fmt.Errorf("%w: %q", errInvalidCDNBase, raw)
 	}
-	if u.RawQuery != "" || u.Fragment != "" {
-		return "", fmt.Errorf("%w: %q", errInvalidCDNBase, raw)
-	}
-
 	return raw, nil
+}
+
+func isValidCDNBase(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	return u.Host != "" && u.RawQuery == "" && u.Fragment == ""
 }
 
 // ClientCDNBase returns the CDN base URL associated with the client, if any.
