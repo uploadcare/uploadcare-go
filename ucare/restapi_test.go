@@ -66,7 +66,7 @@ func withServer(t *testing.T, handler http.Handler, fn func(*testing.T, *httptes
 func TestRESTAPIClient(t *testing.T) {
 	t.Parallel()
 
-	conf, err := resolveConfig(nil, testCreds().PublicKey)
+	conf, err := NewConfig(testCreds())
 	require.NoError(t, err)
 	client := newRESTAPIClient(testCreds(), conf)
 

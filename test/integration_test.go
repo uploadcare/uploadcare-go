@@ -62,12 +62,15 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// TODO: test with different config settings
-	conf := ucare.Config{
-		SignBasedAuthentication: true,
-		APIVersion:             ucare.APIv07,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithAPIVersion(ucare.APIv07),
+	)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	client, err := ucare.NewClient(creds, &conf)
+	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
