@@ -27,25 +27,6 @@ type APICreds struct {
 	PublicKey string
 }
 
-// Config holds configuration for the client
-type Config struct {
-	// HTTPClient allows you to set custom http client for the calls
-	HTTPClient *http.Client
-	// APIVersion specifies REST API version to be used
-	APIVersion string
-	// SignBasedAuthentication should be true if you want to use
-	// signed uploads and signature based authentication for the
-	// REST API calls.
-	SignBasedAuthentication bool
-	// UserAgent is appended to the default User-Agent string.
-	// Use this to identify your application (e.g. "my-app/1.0.0").
-	UserAgent string
-	// Retry controls automatic retry of throttled (HTTP 429) requests.
-	// When nil (the default), throttled requests fail immediately.
-	// See RetryConfig for details on MaxRetries and MaxWaitSeconds.
-	Retry *RetryConfig
-}
-
 // ReqEncoder exists to encode data into the prepared request.
 // It may encode part of the data to the query string and other
 // part into the request body. It may also set request headers for some
@@ -57,6 +38,7 @@ type ReqEncoder interface {
 type client struct {
 	backends   map[config.Endpoint]Client
 	fallbackDo func(*http.Request, interface{}) error
+	cdnBase    string
 }
 
 // NewClient initializes and configures new client for the high level API.
@@ -66,8 +48,9 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 	if creds.SecretKey == "" || creds.PublicKey == "" {
 		return nil, errors.New("uploadcare: invalid api creds provided")
 	}
-
-	conf = resolveConfig(conf)
+	if conf == nil {
+		return nil, errors.New("uploadcare: config required, build via NewConfig")
+	}
 
 	c := client{
 		backends: map[config.Endpoint]Client{
@@ -75,10 +58,13 @@ func NewClient(creds APICreds, conf *Config) (Client, error) {
 			config.UploadAPIEndpoint: newUploadAPIClient(creds, conf),
 		},
 		fallbackDo: fallbackDoFunc(conf.HTTPClient),
+		cdnBase:    conf.CDNBase,
 	}
 
 	return &c, nil
 }
+
+func (c *client) CDNBase() string { return c.cdnBase }
 
 var errNoClient = errors.New("no client for such endpoint")
 
@@ -104,17 +90,4 @@ func (c *client) Do(req *http.Request, resdata interface{}) error {
 		return c.fallbackDo(req, resdata)
 	}
 	return b.Do(req, resdata)
-}
-
-func resolveConfig(conf *Config) *Config {
-	if conf == nil {
-		conf = &Config{}
-	}
-	if conf.APIVersion == "" {
-		conf.APIVersion = defaultAPIVersion
-	}
-	if conf.HTTPClient == nil {
-		conf.HTTPClient = http.DefaultClient
-	}
-	return conf
 }

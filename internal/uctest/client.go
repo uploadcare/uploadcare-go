@@ -16,6 +16,7 @@ import (
 type Client struct {
 	HTTP    *http.Client
 	BaseURL string
+	CDN     string
 }
 
 func NewServerClient(srv *httptest.Server) *Client {
@@ -24,6 +25,8 @@ func NewServerClient(srv *httptest.Server) *Client {
 		BaseURL: srv.URL,
 	}
 }
+
+func (c *Client) CDNBase() string { return c.CDN }
 
 func (c *Client) NewRequest(
 	ctx context.Context,
@@ -66,6 +69,7 @@ func (c *Client) Do(req *http.Request, resdata interface{}) error {
 type UploadClient struct {
 	HTTP    *http.Client
 	BaseURL string
+	CDN     string
 }
 
 func NewUploadServerClient(srv *httptest.Server) *UploadClient {
@@ -74,6 +78,8 @@ func NewUploadServerClient(srv *httptest.Server) *UploadClient {
 		BaseURL: srv.URL,
 	}
 }
+
+func (c *UploadClient) CDNBase() string { return c.CDN }
 
 func (c *UploadClient) NewRequest(
 	ctx context.Context,

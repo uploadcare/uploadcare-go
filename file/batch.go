@@ -26,6 +26,11 @@ func (s service) BatchStore(
 		batchParams(ids),
 		&data,
 	)
+	if err == nil {
+		for i := range data.Results {
+			applyCDNBase(&data.Results[i], s.cdnBase)
+		}
+	}
 	return
 }
 
@@ -42,6 +47,11 @@ func (s service) BatchDelete(
 		batchParams(ids),
 		&data,
 	)
+	if err == nil {
+		for i := range data.Results {
+			applyCDNBase(&data.Results[i], s.cdnBase)
+		}
+	}
 	return
 }
 

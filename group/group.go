@@ -20,6 +20,9 @@ func (s service) Info(
 		nil,
 		&data,
 	)
+	if err == nil {
+		applyCDNBase(&data, s.cdnBase)
+	}
 	return
 }
 

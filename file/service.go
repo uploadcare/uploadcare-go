@@ -28,7 +28,16 @@ type Service interface {
 }
 
 type service struct {
-	svc svc.Service
+	svc     svc.Service
+	cdnBase string
+}
+
+func applyCDNBase(info *Info, cdnBase string) {
+	if cdnBase == "" || info == nil || info.OriginalFileURL == nil {
+		return
+	}
+	rewritten := ucare.RewriteCDNURL(*info.OriginalFileURL, cdnBase)
+	info.OriginalFileURL = &rewritten
 }
 
 const (
@@ -70,5 +79,8 @@ const (
 
 // NewService returns new instance of the Service
 func NewService(client ucare.Client) Service {
-	return service{svc.New(config.RESTAPIEndpoint, client, log)}
+	return service{
+		svc:     svc.New(config.RESTAPIEndpoint, client, log),
+		cdnBase: ucare.ClientCDNBase(client),
+	}
 }

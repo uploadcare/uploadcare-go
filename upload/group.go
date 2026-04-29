@@ -30,6 +30,7 @@ func (d *createGroupParams) EncodeReq(req *http.Request) error {
 // or without applied CDN media processing operations.
 //
 // Example:
+//
 //	[
 //		"d6d34fa9-addd-472c-868d-2e5c105f9fcd",
 //		"b1026315-8116-4632-8364-607e64fca723/-/resize/x800/",
@@ -53,6 +54,9 @@ func (s service) CreateGroup(
 
 	log.Debugf("created group: %+v", info)
 
+	if err == nil {
+		applyGroupCDNBase(&info, s.cdnBase)
+	}
 	return
 }
 
@@ -89,6 +93,7 @@ func (d *groupInfoParams) EncodeReq(req *http.Request) error {
 // GroupInfo returns group specific info.
 //
 // GroupID look like UUID~N, for example:
+//
 //	"d52d7136-a2e5-4338-9f45-affbf83b857d~2"
 func (s service) GroupInfo(
 	ctx context.Context,
@@ -104,5 +109,8 @@ func (s service) GroupInfo(
 		&params,
 		&info,
 	)
+	if err == nil {
+		applyGroupCDNBase(&info, s.cdnBase)
+	}
 	return
 }

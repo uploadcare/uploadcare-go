@@ -44,7 +44,8 @@ func (d *ListParams) EncodeReq(req *http.Request) error {
 
 // List holds a list of files
 type List struct {
-	raw codec.NextRawResulter
+	raw     codec.NextRawResulter
+	cdnBase string
 }
 
 // Next indicates if there is a result to read
@@ -63,6 +64,10 @@ func (v *List) ReadResult() (*Info, error) {
 
 	log.Debugf("reading file list result: %+v", fi)
 
+	if err == nil {
+		applyCDNBase(&fi, v.cdnBase)
+	}
+
 	return &fi, err
 }
 
@@ -80,5 +85,5 @@ func (v *List) ReadResult() (*Info, error) {
 //	}
 func (s service) List(ctx context.Context, params ListParams) (*List, error) {
 	resbuf, err := s.svc.List(ctx, listPathFormat, &params)
-	return &List{raw: resbuf}, err
+	return &List{raw: resbuf, cdnBase: s.cdnBase}, err
 }
