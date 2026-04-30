@@ -93,7 +93,7 @@ func (c *restAPIClient) NewRequest(
 	req.Header.Set("Date", date)
 	c.setAuthHeader(c.creds, req)
 
-	log.Debugf("created new request: %+v", req)
+	log.Debugf("created new request: %s %s", req.Method, req.URL)
 	return req, nil
 }
 
@@ -107,7 +107,7 @@ func (c *restAPIClient) Do(req *http.Request, resdata interface{}) error {
 			}
 		}
 
-		log.Debugf("making %d request: %+v", tries, req)
+		log.Debugf("making %d request: %s %s", tries, req.Method, req.URL)
 
 		resp, err := c.conn.Do(req)
 		if err != nil {
