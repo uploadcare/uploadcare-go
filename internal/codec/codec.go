@@ -117,7 +117,7 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 			continue
 		}
 
-		if f.Kind() == reflect.Ptr && f.IsNil() {
+		if f.Kind() == reflect.Pointer && f.IsNil() {
 			continue
 		}
 
@@ -280,7 +280,7 @@ func writeFormField(
 	t reflect.StructField,
 	f reflect.Value,
 ) {
-	if f.Kind() == reflect.Ptr && f.IsNil() {
+	if f.Kind() == reflect.Pointer && f.IsNil() {
 		return
 	}
 
@@ -336,7 +336,7 @@ func fieldValue(v reflect.Value) (val string) {
 }
 
 func reflectTypeValue(d interface{}) (t reflect.Type, v reflect.Value, err error) {
-	if reflect.TypeOf(d).Kind() != reflect.Ptr {
+	if reflect.TypeOf(d).Kind() != reflect.Pointer {
 		err = errors.New("data is not a pointer type")
 		return
 	}
