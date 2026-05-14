@@ -95,8 +95,8 @@ func TestRESTAPIClient(t *testing.T) {
 				"UploadcareGo/2.0.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
-			if h.Get("Content-Type") != "application/json" {
-				return errors.New("wrong content-type header")
+			if h.Get("Content-Type") != "" {
+				return errors.New("content-type should not be set on a bodyless request")
 			}
 			_, err := time.Parse(dateHeaderFormat, h.Get("Date"))
 			if err != nil {

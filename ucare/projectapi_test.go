@@ -75,7 +75,7 @@ func TestProjectAPIClient_NewRequest(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "Bearer my-bearer-token", req.Header.Get("Authorization"))
-	assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+	assert.Empty(t, req.Header.Get("Content-Type"), "content-type should not be set on a bodyless request")
 	assert.Contains(t, req.Header.Get("User-Agent"), "UploadcareGo/")
 	assert.Equal(t, "https://api.uploadcare.com/projects/", req.URL.String())
 }
@@ -85,16 +85,41 @@ func TestProjectAPIClient_NewRequest_WithData(t *testing.T) {
 
 	client := newProjectAPIClient("tok", NewBearerConfig())
 
-	data := testReqEncoder{query: "limit=10"}
+	data := testReqEncoder{body: `{"name":"test"}`, query: "limit=10"}
 	req, err := client.NewRequest(
 		context.Background(),
 		config.RESTAPIEndpoint,
-		http.MethodGet,
+		http.MethodPost,
 		"/projects/",
 		&data,
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "limit=10", req.URL.RawQuery)
+	assert.Equal(t, "application/json", req.Header.Get("Content-Type"), "content-type must be set when a body is present")
+}
+
+func TestProjectAPIClient_NewRequest_PreservesEncoderContentType(t *testing.T) {
+	t.Parallel()
+
+	client := newProjectAPIClient("tok", NewBearerConfig())
+
+	data := contentTypeEncoder{contentType: "multipart/form-data; boundary=xyz"}
+	req, err := client.NewRequest(
+		context.Background(),
+		config.RESTAPIEndpoint,
+		http.MethodPost,
+		"/projects/",
+		&data,
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "multipart/form-data; boundary=xyz", req.Header.Get("Content-Type"))
+}
+
+type contentTypeEncoder struct{ contentType string }
+
+func (e contentTypeEncoder) EncodeReq(r *http.Request) error {
+	r.Header.Set("Content-Type", e.contentType)
+	return nil
 }
 
 func TestProjectAPIClient_Do_Success(t *testing.T) {
@@ -182,6 +207,62 @@ func TestProjectAPIClient_Do_ErrorWithoutJSON(t *testing.T) {
 	assert.True(t, errors.As(err, &apiErr))
 	assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
 	assert.Equal(t, "Bad Gateway", apiErr.Message)
+}
+
+func TestProjectAPIClient_Do_Unauthorized(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"message":"Invalid token.","code":"invalid_token"}`))
+	}))
+	defer srv.Close()
+
+	client := &projectAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/projects/", nil)
+	require.NoError(t, err)
+
+	err = client.Do(req, nil)
+	require.Error(t, err)
+
+	var authErr ProjectAuthError
+	require.True(t, errors.As(err, &authErr), "must surface as ProjectAuthError")
+	assert.Equal(t, http.StatusUnauthorized, authErr.StatusCode)
+	assert.Equal(t, "Invalid token.", authErr.Message)
+	assert.Equal(t, "invalid_token", authErr.Code)
+	assert.Contains(t, authErr.Error(), "authentication failed")
+
+	var apiErr ProjectAPIError
+	require.True(t, errors.As(err, &apiErr), "must remain reachable as ProjectAPIError via Unwrap")
+	assert.Equal(t, "invalid_token", apiErr.Code)
+}
+
+func TestProjectAPIClient_Do_Forbidden(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"No access to project.","code":"forbidden"}`))
+	}))
+	defer srv.Close()
+
+	client := &projectAPIClient{conn: srv.Client()}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/projects/abc/", nil)
+	require.NoError(t, err)
+
+	err = client.Do(req, nil)
+	require.Error(t, err)
+
+	var forbiddenErr ProjectForbiddenError
+	require.True(t, errors.As(err, &forbiddenErr), "must surface as ProjectForbiddenError")
+	assert.Equal(t, http.StatusForbidden, forbiddenErr.StatusCode)
+	assert.Equal(t, "No access to project.", forbiddenErr.Message)
+	assert.Contains(t, forbiddenErr.Error(), "forbidden")
+
+	var apiErr ProjectAPIError
+	require.True(t, errors.As(err, &apiErr), "must remain reachable as ProjectAPIError via Unwrap")
 }
 
 func TestProjectAPIClient_Do_ThrottleNoRetry(t *testing.T) {
@@ -307,8 +388,7 @@ func TestProjectAPIClient_HandleThrottleBackoffExceedsMaxWait(t *testing.T) {
 	resp := rec.Result()
 	resp.Request = req
 
-	client := &projectAPIClient{retry: &RetryConfig{MaxRetries: 10, MaxWaitSeconds: 3}}
-	retry, err := client.handleResponse(resp, req, nil, 5)
+	retry, err := processResponse(resp, req, nil, &RetryConfig{MaxRetries: 10, MaxWaitSeconds: 3}, 5, mapProjectAPIError)
 	assert.False(t, retry)
 
 	var throttleErr ThrottleError
