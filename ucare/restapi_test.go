@@ -56,6 +56,13 @@ func respondJSON(w http.ResponseWriter, v interface{}) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// writeJSONStatus writes JSON with an explicit status code (test servers only).
+func writeJSONStatus(w http.ResponseWriter, code int, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
 func withServer(t *testing.T, handler http.Handler, fn func(*testing.T, *httptest.Server)) {
 	t.Helper()
 	srv := httptest.NewServer(handler)

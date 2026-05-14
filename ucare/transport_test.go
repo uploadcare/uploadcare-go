@@ -16,21 +16,23 @@ type errReadCloser struct{ err error }
 func (e errReadCloser) Read([]byte) (int, error) { return 0, e.err }
 func (e errReadCloser) Close() error             { return nil }
 
+func restAPIClientStubTransport(rt http.RoundTripper) *restAPIClient {
+	return &restAPIClient{
+		conn: &http.Client{Transport: rt},
+	}
+}
+
 func TestProcessResponse_BodyReadErrorJoinedWithAPIError(t *testing.T) {
 	t.Parallel()
 
 	readErr := errors.New("simulated read failure")
-	client := &restAPIClient{
-		conn: &http.Client{
-			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusBadGateway,
-					Header:     make(http.Header),
-					Body:       errReadCloser{err: readErr},
-				}, nil
-			}),
-		},
-	}
+	client := restAPIClientStubTransport(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusBadGateway,
+			Header:     make(http.Header),
+			Body:       errReadCloser{err: readErr},
+		}, nil
+	}))
 	req, err := http.NewRequest(http.MethodGet, "https://example.test/files/", nil)
 	require.NoError(t, err)
 
@@ -46,7 +48,7 @@ func TestProcessResponse_BodyReadErrorJoinedWithAPIError(t *testing.T) {
 }
 
 type drainTrackedBody struct {
-	r        io.Reader
+	r         io.Reader
 	readToEnd *bool
 	closed    *bool
 }
@@ -64,56 +66,47 @@ func (d *drainTrackedBody) Close() error {
 	return nil
 }
 
-func TestProcessResponse_DrainsBodyAfterDecode(t *testing.T) {
-	t.Parallel()
+func TestProcessResponse_DrainsBody(t *testing.T) {
+	t.Run("after_decode", func(t *testing.T) {
+		t.Parallel()
 
-	readToEnd := false
-	closed := false
-	body := strings.NewReader(`{"ok":true}` + strings.Repeat("x", 256))
+		readToEnd, closed := false, false
+		body := strings.NewReader(`{"ok":true}` + strings.Repeat("x", 256))
 
-	client := &restAPIClient{
-		conn: &http.Client{
-			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     make(http.Header),
-					Body:       &drainTrackedBody{r: body, readToEnd: &readToEnd, closed: &closed},
-				}, nil
-			}),
-		},
-	}
-	req, err := http.NewRequest(http.MethodGet, "https://example.test/files/", nil)
-	require.NoError(t, err)
+		client := restAPIClientStubTransport(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       &drainTrackedBody{r: body, readToEnd: &readToEnd, closed: &closed},
+			}, nil
+		}))
+		req, err := http.NewRequest(http.MethodGet, "https://example.test/files/", nil)
+		require.NoError(t, err)
 
-	var result map[string]bool
-	require.NoError(t, client.Do(req, &result))
-	assert.True(t, result["ok"])
-	assert.True(t, readToEnd, "body must be drained to EOF for connection reuse")
-	assert.True(t, closed, "body must be closed")
-}
+		var result map[string]bool
+		require.NoError(t, client.Do(req, &result))
+		assert.True(t, result["ok"])
+		assert.True(t, readToEnd, "body must be drained to EOF for connection reuse")
+		assert.True(t, closed, "body must be closed")
+	})
+	t.Run("on_nil_resdata", func(t *testing.T) {
+		t.Parallel()
 
-func TestProcessResponse_DrainsBodyOnNilResdata(t *testing.T) {
-	t.Parallel()
+		readToEnd, closed := false, false
+		body := strings.NewReader(`{"ignored":"payload"}`)
 
-	readToEnd := false
-	closed := false
-	body := strings.NewReader(`{"ignored":"payload"}`)
+		client := restAPIClientStubTransport(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusNoContent,
+				Header:     make(http.Header),
+				Body:       &drainTrackedBody{r: body, readToEnd: &readToEnd, closed: &closed},
+			}, nil
+		}))
+		req, err := http.NewRequest(http.MethodDelete, "https://example.test/files/abc/", nil)
+		require.NoError(t, err)
 
-	client := &restAPIClient{
-		conn: &http.Client{
-			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNoContent,
-					Header:     make(http.Header),
-					Body:       &drainTrackedBody{r: body, readToEnd: &readToEnd, closed: &closed},
-				}, nil
-			}),
-		},
-	}
-	req, err := http.NewRequest(http.MethodDelete, "https://example.test/files/abc/", nil)
-	require.NoError(t, err)
-
-	require.NoError(t, client.Do(req, nil))
-	assert.True(t, readToEnd, "body must be drained even when caller passes nil resdata")
-	assert.True(t, closed)
+		require.NoError(t, client.Do(req, nil))
+		assert.True(t, readToEnd, "body must be drained even when caller passes nil resdata")
+		assert.True(t, closed)
+	})
 }

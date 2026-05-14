@@ -8,8 +8,6 @@ import (
 	"net/http"
 )
 
-// body-read errors are joined onto the returned error by the caller, so
-// implementations can focus on parsing.
 type httpErrorMapper func(statusCode int, body []byte) error
 
 func doWithRetry(
@@ -78,8 +76,6 @@ func processResponse(
 	return false, nil
 }
 
-// drainAndClose: without draining, partially-read responses force net/http
-// to drop the underlying TCP connection instead of reusing it.
 func drainAndClose(body io.ReadCloser) {
 	_, _ = io.Copy(io.Discard, body)
 	_ = body.Close()
