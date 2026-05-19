@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
@@ -59,7 +58,9 @@ func (c *projectAPIClient) NewRequest(
 		}
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	if data != nil && req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set(userAgentHeaderKey, c.userAgent)
 	req.Header.Set(authHeaderKey, "Bearer "+c.token)
 
@@ -68,60 +69,20 @@ func (c *projectAPIClient) NewRequest(
 }
 
 func (c *projectAPIClient) Do(req *http.Request, resdata interface{}) error {
-	for tries := 1; ; tries++ {
-		if tries > 1 && req.GetBody != nil {
-			var err error
-			req.Body, err = req.GetBody()
-			if err != nil {
-				return err
-			}
-		}
-
-		log.Debugf("making %d project api request: %s %s", tries, req.Method, req.URL)
-
-		resp, err := c.conn.Do(req)
-		if err != nil {
-			return err
-		}
-
-		retry, err := c.handleResponse(resp, req, resdata, tries)
-		if err != nil || !retry {
-			return err
-		}
-	}
+	return doWithRetry(c.conn, c.retry, req, resdata, mapProjectAPIError)
 }
 
-func (c *projectAPIClient) handleResponse(
-	resp *http.Response,
-	req *http.Request,
-	resdata interface{},
-	tries int,
-) (bool, error) {
-	defer func() { _ = resp.Body.Close() }()
-
-	log.Debugf("received project api response: %+v", resp)
-
-	if resp.StatusCode == 429 {
-		return handleThrottle(req.Context(), resp, c.retry, tries)
+func mapProjectAPIError(statusCode int, body []byte) error {
+	apiErr := ProjectAPIError{StatusCode: statusCode}
+	if json.Unmarshal(body, &apiErr) != nil || apiErr.Message == "" {
+		apiErr.Message = stringOrStatus(body, statusCode)
 	}
-
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		var apiErr ProjectAPIError
-		apiErr.StatusCode = resp.StatusCode
-		if json.Unmarshal(body, &apiErr) != nil || apiErr.Message == "" {
-			apiErr.Message = stringOrStatus(body, resp.StatusCode)
-		}
-		return false, apiErr
+	switch statusCode {
+	case http.StatusUnauthorized:
+		return ProjectAuthError{ProjectAPIError: apiErr}
+	case http.StatusForbidden:
+		return ProjectForbiddenError{ProjectAPIError: apiErr}
+	default:
+		return apiErr
 	}
-
-	if isNilResponseData(resdata) {
-		return false, nil
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(resdata); err != nil {
-		return false, err
-	}
-
-	return false, nil
 }

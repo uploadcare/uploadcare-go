@@ -87,7 +87,9 @@ func (c *restAPIClient) NewRequest(
 
 	date := time.Now().In(dateHeaderLocation).Format(dateHeaderFormat)
 
-	req.Header.Set("Content-Type", "application/json")
+	if data != nil && req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set("Accept", c.acceptHeader)
 	req.Header.Set(userAgentHeaderKey, c.userAgent)
 	req.Header.Set("Date", date)
@@ -98,81 +100,38 @@ func (c *restAPIClient) NewRequest(
 }
 
 func (c *restAPIClient) Do(req *http.Request, resdata interface{}) error {
-	for tries := 1; ; tries++ {
-		if tries > 1 && req.GetBody != nil {
-			var err error
-			req.Body, err = req.GetBody()
-			if err != nil {
-				return err
-			}
-		}
-
-		log.Debugf("making %d request: %s %s", tries, req.Method, req.URL)
-
-		resp, err := c.conn.Do(req)
-		if err != nil {
-			return err
-		}
-
-		retry, err := c.handleResponse(resp, req, resdata, tries)
-		if err != nil || !retry {
-			return err
-		}
-	}
+	return doWithRetry(c.conn, c.retry, req, resdata, mapRESTError)
 }
 
-func (c *restAPIClient) handleResponse(
-	resp *http.Response,
-	req *http.Request,
-	resdata interface{},
-	tries int,
-) (bool, error) {
-	defer func() { _ = resp.Body.Close() }()
-
-	log.Debugf("received response: %+v", resp)
-
-	switch resp.StatusCode {
-	case 400, 404:
-		apiErr := APIError{StatusCode: resp.StatusCode}
-		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &apiErr) != nil {
-			apiErr.Detail = stringOrStatus(body, resp.StatusCode)
+func mapRESTError(statusCode int, body []byte) error {
+	switch statusCode {
+	case http.StatusBadRequest, http.StatusNotFound:
+		apiErr := APIError{StatusCode: statusCode}
+		if json.Unmarshal(body, &apiErr) != nil {
+			apiErr.Detail = stringOrStatus(body, statusCode)
 		}
-		return false, apiErr
-	case 401:
-		authErr := AuthError{APIError: APIError{StatusCode: 401}}
-		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &authErr) != nil {
-			authErr.Detail = stringOrStatus(body, 401)
+		return apiErr
+	case http.StatusUnauthorized:
+		authErr := AuthError{APIError: APIError{StatusCode: http.StatusUnauthorized}}
+		if json.Unmarshal(body, &authErr) != nil {
+			authErr.Detail = stringOrStatus(body, http.StatusUnauthorized)
 		}
-		return false, authErr
-	case 403:
-		forbiddenErr := ForbiddenError{APIError: APIError{StatusCode: 403}}
-		if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &forbiddenErr) != nil {
-			forbiddenErr.Detail = stringOrStatus(body, 403)
+		return authErr
+	case http.StatusForbidden:
+		forbiddenErr := ForbiddenError{APIError: APIError{StatusCode: http.StatusForbidden}}
+		if json.Unmarshal(body, &forbiddenErr) != nil {
+			forbiddenErr.Detail = stringOrStatus(body, http.StatusForbidden)
 		}
-		return false, forbiddenErr
-	case 406:
-		return false, ErrInvalidVersion
-	case 429:
-		return handleThrottle(req.Context(), resp, c.retry, tries)
+		return forbiddenErr
+	case http.StatusNotAcceptable:
+		return ErrInvalidVersion
 	default:
-		if resp.StatusCode >= 400 {
-			apiErr := APIError{StatusCode: resp.StatusCode}
-			if body, _ := io.ReadAll(resp.Body); json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
-				apiErr.Detail = stringOrStatus(body, resp.StatusCode)
-			}
-			return false, apiErr
+		apiErr := APIError{StatusCode: statusCode}
+		if json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
+			apiErr.Detail = stringOrStatus(body, statusCode)
 		}
+		return apiErr
 	}
-
-	if isNilResponseData(resdata) {
-		return false, nil
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(resdata); err != nil {
-		return false, err
-	}
-
-	return false, nil
 }
 
 func stringOrStatus(body []byte, statusCode int) string {
@@ -190,7 +149,7 @@ func isNilResponseData(resdata interface{}) bool {
 	v := reflect.ValueOf(resdata)
 	switch v.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map,
-		reflect.Ptr, reflect.Slice:
+		reflect.Pointer, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false

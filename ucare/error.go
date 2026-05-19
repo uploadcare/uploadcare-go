@@ -78,3 +78,25 @@ func (e ProjectAPIError) Error() string {
 	}
 	return fmt.Sprintf("uploadcare: project api: HTTP %d: %s", e.StatusCode, e.Message)
 }
+
+type ProjectAuthError struct{ ProjectAPIError }
+
+func (e ProjectAuthError) Error() string {
+	if e.Code != "" {
+		return fmt.Sprintf("uploadcare: project api: authentication failed: %s (%s)", e.Message, e.Code)
+	}
+	return fmt.Sprintf("uploadcare: project api: authentication failed: %s", e.Message)
+}
+
+func (e ProjectAuthError) Unwrap() error { return e.ProjectAPIError }
+
+type ProjectForbiddenError struct{ ProjectAPIError }
+
+func (e ProjectForbiddenError) Error() string {
+	if e.Code != "" {
+		return fmt.Sprintf("uploadcare: project api: forbidden: %s (%s)", e.Message, e.Code)
+	}
+	return fmt.Sprintf("uploadcare: project api: forbidden: %s", e.Message)
+}
+
+func (e ProjectForbiddenError) Unwrap() error { return e.ProjectAPIError }

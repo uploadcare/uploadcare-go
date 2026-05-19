@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
@@ -70,81 +69,26 @@ func (c *uploadAPIClient) Do(
 	req *http.Request,
 	resdata interface{},
 ) error {
-	for tries := 1; ; tries++ {
-		if tries > 1 && req.GetBody != nil {
-			var err error
-			req.Body, err = req.GetBody()
-			if err != nil {
-				return err
-			}
-		}
-
-		log.Debugf("making %d request: %s %+v", tries, req.Method, req.URL)
-
-		resp, err := c.conn.Do(req)
-		if err != nil {
-			return err
-		}
-
-		retry, err := c.handleResponse(resp, resdata, tries)
-		if err != nil || !retry {
-			return err
-		}
-	}
+	return doWithRetry(c.conn, c.retry, req, resdata, mapUploadError)
 }
 
-func (c *uploadAPIClient) handleResponse(
-	resp *http.Response,
-	resdata interface{},
-	tries int,
-) (bool, error) {
-	defer func() { _ = resp.Body.Close() }()
-
-	log.Debugf("received response: %+v", resp)
-
-	switch resp.StatusCode {
-	case 400:
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return false, err
-		}
-		return false, ValidationError{APIError{StatusCode: 400, Detail: string(data)}}
-	case 403:
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return false, err
-		}
-		return false, ForbiddenError{APIError{StatusCode: 403, Detail: string(data)}}
-	case 413:
-		return false, ErrFileTooLarge
-	case 429:
-		return handleThrottle(resp.Request.Context(), resp, c.retry, tries)
+func mapUploadError(statusCode int, body []byte) error {
+	switch statusCode {
+	case http.StatusBadRequest:
+		return ValidationError{APIError{StatusCode: http.StatusBadRequest, Detail: string(body)}}
+	case http.StatusForbidden:
+		return ForbiddenError{APIError{StatusCode: http.StatusForbidden, Detail: string(body)}}
+	case http.StatusRequestEntityTooLarge:
+		return ErrFileTooLarge
 	default:
-		if resp.StatusCode >= 400 {
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return false, err
+		apiErr := APIError{StatusCode: statusCode}
+		if json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
+			detail := string(body)
+			if detail == "" {
+				detail = http.StatusText(statusCode)
 			}
-			var apiErr APIError
-			if json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
-				detail := string(body)
-				if detail == "" {
-					detail = http.StatusText(resp.StatusCode)
-				}
-				apiErr.Detail = detail
-			}
-			apiErr.StatusCode = resp.StatusCode
-			return false, apiErr
+			apiErr.Detail = detail
 		}
+		return apiErr
 	}
-
-	if isNilResponseData(resdata) {
-		return false, nil
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(resdata); err != nil {
-		return false, err
-	}
-
-	return false, nil
 }
