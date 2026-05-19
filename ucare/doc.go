@@ -19,7 +19,7 @@ access different parts of the Uploadcare API:
 
 	conf, err := ucare.NewConfig(creds, ucare.WithSignBasedAuthentication())
 	if err != nil {
-		// handle error
+		panic(err)
 	}
 
 	client, err := ucare.NewClient(creds, conf)
@@ -133,6 +133,31 @@ Uploading a file
 	fileID, err := uploadSvc.File(context.Background(), fileParams)
 	if err != nil {
 		// handle error
+	}
+
+Using the Project API (bearer token authentication):
+
+	import "github.com/uploadcare/uploadcare-go/v2/projectapi"
+
+	conf := ucare.NewBearerConfig()
+	client, err := ucare.NewBearerClient("your-bearer-token", conf)
+	if err != nil {
+		panic(err)
+	}
+
+	projectSvc := projectapi.NewService(client)
+
+	projects, err := projectSvc.List(context.Background(), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	for projects.Next() {
+		p, err := projects.ReadResult()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("project: %s (%s)\n", p.Name, p.PubKey)
 	}
 */
 package ucare

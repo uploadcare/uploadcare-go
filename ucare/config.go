@@ -59,7 +59,6 @@ type Config struct {
 	CDNBase string
 }
 
-// Option configures a Config.
 type Option func(*Config)
 
 func WithHTTPClient(hc *http.Client) Option {
@@ -86,8 +85,8 @@ func WithCDNBase(url string) Option {
 	return func(c *Config) { c.CDNBase = url }
 }
 
-// NewConfig builds the only Config shape NewClient accepts: defaults applied,
-// CDNBase resolved against creds.PublicKey.
+// NewConfig builds a Config with defaults applied and CDNBase resolved
+// against creds.PublicKey.
 func NewConfig(creds APICreds, opts ...Option) (*Config, error) {
 	if creds.PublicKey == "" {
 		return nil, errors.New("uploadcare: invalid api creds: public key required")
@@ -96,18 +95,46 @@ func NewConfig(creds APICreds, opts ...Option) (*Config, error) {
 	for _, opt := range opts {
 		opt(cfg)
 	}
-	if cfg.APIVersion == "" {
-		cfg.APIVersion = defaultAPIVersion
+	return resolveConfig(creds, cfg)
+}
+
+func resolveConfig(creds APICreds, conf *Config) (*Config, error) {
+	if creds.PublicKey == "" {
+		return nil, errors.New("uploadcare: invalid api creds: public key required")
 	}
-	if cfg.HTTPClient == nil {
-		cfg.HTTPClient = http.DefaultClient
+	if conf == nil {
+		conf = &Config{}
 	}
-	cdnBase, err := resolveCDNBase(cfg.CDNBase, creds.PublicKey)
+	if conf.APIVersion == "" {
+		conf.APIVersion = defaultAPIVersion
+	}
+	if conf.HTTPClient == nil {
+		conf.HTTPClient = http.DefaultClient
+	}
+	cdnBase, err := resolveCDNBase(conf.CDNBase, creds.PublicKey)
 	if err != nil {
 		return nil, err
 	}
-	cfg.CDNBase = cdnBase
-	return cfg, nil
+	conf.CDNBase = cdnBase
+	return conf, nil
+}
+
+// NewBearerConfig builds a Config for bearer-token clients such as the Project API.
+func NewBearerConfig(opts ...Option) *Config {
+	cfg := &Config{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return resolveBearerConfig(cfg)
+}
+
+func resolveBearerConfig(conf *Config) *Config {
+	if conf.HTTPClient != nil {
+		return conf
+	}
+	copied := *conf
+	copied.HTTPClient = http.DefaultClient
+	return &copied
 }
 
 func cdnCNAMEPrefix(publicKey string) string {

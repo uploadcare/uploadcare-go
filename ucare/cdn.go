@@ -5,10 +5,6 @@ import (
 	"strings"
 )
 
-// cdnBaseProvider is an optional capability discovered via type assertion in
-// ClientCDNBase. It is intentionally not part of the public Client interface:
-// adding a method there would break every external Client implementation
-// (test doubles, custom wrappers).
 type cdnBaseProvider interface {
 	CDNBase() string
 }

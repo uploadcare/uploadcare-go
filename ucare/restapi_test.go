@@ -56,6 +56,13 @@ func respondJSON(w http.ResponseWriter, v interface{}) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// writeJSONStatus writes JSON with an explicit status code (test servers only).
+func writeJSONStatus(w http.ResponseWriter, code int, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
 func withServer(t *testing.T, handler http.Handler, fn func(*testing.T, *httptest.Server)) {
 	t.Helper()
 	srv := httptest.NewServer(handler)
@@ -95,8 +102,8 @@ func TestRESTAPIClient(t *testing.T) {
 				"UploadcareGo/2.0.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
-			if h.Get("Content-Type") != "application/json" {
-				return errors.New("wrong content-type header")
+			if h.Get("Content-Type") != "" {
+				return errors.New("content-type should not be set on a bodyless request")
 			}
 			_, err := time.Parse(dateHeaderFormat, h.Get("Date"))
 			if err != nil {

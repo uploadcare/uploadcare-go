@@ -2,9 +2,11 @@
 package test
 
 import (
+	"context"
 	"os"
 	"testing"
 
+	"github.com/uploadcare/uploadcare-go/v2/projectapi"
 	"github.com/uploadcare/uploadcare-go/v2/test/testenv"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
@@ -83,4 +85,43 @@ func TestIntegration(t *testing.T) {
 	for _, test := range integrationTests {
 		t.Run(test.name, func(t *testing.T) { test.fn(t, r) })
 	}
+}
+
+func TestProjectAPIIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	token := os.Getenv("PROJECT_API_TOKEN")
+	if token == "" {
+		t.Skip("PROJECT_API_TOKEN env var is required for Project API tests")
+	}
+
+	client, err := ucare.NewBearerClient(
+		token,
+		ucare.NewBearerConfig(ucare.WithRetry(&ucare.RetryConfig{MaxRetries: 3})),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	svc := projectapi.NewService(client)
+
+	t.Run("list projects", func(t *testing.T) { projectAPIList(t, svc) })
+
+	list, err := svc.List(context.Background(), nil)
+	if err != nil {
+		t.Fatal("cannot list projects: ", err)
+	}
+	if !list.Next() {
+		t.Fatal("no projects found")
+	}
+	first, err := list.ReadResult()
+	if err != nil {
+		t.Fatal("cannot read first project: ", err)
+	}
+	pubKey := first.PubKey
+
+	t.Run("get project", func(t *testing.T) { projectAPIGet(t, svc, pubKey) })
+	t.Run("list secrets", func(t *testing.T) { projectAPIListSecrets(t, svc, pubKey) })
 }
