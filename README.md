@@ -33,6 +33,8 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/group"
 	"github.com/uploadcare/uploadcare-go/v2/upload"
 	"github.com/uploadcare/uploadcare-go/v2/conversion"
+	"github.com/uploadcare/uploadcare-go/v2/metadata"
+	"github.com/uploadcare/uploadcare-go/v2/addon"
 	"github.com/uploadcare/uploadcare-go/v2/projectapi"
 )
 ```
@@ -57,6 +59,21 @@ if err != nil {
 	log.Fatalf("creating uploadcare API client: %s", err)
 }
 ```
+
+`NewConfig` accepts additional options:
+
+```go
+conf, err := ucare.NewConfig(creds,
+	ucare.WithSignBasedAuthentication(),
+	ucare.WithUserAgent("my-app/1.0.0"),                  // appended to the default User-Agent
+	ucare.WithRetry(&ucare.RetryConfig{MaxRetries: 3}),   // retry throttled (429) requests; off by default
+	ucare.WithCDNBase("https://cdn.example.com"),         // override the per-project CDN domain
+)
+```
+
+By default the CDN base URL is derived automatically from the public key, and
+URLs returned by the API (`file.Info.OriginalFileURL`, `group.Info.CDNLink`,
+`upload.GroupInfo.CDNLink`) are rewritten to point at it.
 
 ### Project API client
 
@@ -140,6 +157,62 @@ fID, err := uploadSvc.File(context.Background(), params)
 if err != nil {
 	// handle error
 }
+```
+
+`Upload` picks between direct and multipart uploads automatically based on file
+size (multipart above 10MB by default) and accepts custom metadata:
+
+```go
+f, err := os.Open("large-video.mp4")
+if err != nil {
+	// handle error
+}
+
+info, err := uploadSvc.Upload(context.Background(), upload.UploadParams{
+	Data:        f,
+	Name:        f.Name(),
+	ContentType: "video/mp4", // required for the multipart path (files > 10MB)
+	Metadata:    map[string]string{"source": "import"},
+})
+if err != nil {
+	// handle error
+}
+```
+
+Working with per-file metadata:
+
+```go
+metaSvc := metadata.NewService(client)
+
+_, err := metaSvc.Set(context.Background(), fileID, "source", "import")
+if err != nil {
+	// handle error
+}
+
+all, err := metaSvc.List(context.Background(), fileID)
+if err != nil {
+	// handle error
+}
+fmt.Printf("metadata: %v\n", all)
+```
+
+Executing an add-on (e.g. background removal) and polling for the result:
+
+```go
+addonSvc := addon.NewService(client)
+
+exec, err := addonSvc.Execute(context.Background(), addon.AddonRemoveBG, addon.ExecuteParams{
+	Target: fileID,
+})
+if err != nil {
+	// handle error
+}
+
+status, err := addonSvc.Status(context.Background(), addon.AddonRemoveBG, exec.RequestID)
+if err != nil {
+	// handle error
+}
+fmt.Printf("addon status: %s\n", status.Status)
 ```
 
 Managing projects via the Project API:
