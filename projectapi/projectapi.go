@@ -1,4 +1,4 @@
-// Package projectapi is the Uploadcare Project API (projects, secret keys, and usage metrics).
+// Package projectapi is the Uploadcare Project API.
 package projectapi
 
 import (
@@ -17,13 +17,17 @@ type Project struct {
 }
 
 type ProjectFeatures struct {
-	GifToVideoConversion *FeatureToggle     `json:"gif_to_video_conversion,omitempty"`
-	MimeTypeFiltering    *MimeTypeFiltering `json:"mime_type_filtering,omitempty"`
-	TeamMembers          *TeamMembers       `json:"team_members,omitempty"`
-	Uploads              *UploadSettings    `json:"uploads,omitempty"`
-	VideoProcessing      *FeatureToggle     `json:"video_processing,omitempty"`
-	MalwareProtection    *FeatureToggle     `json:"malware_protection,omitempty"`
-	SVGValidation        *FeatureToggle     `json:"svg_validation,omitempty"`
+	GifToVideoConversion     *FeatureToggle          `json:"gif_to_video_conversion,omitempty"`
+	MimeTypeFiltering        *MimeTypeFiltering      `json:"mime_type_filtering,omitempty"`
+	TeamMembers              *TeamMembers            `json:"team_members,omitempty"`
+	Uploads                  *UploadSettings         `json:"uploads,omitempty"`
+	VideoProcessing          *FeatureToggle          `json:"video_processing,omitempty"`
+	MalwareProtection        *FeatureToggle          `json:"malware_protection,omitempty"`
+	SVGValidation            *FeatureToggle          `json:"svg_validation,omitempty"`
+	UnsafeContentDetection   *UnsafeContentDetection `json:"unsafe_content_detection,omitempty"`
+	AdaptiveBitrateStreaming *FeatureToggle          `json:"adaptive_bitrate_streaming,omitempty"`
+	DocumentConversion       *FeatureToggle          `json:"document_conversion,omitempty"`
+	EXIFMetadataRemoval      *FeatureToggle          `json:"exif_metadata_removal,omitempty"`
 }
 
 type FeatureToggle struct {
@@ -31,9 +35,22 @@ type FeatureToggle struct {
 }
 
 type MimeTypeFiltering struct {
-	MimeTypes              []string `json:"mime_types,omitempty"`
-	IsMimeFilteringEnabled *bool    `json:"is_mime_filtering_enabled,omitempty"`
+	MimeTypes []string `json:"mime_types,omitempty"`
+	IsEnabled *bool    `json:"is_enabled,omitempty"`
 }
+
+type UnsafeContentDetection struct {
+	IsEnabled      *bool              `json:"is_enabled,omitempty"`
+	AutoModeration AutoModerationMode `json:"auto_moderation,omitempty"`
+}
+
+type AutoModerationMode string
+
+const (
+	AutoModerationDisabled    AutoModerationMode = "disabled"
+	AutoModerationEnabled     AutoModerationMode = "enabled"
+	AutoModerationRemoveFiles AutoModerationMode = "remove_files"
+)
 
 type TeamMembers struct {
 	TeamSize int `json:"team_size,omitempty"`
@@ -111,4 +128,44 @@ type CombinedUsageDataPoint struct {
 	Traffic    int64  `json:"traffic"`
 	Storage    int64  `json:"storage"`
 	Operations int64  `json:"operations"`
+}
+
+type ModerationThresholdFileType string
+
+const (
+	ModerationThresholdFileTypeImage ModerationThresholdFileType = "image"
+)
+
+type ModerationThreshold struct {
+	CategoryID          int                         `json:"category_id"`
+	FileType            ModerationThresholdFileType `json:"file_type"`
+	ThresholdPercentage string                      `json:"threshold_percentage"`
+	CreatedAt           string                      `json:"created_at,omitempty"`
+	UpdatedAt           string                      `json:"updated_at,omitempty"`
+}
+
+type ModerationThresholdParams struct {
+	CategoryID          int                         `json:"category_id"`
+	FileType            ModerationThresholdFileType `json:"file_type"`
+	ThresholdPercentage string                      `json:"threshold_percentage"`
+}
+
+type ModerationThresholds struct {
+	Thresholds []ModerationThreshold `json:"thresholds"`
+}
+
+type MimeTypes struct {
+	MimeTypes []string `json:"mime_types"`
+}
+
+type ModerationCategories struct {
+	Categories []ModerationCategory `json:"categories"`
+}
+
+type ModerationCategory struct {
+	ID          int    `json:"id"`
+	ParentID    *int   `json:"parent_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Level       int    `json:"level"`
 }

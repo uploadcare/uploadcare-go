@@ -117,6 +117,80 @@ func TestGetProject(t *testing.T) {
 	})
 }
 
+func TestProjectFeatureJSON(t *testing.T) {
+	t.Parallel()
+
+	enabled := true
+	tests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{
+			name: "unmarshal_feature_fields",
+			run: func(t *testing.T) {
+				var data Project
+				require.NoError(t, json.Unmarshal([]byte(`{
+					"features": {
+						"mime_type_filtering": {
+							"mime_types": ["image/jpeg"],
+							"is_enabled": true
+						},
+						"unsafe_content_detection": {
+							"is_enabled": true,
+							"auto_moderation": "remove_files"
+						},
+						"adaptive_bitrate_streaming": {
+							"is_enabled": false
+						},
+						"document_conversion": {
+							"is_enabled": true
+						},
+						"exif_metadata_removal": {
+							"is_enabled": false
+						}
+					}
+				}`), &data))
+
+				require.NotNil(t, data.Features)
+				require.NotNil(t, data.Features.MimeTypeFiltering)
+				require.NotNil(t, data.Features.MimeTypeFiltering.IsEnabled)
+				assert.True(t, *data.Features.MimeTypeFiltering.IsEnabled)
+				assert.Equal(t, []string{"image/jpeg"}, data.Features.MimeTypeFiltering.MimeTypes)
+				require.NotNil(t, data.Features.UnsafeContentDetection)
+				assert.Equal(t, AutoModerationRemoveFiles, data.Features.UnsafeContentDetection.AutoModeration)
+				assert.NotNil(t, data.Features.AdaptiveBitrateStreaming)
+				assert.NotNil(t, data.Features.DocumentConversion)
+				assert.NotNil(t, data.Features.EXIFMetadataRemoval)
+			},
+		},
+		{
+			name: "marshal_mime_type_filtering",
+			run: func(t *testing.T) {
+				raw, err := json.Marshal(ProjectFeatures{
+					MimeTypeFiltering: &MimeTypeFiltering{
+						MimeTypes: []string{"image/jpeg"},
+						IsEnabled: &enabled,
+					},
+				})
+				require.NoError(t, err)
+				assert.JSONEq(t, `{
+					"mime_type_filtering": {
+						"mime_types": ["image/jpeg"],
+						"is_enabled": true
+					}
+				}`, string(raw))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.run(t)
+		})
+	}
+}
+
 func TestUpdateProject(t *testing.T) {
 	t.Parallel()
 
@@ -149,6 +223,116 @@ func TestDeleteProject(t *testing.T) {
 		err := svc.Delete(context.Background(), testPubKey)
 		require.NoError(t, err)
 	})
+}
+
+func TestModerationThresholds(t *testing.T) {
+	t.Parallel()
+
+	responseThresholds := func(params []ModerationThresholdParams) ModerationThresholds {
+		thresholds := make([]ModerationThreshold, 0, len(params))
+		for _, p := range params {
+			thresholds = append(thresholds, ModerationThreshold{
+				CategoryID:          p.CategoryID,
+				FileType:            p.FileType,
+				ThresholdPercentage: p.ThresholdPercentage,
+				CreatedAt:           "2024-12-30T11:24:28.604307Z",
+				UpdatedAt:           "2024-12-30T12:14:02.028743Z",
+			})
+		}
+		return ModerationThresholds{Thresholds: thresholds}
+	}
+
+	tests := []struct {
+		name    string
+		method  string
+		call    func(Service) (ModerationThresholds, error)
+		handler func(*testing.T, http.ResponseWriter, *http.Request)
+		check   func(*testing.T, ModerationThresholds)
+	}{
+		{
+			name:   "get",
+			method: http.MethodGet,
+			call: func(svc Service) (ModerationThresholds, error) {
+				return svc.GetModerationThresholds(context.Background(), testPubKey)
+			},
+			handler: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
+				uctest.RespondJSON(t, w, ModerationThresholds{
+					Thresholds: []ModerationThreshold{
+						{
+							CategoryID:          4,
+							FileType:            ModerationThresholdFileTypeImage,
+							ThresholdPercentage: "37.00",
+							CreatedAt:           "2024-12-30T11:24:28.604307Z",
+							UpdatedAt:           "2024-12-30T12:14:02.028743Z",
+						},
+					},
+				})
+			},
+			check: func(t *testing.T, data ModerationThresholds) {
+				require.Len(t, data.Thresholds, 1)
+				assert.Equal(t, 4, data.Thresholds[0].CategoryID)
+				assert.Equal(t, ModerationThresholdFileTypeImage, data.Thresholds[0].FileType)
+				assert.Equal(t, "37.00", data.Thresholds[0].ThresholdPercentage)
+			},
+		},
+		{
+			name:   "set",
+			method: http.MethodPut,
+			call: func(svc Service) (ModerationThresholds, error) {
+				return svc.SetModerationThresholds(context.Background(), testPubKey, []ModerationThresholdParams{
+					{CategoryID: 4, FileType: ModerationThresholdFileTypeImage, ThresholdPercentage: "30.0"},
+					{CategoryID: 5, FileType: ModerationThresholdFileTypeImage, ThresholdPercentage: "45.0"},
+				})
+			},
+			handler: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
+				body := uctest.ReadBody(t, r)
+				assert.NotContains(t, string(body), "created_at")
+				assert.NotContains(t, string(body), "updated_at")
+
+				var params []ModerationThresholdParams
+				require.NoError(t, json.Unmarshal(body, &params))
+				require.Len(t, params, 2)
+				assert.Equal(t, 4, params[0].CategoryID)
+				assert.Equal(t, ModerationThresholdFileTypeImage, params[0].FileType)
+				assert.Equal(t, "30.0", params[0].ThresholdPercentage)
+
+				uctest.RespondJSON(t, w, responseThresholds(params))
+			},
+			check: func(t *testing.T, data ModerationThresholds) {
+				require.Len(t, data.Thresholds, 2)
+				assert.Equal(t, "45.0", data.Thresholds[1].ThresholdPercentage)
+			},
+		},
+		{
+			name:   "set_empty",
+			method: http.MethodPut,
+			call: func(svc Service) (ModerationThresholds, error) {
+				return svc.SetModerationThresholds(context.Background(), testPubKey, nil)
+			},
+			handler: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
+				assert.JSONEq(t, `[]`, string(uctest.ReadBody(t, r)))
+				uctest.RespondJSON(t, w, ModerationThresholds{})
+			},
+			check: func(t *testing.T, data ModerationThresholds) {
+				assert.Empty(t, data.Thresholds)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			withProjectAPIService(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, tt.method, r.Method)
+				assert.Equal(t, "/projects/"+testPubKey+"/moderation/thresholds/", r.URL.Path)
+				tt.handler(t, w, r)
+			}), func(svc Service) {
+				data, err := tt.call(svc)
+				require.NoError(t, err)
+				tt.check(t, data)
+			})
+		})
+	}
 }
 
 func TestListSecrets(t *testing.T) {
@@ -265,6 +449,67 @@ func TestGetUsageMetric(t *testing.T) {
 	})
 }
 
+func TestMeta(t *testing.T) {
+	t.Parallel()
+
+	parentID := 7
+	tests := []struct {
+		name    string
+		path    string
+		call    func(*testing.T, Service)
+		handler func(*testing.T, http.ResponseWriter, *http.Request)
+	}{
+		{
+			name: "mime_types",
+			path: "/meta/mime/types/",
+			call: func(t *testing.T, svc Service) {
+				data, err := svc.ListMimeTypes(context.Background())
+				require.NoError(t, err)
+				assert.Equal(t, []string{"application/cbor", "image/jpeg"}, data.MimeTypes)
+			},
+			handler: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
+				uctest.RespondJSON(t, w, MimeTypes{
+					MimeTypes: []string{"application/cbor", "image/jpeg"},
+				})
+			},
+		},
+		{
+			name: "moderation_categories",
+			path: "/meta/moderation/categories/",
+			call: func(t *testing.T, svc Service) {
+				data, err := svc.ListModerationCategories(context.Background())
+				require.NoError(t, err)
+				require.Len(t, data.Categories, 2)
+				assert.Equal(t, "Alcohol", data.Categories[0].Name)
+				require.NotNil(t, data.Categories[1].ParentID)
+				assert.Equal(t, parentID, *data.Categories[1].ParentID)
+			},
+			handler: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
+				uctest.RespondJSON(t, w, ModerationCategories{
+					Categories: []ModerationCategory{
+						{ID: 7, Name: "Alcohol", Description: "", Level: 1},
+						{ID: 8, ParentID: &parentID, Name: "Alcoholic Beverages", Description: "Description", Level: 2},
+					},
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			withProjectAPIService(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, http.MethodGet, r.Method)
+				assert.Equal(t, tt.path, r.URL.Path)
+				assert.Empty(t, r.URL.RawQuery)
+				tt.handler(t, w, r)
+			}), func(svc Service) {
+				tt.call(t, svc)
+			})
+		})
+	}
+}
+
 func TestPathValidation(t *testing.T) {
 	t.Parallel()
 
@@ -330,6 +575,22 @@ func TestPathValidation(t *testing.T) {
 				return err
 			},
 			wantErr: ErrInvalidUsageMetric,
+		},
+		{
+			name: "get_moderation_thresholds_slash_pub_key",
+			call: func(svc Service) error {
+				_, err := svc.GetModerationThresholds(context.Background(), "bad/key")
+				return err
+			},
+			wantErr: ErrInvalidPubKey,
+		},
+		{
+			name: "set_moderation_thresholds_empty_pub_key",
+			call: func(svc Service) error {
+				_, err := svc.SetModerationThresholds(context.Background(), "", nil)
+				return err
+			},
+			wantErr: ErrInvalidPubKey,
 		},
 	}
 

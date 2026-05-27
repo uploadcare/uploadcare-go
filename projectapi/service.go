@@ -22,6 +22,12 @@ type Service interface {
 
 	GetUsage(ctx context.Context, pubKey string, params UsageDateRange) (UsageMetricsCombined, error)
 	GetUsageMetric(ctx context.Context, pubKey string, metric UsageMetricName, params UsageDateRange) (UsageMetric, error)
+
+	GetModerationThresholds(ctx context.Context, pubKey string) (ModerationThresholds, error)
+	SetModerationThresholds(ctx context.Context, pubKey string, thresholds []ModerationThresholdParams) (ModerationThresholds, error)
+
+	ListMimeTypes(ctx context.Context) (MimeTypes, error)
+	ListModerationCategories(ctx context.Context) (ModerationCategories, error)
 }
 
 type service struct {

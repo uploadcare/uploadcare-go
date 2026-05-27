@@ -17,10 +17,11 @@ BREAKING CHANGES:
 
 FEATURES:
 
-* Add `projectapi` package for the Project API with bearer token authentication — manage projects, secret keys, and usage metrics
+* Add `projectapi` package for the Project API with bearer token authentication — manage projects, project features, moderation thresholds, meta reference lists, secret keys, and usage metrics
 * Add `ucare.NewBearerConfig()` and `ucare.NewBearerClient()` for bearer token authentication used by the Project API
 * Add `ucare.ProjectAPIError` type for Project API error responses
 * Add typed Project API usage metric constants for `traffic`, `storage`, and `operations`
+* Add Project API moderation threshold methods and meta reference methods for MIME types and moderation categories
 * Add `addon` package for Addons API execution and status polling
 * Add typed addon params for Remove.bg and ClamAV requests
 * Add `metadata` package with file metadata CRUD operations
