@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -18,43 +19,75 @@ import (
 func TestUploadAPIClient(t *testing.T) {
 	t.Parallel()
 
-	conf, err := NewConfig(testCreds())
-	require.NoError(t, err)
-	client := newUploadAPIClient(testCreds(), conf)
-
 	cases := []struct {
 		test string
 
-		endpoint config.Endpoint
-		method   string
-		requrl   string
-		data     ReqEncoder
+		configOpts []Option
+		endpoint   config.Endpoint
+		method     string
+		requrl     string
+		data       ReqEncoder
 
 		checkReq func(*http.Request) error
-	}{{
-		test:     "form_data",
-		endpoint: config.UploadAPIEndpoint,
-		method:   http.MethodPost,
-		requrl:   "/base/",
-		data: testReqEncoder{
-			body:  "formkey=formvalue",
-			query: "qparam1=qparamvalue1&qparam2=qparamvalue2",
+	}{
+		{
+			test:     "form_data",
+			endpoint: config.UploadAPIEndpoint,
+			method:   http.MethodPost,
+			requrl:   "/base/",
+			data: testReqEncoder{
+				body:  "formkey=formvalue",
+				query: "qparam1=qparamvalue1&qparam2=qparamvalue2",
+			},
+			checkReq: func(r *http.Request) error {
+				data, _ := io.ReadAll(r.Body)
+				if string(data) != "formkey=formvalue" {
+					return errors.New("invalid req body data")
+				}
+				if r.URL.RawQuery != "qparam1=qparamvalue1&qparam2=qparamvalue2" {
+					return errors.New("invalid req query")
+				}
+				return nil
+			},
 		},
-		checkReq: func(r *http.Request) error {
-			data, _ := io.ReadAll(r.Body)
-			if string(data) != "formkey=formvalue" {
-				return errors.New("invalid req body data")
-			}
-			if r.URL.RawQuery != "qparam1=qparamvalue1&qparam2=qparamvalue2" {
-				return errors.New("invalid req query")
-			}
-			return nil
+		{
+			test:     "user_agent",
+			endpoint: config.UploadAPIEndpoint,
+			method:   http.MethodPost,
+			requrl:   "/base/",
+			checkReq: func(r *http.Request) error {
+				if !strings.Contains(r.Header.Get("User-Agent"), config.UserAgentPrefix+"/") {
+					return errors.New("expected User-Agent to contain UploadcareGo/")
+				}
+				return nil
+			},
 		},
-	}}
+		{
+			test:       "custom_user_agent",
+			configOpts: []Option{WithUserAgent("MyApp/1.0")},
+			endpoint:   config.UploadAPIEndpoint,
+			method:     http.MethodPost,
+			requrl:     "/base/",
+			checkReq: func(r *http.Request) error {
+				userAgent := r.Header.Get("User-Agent")
+				if !strings.Contains(userAgent, config.UserAgentPrefix+"/") {
+					return errors.New("expected User-Agent to contain UploadcareGo/")
+				}
+				if !strings.Contains(userAgent, "MyApp/1.0") {
+					return errors.New("expected User-Agent to contain custom value")
+				}
+				return nil
+			},
+		},
+	}
 
 	for _, c := range cases {
 		t.Run(c.test, func(t *testing.T) {
 			t.Parallel()
+
+			conf, err := NewConfig(testCreds(), c.configOpts...)
+			require.NoError(t, err)
+			client := newUploadAPIClient(testCreds(), conf)
 
 			req, err := client.NewRequest(
 				context.Background(),
