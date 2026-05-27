@@ -1,56 +1,43 @@
-## 2.0.0
+## 2.0.0 (May 28, 2026)
 
 BREAKING CHANGES:
 
-* Target REST API v0.7 (previously v0.5)
-* Remove `ImageInfo` and `VideoMeta` fields from `file.BasicFileInfo` — use `ContentInfo.Image` and `ContentInfo.Video`
-* Remove `RecognitionInfo` field from `file.Info` — use `AppData`
-* Add `Metadata` and `AppData` fields to `file.Info`
-* Remove `group.Store()` method (endpoint removed in v0.7)
-* Remove `file.Copy()` method and `file.CopyParams` type — use `LocalCopy()` and `RemoteCopy()`
-* Remove `file.OrderBySizeAsc` and `file.OrderBySizeDesc` constants (not supported in v0.7)
-* Remove `APIv05` and `APIv06` constants
-* Change `file.Service.Info()` signature to accept `*file.InfoParams` for optional `include` query parameters
-* Change `webhook.Service.Delete()` to delete by webhook ID instead of target URL
+* Target REST API v0.7 (previously v0.5); remove the `APIv05` and `APIv06` constants
 * Minimum Go version is now 1.25
 * Throttled requests no longer retry by default — automatic retries are now opt-in via `ucare.Config.Retry`
+* `file.Service.Info()` now takes `*file.InfoParams` to pass optional `include` query parameters
+* `webhook.Service.Delete()` now deletes by webhook ID instead of by target URL
+* Remove `RecognitionInfo` field from `file.Info` — use `AppData` instead
+* Remove `ImageInfo` and `VideoMeta` fields from `file.BasicFileInfo` — use `ContentInfo.Image` and `ContentInfo.Video`
+* Remove `file.Copy()` method and `file.CopyParams` type — use `LocalCopy()` and `RemoteCopy()`
+* Remove `group.Store()` method (endpoint removed in v0.7)
+* Remove `file.OrderBySizeAsc` and `file.OrderBySizeDesc` constants (not supported in v0.7)
 
 FEATURES:
 
-* Add `projectapi` package for the Project API with bearer token authentication — manage projects, project features, moderation thresholds, meta reference lists, secret keys, and usage metrics
-* Add `ucare.NewBearerConfig()` and `ucare.NewBearerClient()` for bearer token authentication used by the Project API
-* Add `ucare.ProjectAPIError` type for Project API error responses
-* Add typed Project API usage metric constants for `traffic`, `storage`, and `operations`
-* Add Project API moderation threshold methods and meta reference methods for MIME types and moderation categories
-* Add `addon` package for Addons API execution and status polling
-* Add typed addon params for Remove.bg and ClamAV requests
+* Add `projectapi` package for the Project API, with bearer token authentication via `ucare.NewBearerConfig()` and `ucare.NewBearerClient()` — manage projects, project features, secret keys, usage metrics, moderation thresholds, and meta reference lists for MIME types and moderation categories
+* Add `addon` package for Addons API execution and status polling, with typed params for Remove.bg and ClamAV requests
 * Add `metadata` package with file metadata CRUD operations
-* Add `group.Delete()` for deleting group metadata without deleting files
-* Add webhook event constants for `file.stored`, `file.deleted`, `file.info_updated`, and deprecated `file.infected`
+* Add `upload.Service.Upload()` for automatic direct-vs-multipart upload selection, with metadata support across direct, multipart, from-URL, and unified uploads
+* Resolve a per-project CDN base URL automatically when `ucare.Config.CDNBase` is empty (overridable with an explicit absolute URL), and rewrite the scheme/host of API-returned URLs — `file.Info.OriginalFileURL`, `group.Info.CDNLink`, and `upload.GroupInfo.CDNLink` — to point at it while preserving the full path; exposed via the `ucare.ClientCDNBase(Client)` and `ucare.RewriteCDNURL(originalURL, cdnBase)` helpers
+* Export structured error types for inspecting HTTP status and detail: `APIError`, `AuthError`, `ThrottleError`, `ValidationError`, `ForbiddenError`, and Project API equivalents `ProjectAPIError`, `ProjectAuthError`, `ProjectForbiddenError`
 * Add `ucare.Config.Retry` and `RetryConfig` for configurable throttling retries
-* Add `upload.Service.Upload()` for automatic direct-vs-multipart upload selection
-* Add upload metadata support for direct, multipart, from-URL, and unified uploads
-* Add `file.InfoParams.Include` and `file.ListParams.Include` for `include=appdata`
-* Add `conversion.Params.SaveInGroup` for document conversions that should persist image output as a file group
-* Add `conversion.BuildDocumentPath()` and `conversion.BuildVideoPath()` helpers for constructing conversion paths
-* Export structured API error types: `APIError`, `AuthError`, `ThrottleError`, `ValidationError`, and `ForbiddenError`
-* Automatic per-project CDN base URL when `ucare.Config.CDNBase` is empty, with explicit absolute URL override support
-* Apply resolved CDN base to API-returned URLs: `file.Info.OriginalFileURL`, `group.Info.CDNLink`, and `upload.GroupInfo.CDNLink` have their scheme/host rewritten to point at the configured CDN while preserving the full path (e.g. `/{uuid}/pineapple.jpg`)
-* Export `ucare.ClientCDNBase(Client)` and `ucare.RewriteCDNURL(originalURL, cdnBase)` helpers
+* Add `Metadata` and `AppData` fields to `file.Info`, plus `file.InfoParams.Include` and `file.ListParams.Include` for requesting `include=appdata`
+* Add `group.Delete()` for deleting group metadata without deleting files
+* Add `conversion.Params.SaveInGroup` to persist multi-page document conversion output as a file group, and `conversion.BuildDocumentPath()` / `conversion.BuildVideoPath()` helpers for constructing conversion paths
+* Add webhook event constants for `file.stored`, `file.deleted`, `file.info_updated`, and deprecated `file.infected`
+* Add typed Project API usage metric constants for `traffic`, `storage`, and `operations`
 
 IMPROVEMENTS:
 
 * Add `UserAgent` field to `ucare.Config` for custom agent identification
+* Throttle retries now use the server `Retry-After` when present, falling back to exponential backoff (capped at 30s), respect context cancellation, and cap the effective wait via `MaxWaitSeconds`
 * Extend form/query encoding to support Upload API metadata fields in `metadata[key]=value` bracket notation
 * Replace `http.NewRequest` + `WithContext` with `http.NewRequestWithContext`
-* Throttle retry loops now respect context cancellation
-* Throttle retries use server `Retry-After` when present, falling back to exponential backoff (capped at 30s); `MaxWaitSeconds` caps the effective wait from either source
-* Error values now expose HTTP status details for caller inspection
 * Replace `ioutil` usage with `io` equivalents
 * Replace `go-env` dependency with `os.Getenv`
 * Update `stretchr/testify` to v1.10.0
 * Update CI: Go 1.25, modern GitHub Actions versions, remove deprecated golint
-* Integration tests skip gracefully when credentials are not set
 * Fix errors in package documentation examples and update public examples for the new `file.Info()` signature
 
 ## 1.2.1 (September 1, 2020)
@@ -81,7 +68,7 @@ BUG FIXES:
 
 BUG FIXES:
 
-* Set default upload ToStore form param value to "auto" 
+* Set default upload ToStore form param value to "auto"
 * Change "UPLOADCARE_STORE" upload.FromURL param to "store" according to specs
 
 ## 1.1.8 (Apr 22, 2020)
@@ -95,7 +82,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-* Change ImageInfo.Orientation type to interface{} 
+* Change ImageInfo.Orientation type to interface{}
 
 ## 1.1.6 (Apr 14, 2020)
 
