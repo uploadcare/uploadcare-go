@@ -72,11 +72,11 @@ func TestHandleThrottle(t *testing.T) {
 			wantOK:     true,
 		},
 		{
-			name:      "context_cancelled",
+			name:       "context_cancelled",
 			retryAfter: "1",
-			cfg:       &RetryConfig{MaxRetries: 5, MaxWaitSeconds: 60},
-			tries:     1,
-			cancelCtx: true,
+			cfg:        &RetryConfig{MaxRetries: 5, MaxWaitSeconds: 60},
+			tries:      1,
+			cancelCtx:  true,
 		},
 		{
 			name:       "max_wait_zero_unlimited",

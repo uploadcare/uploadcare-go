@@ -18,6 +18,7 @@ import (
 // Service describes all file related API
 type Service interface {
 	List(context.Context, ListParams) (*List, error)
+	Search(context.Context, SearchParams) (*SearchResult, error)
 	Info(ctx context.Context, id string, params *InfoParams) (Info, error)
 	Store(ctx context.Context, id string) (Info, error)
 	Delete(ctx context.Context, id string) (Info, error)
@@ -42,6 +43,7 @@ func applyCDNBase(info *Info, cdnBase string) {
 
 const (
 	listPathFormat   = "/files/"
+	searchPathFormat = "/files/search/"
 	infoPathFormat   = "/files/%s/"
 	deletePathFormat = "/files/%s/storage/"
 

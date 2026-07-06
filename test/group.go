@@ -38,4 +38,3 @@ func groupDelete(t *testing.T, r *testenv.Runner) {
 	err := r.Group.Delete(ctx, r.Artifacts.GroupIDs[0])
 	assert.Equal(t, nil, err)
 }
-

@@ -99,7 +99,7 @@ func TestRESTAPIClient(t *testing.T) {
 				return errors.New("wrong accept header")
 			}
 			if h.Get("User-Agent") !=
-				"UploadcareGo/2.0.0/testpublickey" {
+				"UploadcareGo/2.1.0/testpublickey" {
 				return errors.New("wrong user-agent header")
 			}
 			if h.Get("Content-Type") != "" {

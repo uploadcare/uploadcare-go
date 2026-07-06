@@ -15,6 +15,7 @@ var (
 		"more information on which methods belong to which version)")
 	ErrFileTooLarge = errors.New("direct uploads only support " +
 		"files smaller than 100MB")
+	ErrEndOfResults = errors.New("no results are left to read")
 )
 
 type APIError struct {
