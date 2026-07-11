@@ -65,7 +65,7 @@ func (v *List) ReadResult() (*Info, error) {
 	log.Debugf("reading file list result: %+v", fi)
 
 	if err == nil {
-		applyCDNBase(&fi, v.cdnBase)
+		fi.OriginalFileURL = applyCDNBase(fi.OriginalFileURL, v.cdnBase)
 	}
 
 	return &fi, err

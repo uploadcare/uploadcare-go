@@ -13,6 +13,10 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
+func matchByID(id string) SearchMatch {
+	return SearchMatch{ID: id}
+}
+
 func TestSearch(t *testing.T) {
 	t.Parallel()
 
@@ -33,8 +37,12 @@ func TestSearch(t *testing.T) {
 			}
 
 			uctest.RespondJSON(t, w, searchPage{
-				Results: []SearchMatch{{ID: "uuid-1", OriginalFileName: "invoice.pdf", Size: 100}},
-				Total:   1,
+				Results: []SearchMatch{{
+					ID:               "uuid-1",
+					OriginalFileName: "invoice.pdf",
+					Size:             100,
+				}},
+				Total: 1,
 			})
 		}), func(t *testing.T, srv *httptest.Server) {
 			svc := NewService(uctest.NewServerClient(srv))
@@ -88,7 +96,7 @@ func TestSearch(t *testing.T) {
 		})
 	})
 
-	t.Run("decodes_highlight_and_appdata", func(t *testing.T) {
+	t.Run("decodes_full_file_info_highlight_and_appdata", func(t *testing.T) {
 		t.Parallel()
 
 		const raw = `{
@@ -98,6 +106,18 @@ func TestSearch(t *testing.T) {
 				"uuid": "uuid-1",
 				"original_filename": "invoice.pdf",
 				"size": 145212,
+				"mime_type": "application/pdf",
+				"is_image": false,
+				"is_ready": true,
+				"datetime_uploaded": "2024-06-01T12:00:00Z",
+				"datetime_stored": "2024-06-01T12:00:01Z",
+				"datetime_removed": null,
+				"original_file_url": "https://ucarecdn.com/uuid-1/invoice.pdf",
+				"url": "https://api.uploadcare.com/files/uuid-1/",
+				"source": null,
+				"variations": null,
+				"content_info": {"mime": {"mime": "application/pdf", "type": "application", "subtype": "pdf"}},
+				"metadata": {"camera": "Canon"},
 				"highlight": {
 					"original_filename": ["<em>inv</em>oice.pdf"],
 					"metadata": {"camera": "<em>Canon</em>"}
@@ -118,7 +138,22 @@ func TestSearch(t *testing.T) {
 			m, err := res.ReadResult()
 			require.NoError(t, err)
 			assert.Equal(t, "uuid-1", m.ID)
+			assert.Equal(t, "invoice.pdf", m.OriginalFileName)
 			assert.Equal(t, uint64(145212), m.Size)
+			assert.Equal(t, "application/pdf", m.MimeType)
+			assert.False(t, m.IsImage)
+			assert.True(t, m.IsReady)
+			require.NotNil(t, m.UploadedAt)
+			require.NotNil(t, m.StoredAt)
+			assert.Nil(t, m.RemovedAt)
+			require.NotNil(t, m.OriginalFileURL)
+			assert.Equal(t, "https://ucarecdn.com/uuid-1/invoice.pdf", *m.OriginalFileURL)
+			assert.Equal(t, "https://api.uploadcare.com/files/uuid-1/", m.URL)
+			assert.Equal(t, "Canon", m.Metadata["camera"])
+			require.NotNil(t, m.ContentInfo)
+			require.NotNil(t, m.ContentInfo.Mime)
+			assert.Equal(t, "application/pdf", m.ContentInfo.Mime.Mime)
+			assert.Nil(t, m.Variations)
 
 			require.NotNil(t, m.Highlight)
 			assert.Equal(t, []string{"<em>inv</em>oice.pdf"}, m.Highlight.OriginalFileName)
@@ -126,6 +161,32 @@ func TestSearch(t *testing.T) {
 
 			require.Contains(t, m.AppData, "uc_clamav_virus_scan")
 			assert.JSONEq(t, `{"data":{"infected":false}}`, string(m.AppData["uc_clamav_virus_scan"]))
+		})
+	})
+
+	t.Run("rewrites_cdn_base", func(t *testing.T) {
+		t.Parallel()
+
+		uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			uctest.RespondJSON(t, w, searchPage{
+				Results: []SearchMatch{{
+					ID:              rewriteUUID,
+					OriginalFileURL: ucare.String(legacyURL),
+				}},
+				Total: 1,
+			})
+		}), func(t *testing.T, srv *httptest.Server) {
+			c := uctest.NewServerClient(srv)
+			c.CDN = rewriteCDN
+			svc := NewService(c)
+			res, err := svc.Search(context.Background(), SearchParams{Query: "invoice"})
+			require.NoError(t, err)
+			require.True(t, res.Next())
+
+			m, err := res.ReadResult()
+			require.NoError(t, err)
+			require.NotNil(t, m.OriginalFileURL)
+			assert.Equal(t, expectedRewritten, *m.OriginalFileURL)
 		})
 	})
 
@@ -142,7 +203,7 @@ func TestSearch(t *testing.T) {
 				uctest.RespondJSON(t, w, map[string]any{
 					"total":   100,
 					"next":    "https://api.uploadcare.com/files/search/?limit=2&offset=50&include=appdata",
-					"results": []SearchMatch{{ID: "uuid-1"}, {ID: "uuid-2"}},
+					"results": []SearchMatch{matchByID("uuid-1"), matchByID("uuid-2")},
 				})
 			case "50":
 				// The follow-up request must carry the next URL's query verbatim
@@ -155,7 +216,7 @@ func TestSearch(t *testing.T) {
 				uctest.RespondJSON(t, w, map[string]any{
 					"total":   100,
 					"next":    nil,
-					"results": []SearchMatch{{ID: "uuid-3"}},
+					"results": []SearchMatch{matchByID("uuid-3")},
 				})
 			default:
 				t.Fatalf("unexpected offset %q (did not follow next URL verbatim)", off)
@@ -191,7 +252,7 @@ func TestSearch(t *testing.T) {
 				uctest.RespondJSON(t, w, map[string]any{
 					"total":   5,
 					"next":    "https://api.uploadcare.com/files/search/?limit=2&offset=2",
-					"results": []SearchMatch{{ID: "uuid-1"}, {ID: "uuid-2"}},
+					"results": []SearchMatch{matchByID("uuid-1"), matchByID("uuid-2")},
 				})
 			case "2":
 				// Empty page with a next pointer: happens when the matches in
@@ -205,7 +266,7 @@ func TestSearch(t *testing.T) {
 				uctest.RespondJSON(t, w, map[string]any{
 					"total":   5,
 					"next":    nil,
-					"results": []SearchMatch{{ID: "uuid-3"}},
+					"results": []SearchMatch{matchByID("uuid-3")},
 				})
 			default:
 				t.Fatalf("unexpected offset %q (pagination did not terminate)", off)

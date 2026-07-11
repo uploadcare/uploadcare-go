@@ -70,6 +70,21 @@ func TestValidateSearchParams(t *testing.T) {
 			wantErr: ErrSearchEmptyTags,
 		},
 		{
+			name:    "blank tag in any",
+			params:  SearchParams{Tags: &SearchTags{Any: []string{"cat", ""}}},
+			wantErr: ErrSearchBlankTagValue,
+		},
+		{
+			name:    "whitespace-only tag in all",
+			params:  SearchParams{Tags: &SearchTags{All: []string{"  "}}},
+			wantErr: ErrSearchBlankTagValue,
+		},
+		{
+			name:    "blank tag in none",
+			params:  SearchParams{Tags: &SearchTags{None: []string{"archived", ""}}},
+			wantErr: ErrSearchBlankTagValue,
+		},
+		{
 			name:   "tags with a primary condition",
 			params: SearchParams{IsImage: ucare.Bool(true), Tags: &SearchTags{Any: []string{"urgent"}}},
 		},
@@ -115,10 +130,18 @@ func TestValidateSearchParams(t *testing.T) {
 			},
 		},
 		{
-			name: "phrase metadata with exact metadata key",
+			name: "phrase metadata conflicts with exact metadata key",
 			params: SearchParams{
 				Phrase: &SearchPhrase{Metadata: "canon"},
 				Exact:  map[string][]string{"metadata[camera]": {"Canon"}},
+			},
+			wantErr: ErrSearchPhraseExactConflict,
+		},
+		{
+			name: "phrase metadata with exact non-metadata key is allowed",
+			params: SearchParams{
+				Phrase: &SearchPhrase{Metadata: "canon"},
+				Exact:  map[string][]string{SearchExactKeyUUID: {"some-uuid"}},
 			},
 		},
 		{

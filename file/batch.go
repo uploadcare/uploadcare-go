@@ -28,7 +28,7 @@ func (s service) BatchStore(
 	)
 	if err == nil {
 		for i := range data.Results {
-			applyCDNBase(&data.Results[i], s.cdnBase)
+			data.Results[i].OriginalFileURL = applyCDNBase(data.Results[i].OriginalFileURL, s.cdnBase)
 		}
 	}
 	return
@@ -49,7 +49,7 @@ func (s service) BatchDelete(
 	)
 	if err == nil {
 		for i := range data.Results {
-			applyCDNBase(&data.Results[i], s.cdnBase)
+			data.Results[i].OriginalFileURL = applyCDNBase(data.Results[i].OriginalFileURL, s.cdnBase)
 		}
 	}
 	return

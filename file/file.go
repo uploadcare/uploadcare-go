@@ -38,7 +38,7 @@ func (s service) Info(
 		&data,
 	)
 	if err == nil {
-		applyCDNBase(&data, s.cdnBase)
+		data.OriginalFileURL = applyCDNBase(data.OriginalFileURL, s.cdnBase)
 	}
 	return
 }
@@ -56,7 +56,7 @@ func (s service) Store(
 		&data,
 	)
 	if err == nil {
-		applyCDNBase(&data, s.cdnBase)
+		data.OriginalFileURL = applyCDNBase(data.OriginalFileURL, s.cdnBase)
 	}
 	return
 }
@@ -74,7 +74,7 @@ func (s service) Delete(
 		&data,
 	)
 	if err == nil {
-		applyCDNBase(&data, s.cdnBase)
+		data.OriginalFileURL = applyCDNBase(data.OriginalFileURL, s.cdnBase)
 	}
 	return
 }
