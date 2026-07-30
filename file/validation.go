@@ -155,10 +155,11 @@ func validateSearchFilters(p SearchParams) error {
 }
 
 func validateSearchTags(tags *SearchTags) error {
-	all := append(append(tags.Any, tags.All...), tags.None...)
-	for _, tag := range all {
-		if strings.TrimSpace(tag) == "" {
-			return fmt.Errorf("%w: %q", ErrSearchBlankTagValue, tag)
+	for _, tagList := range [][]string{tags.Any, tags.All, tags.None} {
+		for _, tag := range tagList {
+			if strings.TrimSpace(tag) == "" {
+				return fmt.Errorf("%w: %q", ErrSearchBlankTagValue, tag)
+			}
 		}
 	}
 	return nil

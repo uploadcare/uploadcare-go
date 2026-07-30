@@ -246,3 +246,20 @@ func TestValidateSearchParams(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSearchTagsDoesNotMutateAliasedSlices(t *testing.T) {
+	t.Parallel()
+
+	shared := []string{"cat", "", "dog"}
+	tags := &SearchTags{
+		Any:  shared[0:1],
+		All:  shared[2:3],
+		None: shared[1:2],
+	}
+	before := append([]string(nil), shared...)
+
+	err := validateSearchTags(tags)
+
+	assert.ErrorIs(t, err, ErrSearchBlankTagValue)
+	assert.Equal(t, before, shared)
+}
