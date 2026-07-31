@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
+	"github.com/uploadcare/uploadcare-go/v2/internal/config"
 	"github.com/uploadcare/uploadcare-go/v2/internal/svc"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
@@ -98,12 +99,26 @@ type SearchTags struct {
 }
 
 // SearchMatch is a single file match returned by Search.
+// Tags is present only when the file tags feature is enabled server-side.
+// AppData is present only when SearchIncludeAppData is requested via SearchParams.Include.
 type SearchMatch struct {
 	ID               string                     `json:"uuid"`
 	OriginalFileName string                     `json:"original_filename"`
 	Size             uint64                     `json:"size"`
-	Highlight        *SearchHighlight           `json:"highlight,omitempty"`
+	MimeType         string                     `json:"mime_type"`
+	IsImage          bool                       `json:"is_image"`
+	IsReady          bool                       `json:"is_ready"`
+	UploadedAt       *config.Time               `json:"datetime_uploaded"`
+	StoredAt         *config.Time               `json:"datetime_stored"`
+	RemovedAt        *config.Time               `json:"datetime_removed"`
+	OriginalFileURL  *string                    `json:"original_file_url"`
+	URL              string                     `json:"url"`
+	Variations       *map[string]string         `json:"variations"`
+	ContentInfo      *ContentInfo               `json:"content_info"`
+	Metadata         map[string]string          `json:"metadata"`
+	Tags             []string                   `json:"tags,omitempty"`
 	AppData          map[string]json.RawMessage `json:"appdata,omitempty"`
+	Highlight        *SearchHighlight           `json:"highlight,omitempty"`
 }
 
 // SearchHighlight holds matched fragments with the matched tokens wrapped in
@@ -143,9 +158,10 @@ type searchPage struct {
 // SearchResult iterates over the matches of a search, fetching subsequent pages
 // on demand.
 type SearchResult struct {
-	svc    svc.Service
-	ctx    context.Context
-	params SearchParams
+	svc     svc.Service
+	ctx     context.Context
+	params  SearchParams
+	cdnBase string
 
 	nextQuery *string // query string for the next page request; nil when exhausted
 	results   []SearchMatch
@@ -176,6 +192,8 @@ func (r *SearchResult) ReadResult() (*SearchMatch, error) {
 
 	m := r.results[r.at]
 	r.at++
+
+	m.OriginalFileURL = applyCDNBase(m.OriginalFileURL, r.cdnBase)
 
 	log.Debugf("reading search result: %+v", m)
 
@@ -231,7 +249,7 @@ func (s service) Search(
 		return
 	}
 
-	res = &SearchResult{svc: s.svc, ctx: ctx, params: params}
+	res = &SearchResult{svc: s.svc, ctx: ctx, params: params, cdnBase: s.cdnBase}
 	err = res.fetch(searchReq(params))
 	return
 }

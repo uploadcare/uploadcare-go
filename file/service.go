@@ -33,12 +33,12 @@ type service struct {
 	cdnBase string
 }
 
-func applyCDNBase(info *Info, cdnBase string) {
-	if cdnBase == "" || info == nil || info.OriginalFileURL == nil {
-		return
+func applyCDNBase(url *string, cdnBase string) *string {
+	if cdnBase == "" || url == nil {
+		return url
 	}
-	rewritten := ucare.RewriteCDNURL(*info.OriginalFileURL, cdnBase)
-	info.OriginalFileURL = &rewritten
+	rewritten := ucare.RewriteCDNURL(*url, cdnBase)
+	return &rewritten
 }
 
 const (

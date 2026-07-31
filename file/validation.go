@@ -28,6 +28,7 @@ var (
 	ErrSearchEmptyDatetime       = errors.New("search datetime_uploaded requires at least one operator")
 	ErrSearchEmptySize           = errors.New("search size requires at least one operator")
 	ErrSearchEmptyTags           = errors.New("search tags requires at least one tag")
+	ErrSearchBlankTagValue       = errors.New("search tag value must not be blank")
 	ErrSearchLimitOutOfRange     = errors.New("search limit must be between 1 and 100")
 	ErrSearchOffsetTooLarge      = errors.New("search offset plus limit must not exceed 1000")
 	ErrSearchTooManySortKeys     = errors.New("search sort accepts at most 4 keys")
@@ -82,6 +83,13 @@ func validateSearchParams(p SearchParams) error {
 		}
 		if p.Phrase.DetectedMimeType != "" && len(p.Exact[SearchExactKeyDetectedMimeType]) > 0 {
 			return fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, SearchExactKeyDetectedMimeType)
+		}
+		if p.Phrase.Metadata != "" {
+			for key := range p.Exact {
+				if strings.HasPrefix(key, "metadata[") {
+					return fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, key)
+				}
+			}
 		}
 	}
 
@@ -138,7 +146,23 @@ func validateSearchFilters(p SearchParams) error {
 	if p.Tags != nil && !p.Tags.hasValue() {
 		return ErrSearchEmptyTags
 	}
+	if p.Tags != nil {
+		if err := validateSearchTags(p.Tags); err != nil {
+			return err
+		}
+	}
 	return validateSearchExact(p.Exact)
+}
+
+func validateSearchTags(tags *SearchTags) error {
+	for _, tagList := range [][]string{tags.Any, tags.All, tags.None} {
+		for _, tag := range tagList {
+			if strings.TrimSpace(tag) == "" {
+				return fmt.Errorf("%w: %q", ErrSearchBlankTagValue, tag)
+			}
+		}
+	}
+	return nil
 }
 
 func validateSearchExact(exact map[string][]string) error {
