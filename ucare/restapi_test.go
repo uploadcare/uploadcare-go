@@ -184,6 +184,70 @@ func TestDo(t *testing.T) {
 		})
 	})
 
+	t.Run("bad_request_with_structured_field_errors", func(t *testing.T) {
+		t.Parallel()
+
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"tags":{"0":["Tag contains invalid characters."]}}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodPut, srv.URL+"/files/test/tags/", nil)
+			require.NoError(t, err)
+
+			err = client.Do(req, nil)
+
+			require.Error(t, err)
+			var apiErr APIError
+			require.True(t, errors.As(err, &apiErr))
+			assert.Equal(t, http.StatusBadRequest, apiErr.StatusCode)
+			assert.JSONEq(t, `{"tags":{"0":["Tag contains invalid characters."]}}`, apiErr.Detail)
+		})
+	})
+
+	t.Run("auth_error_without_detail_field", func(t *testing.T) {
+		t.Parallel()
+
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error":"signature expired"}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
+
+			err = client.Do(req, nil)
+
+			require.Error(t, err)
+			var authErr AuthError
+			require.True(t, errors.As(err, &authErr))
+			assert.JSONEq(t, `{"error":"signature expired"}`, authErr.Detail)
+		})
+	})
+
+	t.Run("forbidden_without_detail_field", func(t *testing.T) {
+		t.Parallel()
+
+		withServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"account is inactive"}`))
+		}), func(t *testing.T, srv *httptest.Server) {
+			client := &restAPIClient{conn: srv.Client()}
+			req, err := http.NewRequest(http.MethodGet, srv.URL+"/files/", nil)
+			require.NoError(t, err)
+
+			err = client.Do(req, nil)
+
+			require.Error(t, err)
+			var forbiddenErr ForbiddenError
+			require.True(t, errors.As(err, &forbiddenErr))
+			assert.JSONEq(t, `{"error":"account is inactive"}`, forbiddenErr.Detail)
+		})
+	})
+
 	t.Run("forbidden", func(t *testing.T) {
 		t.Parallel()
 

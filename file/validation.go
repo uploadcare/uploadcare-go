@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/uploadcare/uploadcare-go/v2/internal/filetag"
 )
 
 const (
@@ -29,6 +31,9 @@ var (
 	ErrSearchEmptySize           = errors.New("search size requires at least one operator")
 	ErrSearchEmptyTags           = errors.New("search tags requires at least one tag")
 	ErrSearchBlankTagValue       = errors.New("search tag value must not be blank")
+	ErrSearchTagTooLong          = errors.New("search tag exceeds maximum length")
+	ErrSearchInvalidTagValue     = errors.New("search tag contains invalid characters")
+	ErrSearchTooManyTags         = errors.New("search tag operator accepts at most 50 tags")
 	ErrSearchLimitOutOfRange     = errors.New("search limit must be between 1 and 100")
 	ErrSearchOffsetTooLarge      = errors.New("search offset plus limit must not exceed 1000")
 	ErrSearchTooManySortKeys     = errors.New("search sort accepts at most 4 keys")
@@ -50,21 +55,23 @@ var (
 	}
 )
 
-func validateSearchParams(p SearchParams) error {
-	if err := validateSearchFilters(p); err != nil {
-		return err
+func validateSearchParams(p SearchParams) (SearchParams, error) {
+	tags, err := validateSearchFilters(p)
+	if err != nil {
+		return p, err
 	}
+	p.Tags = tags
 
 	if !p.hasCondition() {
-		return ErrSearchNoCondition
+		return p, ErrSearchNoCondition
 	}
 
 	if p.Include != nil && *p.Include != SearchIncludeAppData {
-		return fmt.Errorf("%w: %q", ErrSearchInvalidInclude, *p.Include)
+		return p, fmt.Errorf("%w: %q", ErrSearchInvalidInclude, *p.Include)
 	}
 
 	if p.Query != "" && utf8.RuneCountInString(p.Query) < MinSearchQueryLength {
-		return fmt.Errorf("%w: %q", ErrSearchQueryTooShort, p.Query)
+		return p, fmt.Errorf("%w: %q", ErrSearchQueryTooShort, p.Query)
 	}
 
 	if p.Phrase != nil {
@@ -75,26 +82,26 @@ func validateSearchParams(p SearchParams) error {
 		}
 		for _, v := range fields {
 			if v != "" && utf8.RuneCountInString(v) < MinSearchQueryLength {
-				return fmt.Errorf("%w: %q", ErrSearchPhraseTooShort, v)
+				return p, fmt.Errorf("%w: %q", ErrSearchPhraseTooShort, v)
 			}
 		}
 		if p.Phrase.OriginalFilename != "" && len(p.Exact[SearchExactKeyOriginalFilename]) > 0 {
-			return fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, SearchExactKeyOriginalFilename)
+			return p, fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, SearchExactKeyOriginalFilename)
 		}
 		if p.Phrase.DetectedMimeType != "" && len(p.Exact[SearchExactKeyDetectedMimeType]) > 0 {
-			return fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, SearchExactKeyDetectedMimeType)
+			return p, fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, SearchExactKeyDetectedMimeType)
 		}
 		if p.Phrase.Metadata != "" {
 			for key := range p.Exact {
 				if strings.HasPrefix(key, "metadata[") {
-					return fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, key)
+					return p, fmt.Errorf("%w: %q", ErrSearchPhraseExactConflict, key)
 				}
 			}
 		}
 	}
 
 	if p.Limit != nil && (*p.Limit < 1 || *p.Limit > MaxSearchLimit) {
-		return fmt.Errorf("%w: %d", ErrSearchLimitOutOfRange, *p.Limit)
+		return p, fmt.Errorf("%w: %d", ErrSearchLimitOutOfRange, *p.Limit)
 	}
 
 	limit := uint64(DefaultSearchLimit)
@@ -109,10 +116,10 @@ func validateSearchParams(p SearchParams) error {
 	// overflow uint64 and wrap past the check. limit is <= MaxSearchLimit here,
 	// so MaxSearchOffsetLimit-limit does not underflow.
 	if offset > MaxSearchOffsetLimit-limit {
-		return fmt.Errorf("%w: %d", ErrSearchOffsetTooLarge, offset)
+		return p, fmt.Errorf("%w: %d", ErrSearchOffsetTooLarge, offset)
 	}
 
-	return validateSearchSort(p.Sort)
+	return p, validateSearchSort(p.Sort)
 }
 
 func validateSearchSort(sort []SearchSort) error {
@@ -133,36 +140,65 @@ func validateSearchSort(sort []SearchSort) error {
 	return nil
 }
 
-func validateSearchFilters(p SearchParams) error {
+func validateSearchFilters(p SearchParams) (*SearchTags, error) {
 	if p.Phrase != nil && !p.Phrase.hasValue() {
-		return ErrSearchEmptyPhrase
+		return nil, ErrSearchEmptyPhrase
 	}
 	if p.DatetimeUploaded != nil && !p.DatetimeUploaded.hasValue() {
-		return ErrSearchEmptyDatetime
+		return nil, ErrSearchEmptyDatetime
 	}
 	if p.Size != nil && !p.Size.hasValue() {
-		return ErrSearchEmptySize
+		return nil, ErrSearchEmptySize
 	}
 	if p.Tags != nil && !p.Tags.hasValue() {
-		return ErrSearchEmptyTags
+		return nil, ErrSearchEmptyTags
 	}
+
+	var tags *SearchTags
 	if p.Tags != nil {
-		if err := validateSearchTags(p.Tags); err != nil {
-			return err
+		var err error
+		if tags, err = validateSearchTags(p.Tags); err != nil {
+			return nil, err
 		}
 	}
-	return validateSearchExact(p.Exact)
+	return tags, validateSearchExact(p.Exact)
 }
 
-func validateSearchTags(tags *SearchTags) error {
-	for _, tagList := range [][]string{tags.Any, tags.All, tags.None} {
-		for _, tag := range tagList {
-			if strings.TrimSpace(tag) == "" {
-				return fmt.Errorf("%w: %q", ErrSearchBlankTagValue, tag)
-			}
-		}
+func validateSearchTags(tags *SearchTags) (*SearchTags, error) {
+	anyTags, err := normalizeSearchTagList(tags.Any)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	allTags, err := normalizeSearchTagList(tags.All)
+	if err != nil {
+		return nil, err
+	}
+	noneTags, err := normalizeSearchTagList(tags.None)
+	if err != nil {
+		return nil, err
+	}
+	return &SearchTags{Any: anyTags, All: allTags, None: noneTags}, nil
+}
+
+func normalizeSearchTagList(tagList []string) ([]string, error) {
+	if len(tagList) == 0 {
+		return nil, nil
+	}
+	if len(tagList) > filetag.MaxCount {
+		return nil, ErrSearchTooManyTags
+	}
+	values, err := filetag.Normalize(tagList, 0)
+	switch {
+	case errors.Is(err, filetag.ErrBlank):
+		return nil, ErrSearchBlankTagValue
+	case errors.Is(err, filetag.ErrTooLong):
+		return nil, ErrSearchTagTooLong
+	case errors.Is(err, filetag.ErrInvalidCharacters):
+		return nil, ErrSearchInvalidTagValue
+	case err != nil:
+		return nil, err
+	}
+	return values, nil
 }
 
 func validateSearchExact(exact map[string][]string) error {

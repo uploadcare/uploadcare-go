@@ -34,6 +34,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/upload"
 	"github.com/uploadcare/uploadcare-go/v2/conversion"
 	"github.com/uploadcare/uploadcare-go/v2/metadata"
+	"github.com/uploadcare/uploadcare-go/v2/tag"
 	"github.com/uploadcare/uploadcare-go/v2/addon"
 	"github.com/uploadcare/uploadcare-go/v2/projectapi"
 )
@@ -198,6 +199,7 @@ info, err := uploadSvc.Upload(context.Background(), upload.UploadParams{
 	Name:        f.Name(),
 	ContentType: "video/mp4", // required for the multipart path (files > 10MB)
 	Metadata:    map[string]string{"source": "import"},
+	Tags:        []string{"video", "import"},
 })
 if err != nil {
 	// handle error
@@ -219,6 +221,24 @@ if err != nil {
 	// handle error
 }
 fmt.Printf("metadata: %v\n", all)
+```
+
+Working with per-file tags:
+
+```go
+tagSvc := tag.NewService(client)
+
+change, err := tagSvc.Update(context.Background(), fileID, tag.UpdateParams{
+	Add:    []string{"featured", "Summer"},
+	Delete: []string{"draft"},
+})
+if err != nil {
+	// handle error
+}
+fmt.Printf("tags: %v\n", change.Tags)
+
+// Replace the complete tag list. Passing nil or an empty slice clears it.
+_, err = tagSvc.Replace(context.Background(), fileID, []string{"approved"})
 ```
 
 Executing an add-on (e.g. background removal) and polling for the result:

@@ -35,12 +35,16 @@ func TestInfo(t *testing.T) {
 				assert.Equal(t, "/files/"+testFileUUID+"/", r.URL.Path)
 				assert.Equal(t, tt.wantQuery, r.URL.Query().Get("include"))
 
-				uctest.RespondJSON(t, w, Info{BasicFileInfo: BasicFileInfo{ID: testFileUUID}})
+				uctest.RespondJSON(t, w, Info{
+					BasicFileInfo: BasicFileInfo{ID: testFileUUID},
+					Tags:          []string{"cat", "animal"},
+				})
 			}), func(t *testing.T, srv *httptest.Server) {
 				svc := NewService(uctest.NewServerClient(srv))
 				info, err := svc.Info(context.Background(), testFileUUID, tt.params)
 				require.NoError(t, err)
 				assert.Equal(t, testFileUUID, info.ID)
+				assert.Equal(t, []string{"cat", "animal"}, info.Tags)
 			})
 		})
 	}

@@ -4,6 +4,12 @@ FEATURES:
 
 * Add `file.Service.Search()` for the file search endpoint (`POST /files/search/`), with full-text, exact, metadata, tag, size, upload-time and image filters, sorting, and `include=appdata` support; results come as a paginated `file.SearchResult` iterator yielding `file.SearchMatch` values (file fields plus match highlights; CDN base rewrite for `original_file_url`). Custom implementations and mocks of the `file.Service` interface must add the new method
 * Export `ucare.ErrEndOfResults`, returned by result iterators when no results are left to read
+* Add Upload API file tags to direct, from-URL, multipart, and automatic uploads
+* Add the `tag` package for listing, replacing, adding, and deleting per-file tags through the REST API
+
+IMPROVEMENTS:
+
+* Preserve structured REST API error responses in `Detail` when they do not contain a top-level `detail` field. This applies to every mapped status, including `AuthError` and `ForbiddenError`; previously such bodies produced an empty `Detail`
 
 ## 2.0.0 (May 28, 2026)
 

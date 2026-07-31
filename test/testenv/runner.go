@@ -7,6 +7,7 @@ import (
 	"github.com/uploadcare/uploadcare-go/v2/group"
 	"github.com/uploadcare/uploadcare-go/v2/metadata"
 	"github.com/uploadcare/uploadcare-go/v2/project"
+	"github.com/uploadcare/uploadcare-go/v2/tag"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 	"github.com/uploadcare/uploadcare-go/v2/upload"
 	"github.com/uploadcare/uploadcare-go/v2/webhook"
@@ -21,6 +22,7 @@ type Runner struct {
 	Webhook    webhook.Service
 	Project    project.Service
 	Metadata   metadata.Service
+	Tag        tag.Service
 	Addon      addon.Service
 
 	Artifacts Artifacts
@@ -46,6 +48,7 @@ func NewRunner(client ucare.Client, customStorage string) *Runner {
 		Webhook:    webhook.NewService(client),
 		Project:    project.NewService(client),
 		Metadata:   metadata.NewService(client),
+		Tag:        tag.NewService(client),
 		Addon:      addon.NewService(client),
 		Artifacts: Artifacts{
 			CustomStorage: customStorage,

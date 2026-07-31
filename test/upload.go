@@ -20,6 +20,7 @@ func uploadFile(t *testing.T, r *testenv.Runner) {
 		Name:        originalFileName,
 		Data:        strings.NewReader("test content"),
 		ContentType: "text/plain",
+		Tags:        []string{"SDK-Integration", "go"},
 	}
 	id, err := r.Upload.File(ctx, params)
 	assert.Equal(t, nil, err)

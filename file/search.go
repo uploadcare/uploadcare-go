@@ -245,7 +245,7 @@ func (s service) Search(
 	ctx context.Context,
 	params SearchParams,
 ) (res *SearchResult, err error) {
-	if err = validateSearchParams(params); err != nil {
+	if params, err = validateSearchParams(params); err != nil {
 		return
 	}
 

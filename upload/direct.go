@@ -8,6 +8,7 @@ import (
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
+	"github.com/uploadcare/uploadcare-go/v2/internal/filetag"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
@@ -38,6 +39,9 @@ type FileParams struct {
 
 	// Metadata stores user-defined key-value pairs with the uploaded file.
 	Metadata map[string]string `form:"metadata"`
+
+	// Tags is an ordered list of tags to attach to the uploaded file.
+	Tags []string `form:"tags,csv"`
 }
 
 type uploadFileAuthParams struct {
@@ -53,6 +57,11 @@ type signatureExpire struct {
 // EncodeReq implementes ucare.ReqEncoder
 func (d *FileParams) EncodeReq(req *http.Request) error {
 	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req.Context())()
+	tags, err := filetag.Normalize(d.Tags, filetag.MaxCount)
+	if err != nil {
+		return err
+	}
+	d.Tags = tags
 	return encodeDataToForm(d, req)
 }
 

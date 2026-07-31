@@ -65,6 +65,16 @@ func TestEncodeReqQuery(t *testing.T) {
 			"metadata[key2]": []string{"val2"},
 		},
 	}, {
+		test: "csv string slice",
+		params: &struct {
+			Tags []string `form:"tags,csv"`
+		}{
+			Tags: []string{"cat", "animal"},
+		},
+		expectedQuery: url.Values{
+			"tags": []string{"cat,animal"},
+		},
+	}, {
 		test:          "empty list",
 		params:        &file.ListParams{},
 		expectedQuery: url.Values{},
@@ -247,6 +257,31 @@ func TestEncodeReqFormData(t *testing.T) {
 		testReq: func(written string) error {
 			if strings.Contains(written, "metadata[") {
 				return errors.New("empty metadata should not be written")
+			}
+			return nil
+		},
+	}, {
+		test: "csv string slice",
+		data: &struct {
+			Tags []string `form:"tags,csv"`
+		}{
+			Tags: []string{"cat", "animal", "cute"},
+		},
+		testReq: func(written string) error {
+			if !strings.Contains(written, `name="tags"`) ||
+				!strings.Contains(written, "cat,animal,cute") {
+				return errors.New("CSV field is not written")
+			}
+			return nil
+		},
+	}, {
+		test: "empty csv string slice omitted",
+		data: &struct {
+			Tags []string `form:"tags,csv"`
+		}{Tags: []string{}},
+		testReq: func(written string) error {
+			if strings.Contains(written, `name="tags"`) {
+				return errors.New("empty CSV field should not be written")
 			}
 			return nil
 		},

@@ -112,12 +112,15 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 	q := req.URL.Query()
 	for i := 0; i < t.NumField(); i++ {
 		tf, f := t.Field(i), v.Field(i)
-		formKey := tf.Tag.Get("form")
+		formKey, csv := parseFormTag(tf.Tag.Get("form"))
 		if formKey == "" {
 			continue
 		}
 
 		if f.Kind() == reflect.Pointer && f.IsNil() {
+			continue
+		}
+		if csv && f.Kind() == reflect.Slice && f.Len() == 0 {
 			continue
 		}
 
@@ -137,7 +140,7 @@ func EncodeReqQuery(data interface{}, req *http.Request) error {
 			continue
 		}
 
-		q.Set(formKey, fieldValue(f))
+		q.Set(formKey, fieldValue(f, csv))
 	}
 	req.URL.RawQuery = q.Encode()
 	return nil
@@ -216,7 +219,7 @@ func writeFormFile(w *multipart.Writer, d interface{}) error {
 		}
 	}
 
-	formValue := fileField.Tag.Get("form")
+	formValue, _ := parseFormTag(fileField.Tag.Get("form"))
 	if formValue == "" {
 		return nil
 	}
@@ -284,7 +287,7 @@ func writeFormField(
 		return
 	}
 
-	formKey := t.Tag.Get("form")
+	formKey, csv := parseFormTag(t.Tag.Get("form"))
 
 	if f.Kind() == reflect.Map {
 		if f.IsNil() {
@@ -309,11 +312,20 @@ func writeFormField(
 	if formKey == "" {
 		return
 	}
+	if csv && f.Kind() == reflect.Slice && f.Len() == 0 {
+		return
+	}
 
-	_ = w.WriteField(formKey, fieldValue(f))
+	_ = w.WriteField(formKey, fieldValue(f, csv))
 }
 
-func fieldValue(v reflect.Value) (val string) {
+func fieldValue(v reflect.Value, csv bool) (val string) {
+	if csv {
+		if values, ok := v.Interface().([]string); ok {
+			return strings.Join(values, ",")
+		}
+	}
+
 	switch valc := v.Interface().(type) {
 	case string:
 		val = valc
@@ -333,6 +345,16 @@ func fieldValue(v reflect.Value) (val string) {
 		val = valc.Format(config.UCTimeLayout)
 	}
 	return
+}
+
+func parseFormTag(tag string) (name string, csv bool) {
+	name, options, _ := strings.Cut(tag, ",")
+	for option := range strings.SplitSeq(options, ",") {
+		if option == "csv" {
+			csv = true
+		}
+	}
+	return name, csv
 }
 
 func reflectTypeValue(d interface{}) (t reflect.Type, v reflect.Value, err error) {
