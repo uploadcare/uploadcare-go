@@ -14,7 +14,7 @@ const (
 	RESTAPIEndpoint   Endpoint = "api.uploadcare.com"
 	UploadAPIEndpoint Endpoint = "upload.uploadcare.com"
 
-	ClientVersion   = "2.0.0"
+	ClientVersion   = "2.1.0"
 	UserAgentPrefix = "UploadcareGo"
 
 	AcceptHeaderFormat = "application/vnd.uploadcare-%s+json"

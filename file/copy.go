@@ -54,7 +54,7 @@ func (s service) LocalCopy(
 		&data,
 	)
 	if err == nil {
-		applyCDNBase(&data.Result, s.cdnBase)
+		data.Result.OriginalFileURL = applyCDNBase(data.Result.OriginalFileURL, s.cdnBase)
 	}
 	return
 }

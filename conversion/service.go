@@ -53,9 +53,9 @@ const (
 type Quality string
 
 const (
-	QualityNormal  Quality = "normal"
-	QualityBetter  Quality = "better"
-	QualityBest    Quality = "best"
-	QualityLighter Quality = "lighter"
+	QualityNormal   Quality = "normal"
+	QualityBetter   Quality = "better"
+	QualityBest     Quality = "best"
+	QualityLighter  Quality = "lighter"
 	QualityLightest Quality = "lightest"
 )

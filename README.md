@@ -138,6 +138,31 @@ if file.IsImage && file.ContentInfo != nil && file.ContentInfo.Image != nil {
 }
 ```
 
+Searching files:
+
+```go
+searchParams := file.SearchParams{
+	Query:   "invoice",
+	IsImage: ucare.Bool(false),
+	Sort:    []file.SearchSort{file.SortByUploadedAtDesc},
+}
+
+results, err := fileSvc.Search(context.Background(), searchParams)
+if err != nil {
+	// handle error
+}
+
+fmt.Printf("found %d matches\n", results.Total())
+for results.Next() {
+	match, err := results.ReadResult()
+	if err != nil {
+		// handle error
+	}
+
+	fmt.Println(match.ID, match.OriginalFileName)
+}
+```
+
 Uploading a file:
 
 ```go

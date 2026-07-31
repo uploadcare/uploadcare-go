@@ -18,6 +18,7 @@ import (
 // Service describes all file related API
 type Service interface {
 	List(context.Context, ListParams) (*List, error)
+	Search(context.Context, SearchParams) (*SearchResult, error)
 	Info(ctx context.Context, id string, params *InfoParams) (Info, error)
 	Store(ctx context.Context, id string) (Info, error)
 	Delete(ctx context.Context, id string) (Info, error)
@@ -32,16 +33,17 @@ type service struct {
 	cdnBase string
 }
 
-func applyCDNBase(info *Info, cdnBase string) {
-	if cdnBase == "" || info == nil || info.OriginalFileURL == nil {
-		return
+func applyCDNBase(url *string, cdnBase string) *string {
+	if cdnBase == "" || url == nil {
+		return url
 	}
-	rewritten := ucare.RewriteCDNURL(*info.OriginalFileURL, cdnBase)
-	info.OriginalFileURL = &rewritten
+	rewritten := ucare.RewriteCDNURL(*url, cdnBase)
+	return &rewritten
 }
 
 const (
 	listPathFormat   = "/files/"
+	searchPathFormat = "/files/search/"
 	infoPathFormat   = "/files/%s/"
 	deletePathFormat = "/files/%s/storage/"
 

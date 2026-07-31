@@ -57,7 +57,7 @@ func (b *ResultBuf) Next() bool {
 }
 
 // ErrEndOfResults denotes absence of results
-var ErrEndOfResults = errors.New("no results are left to read")
+var ErrEndOfResults = ucare.ErrEndOfResults
 
 // ReadRawResult reads returns next Raw result.
 // It makes paginated requests when all results from the current page

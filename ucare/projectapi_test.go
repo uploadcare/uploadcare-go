@@ -414,4 +414,3 @@ func TestProjectAPIClient_HandleThrottleBackoffExceedsMaxWait(t *testing.T) {
 	require.True(t, errors.As(err, &throttleErr))
 	assert.Equal(t, 16, throttleErr.RetryAfter)
 }
-
