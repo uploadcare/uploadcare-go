@@ -107,19 +107,19 @@ func mapRESTError(statusCode int, body []byte) error {
 	switch statusCode {
 	case http.StatusBadRequest, http.StatusNotFound:
 		apiErr := APIError{StatusCode: statusCode}
-		if json.Unmarshal(body, &apiErr) != nil {
+		if json.Unmarshal(body, &apiErr) != nil || apiErr.Detail == "" {
 			apiErr.Detail = stringOrStatus(body, statusCode)
 		}
 		return apiErr
 	case http.StatusUnauthorized:
 		authErr := AuthError{APIError: APIError{StatusCode: http.StatusUnauthorized}}
-		if json.Unmarshal(body, &authErr) != nil {
+		if json.Unmarshal(body, &authErr) != nil || authErr.Detail == "" {
 			authErr.Detail = stringOrStatus(body, http.StatusUnauthorized)
 		}
 		return authErr
 	case http.StatusForbidden:
 		forbiddenErr := ForbiddenError{APIError: APIError{StatusCode: http.StatusForbidden}}
-		if json.Unmarshal(body, &forbiddenErr) != nil {
+		if json.Unmarshal(body, &forbiddenErr) != nil || forbiddenErr.Detail == "" {
 			forbiddenErr.Detail = stringOrStatus(body, http.StatusForbidden)
 		}
 		return forbiddenErr

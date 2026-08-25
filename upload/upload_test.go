@@ -147,7 +147,7 @@ func TestUpload(t *testing.T) {
 	})
 }
 
-func TestUpload_Metadata(t *testing.T) {
+func TestUpload_MetadataAndTags(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -170,6 +170,8 @@ func TestUpload_Metadata(t *testing.T) {
 					body := uctest.ReadBody(t, r)
 					assert.Contains(t, string(body), `name="metadata[source]"`)
 					assert.Contains(t, string(body), "cli")
+					assert.Contains(t, string(body), `name="tags"`)
+					assert.Contains(t, string(body), "cat,animal")
 					if tt.metadataPath == "/multipart/start/" {
 						uctest.RespondJSON(t, w, map[string]any{"uuid": "test-uuid", "parts": []string{}})
 					} else {
@@ -189,6 +191,7 @@ func TestUpload_Metadata(t *testing.T) {
 					ContentType:        "text/plain",
 					Size:               5,
 					Metadata:           map[string]string{"source": "cli"},
+					Tags:               []string{" Cat ", "ANIMAL", "cat"},
 					MultipartThreshold: tt.threshold,
 				})
 
@@ -197,4 +200,68 @@ func TestUpload_Metadata(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestFromURL_Tags(t *testing.T) {
+	t.Parallel()
+
+	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/from_url/", r.URL.Path)
+		body := string(uctest.ReadBody(t, r))
+		assert.Contains(t, body, `name="tags"`)
+		assert.Contains(t, body, "remote,animal")
+		uctest.RespondJSON(t, w, FileInfo{FileName: "remote.jpg"})
+	}), func(t *testing.T, srv *httptest.Server) {
+		svc := NewService(uctest.NewUploadServerClient(srv))
+		result, err := svc.FromURL(context.Background(), FromURLParams{
+			URL:  "https://example.test/remote.jpg",
+			Tags: []string{"Remote", " animal "},
+		})
+		require.NoError(t, err)
+
+		info, ok := result.Info()
+		require.True(t, ok)
+		assert.Equal(t, "remote.jpg", info.FileName)
+	})
+}
+
+func TestUpload_InvalidTagsShortCircuitRequest(t *testing.T) {
+	t.Parallel()
+
+	uctest.WithHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	}), func(t *testing.T, srv *httptest.Server) {
+		svc := NewService(uctest.NewUploadServerClient(srv))
+		_, err := svc.File(context.Background(), FileParams{
+			Data: bytes.NewReader([]byte("hello")),
+			Name: "hello.txt",
+			Tags: []string{"bad tag"},
+		})
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrTagInvalidCharacters)
+	})
+}
+
+func TestNormalizeUploadTags(t *testing.T) {
+	t.Parallel()
+
+	t.Run("normalizes and assigns", func(t *testing.T) {
+		t.Parallel()
+		tags := []string{" Cat ", "ANIMAL", "cat"}
+
+		require.NoError(t, normalizeUploadTags(&tags))
+		assert.Equal(t, []string{"cat", "animal"}, tags)
+	})
+
+	t.Run("does not assign on error", func(t *testing.T) {
+		t.Parallel()
+		tags := []string{" Cat ", "bad tag"}
+		before := append([]string(nil), tags...)
+
+		err := normalizeUploadTags(&tags)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrTagInvalidCharacters)
+		assert.Equal(t, before, tags)
+	})
 }

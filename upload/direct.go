@@ -38,6 +38,9 @@ type FileParams struct {
 
 	// Metadata stores user-defined key-value pairs with the uploaded file.
 	Metadata map[string]string `form:"metadata"`
+
+	// Tags is an ordered list of tags to attach to the uploaded file.
+	Tags []string `form:"tags,csv"`
 }
 
 type uploadFileAuthParams struct {
@@ -53,6 +56,9 @@ type signatureExpire struct {
 // EncodeReq implementes ucare.ReqEncoder
 func (d *FileParams) EncodeReq(req *http.Request) error {
 	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req.Context())()
+	if err := normalizeUploadTags(&d.Tags); err != nil {
+		return err
+	}
 	return encodeDataToForm(d, req)
 }
 

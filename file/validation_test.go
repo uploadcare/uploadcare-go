@@ -1,11 +1,13 @@
 package file
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
@@ -83,6 +85,26 @@ func TestValidateSearchParams(t *testing.T) {
 			name:    "blank tag in none",
 			params:  SearchParams{Tags: &SearchTags{None: []string{"archived", ""}}},
 			wantErr: ErrSearchBlankTagValue,
+		},
+		{
+			name:    "tag too long",
+			params:  SearchParams{Tags: &SearchTags{Any: []string{strings.Repeat("a", 101)}}},
+			wantErr: ErrSearchTagTooLong,
+		},
+		{
+			name:    "tag has invalid characters",
+			params:  SearchParams{Tags: &SearchTags{All: []string{"has space"}}},
+			wantErr: ErrSearchInvalidTagValue,
+		},
+		{
+			name:    "too many tags",
+			params:  SearchParams{Tags: &SearchTags{None: searchTestTags(51)}},
+			wantErr: ErrSearchTooManyTags,
+		},
+		{
+			name:    "too many duplicate tags",
+			params:  SearchParams{Tags: &SearchTags{Any: duplicateSearchTags(51, "cat")}},
+			wantErr: ErrSearchTooManyTags,
 		},
 		{
 			name:   "tags with a primary condition",
@@ -237,7 +259,7 @@ func TestValidateSearchParams(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateSearchParams(tt.params)
+			_, err := validateSearchParams(tt.params)
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
 			} else {
@@ -245,6 +267,22 @@ func TestValidateSearchParams(t *testing.T) {
 			}
 		})
 	}
+}
+
+func searchTestTags(count int) []string {
+	tags := make([]string, count)
+	for i := range count {
+		tags[i] = fmt.Sprintf("tag%d", i)
+	}
+	return tags
+}
+
+func duplicateSearchTags(count int, value string) []string {
+	tags := make([]string, count)
+	for i := range count {
+		tags[i] = value
+	}
+	return tags
 }
 
 func TestValidateSearchTagsDoesNotMutateAliasedSlices(t *testing.T) {
@@ -258,8 +296,29 @@ func TestValidateSearchTagsDoesNotMutateAliasedSlices(t *testing.T) {
 	}
 	before := append([]string(nil), shared...)
 
-	err := validateSearchTags(tags)
+	_, err := validateSearchTags(tags)
 
 	assert.ErrorIs(t, err, ErrSearchBlankTagValue)
 	assert.Equal(t, before, shared)
+}
+
+func TestValidateSearchParamsNormalizesTags(t *testing.T) {
+	t.Parallel()
+
+	original := &SearchTags{
+		Any:  []string{" Cat ", "CAT", "dog"},
+		None: []string{"Archived"},
+	}
+	params := SearchParams{Query: "kitten", Tags: original}
+
+	got, err := validateSearchParams(params)
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"cat", "dog"}, got.Tags.Any)
+	assert.Nil(t, got.Tags.All)
+	assert.Equal(t, []string{"archived"}, got.Tags.None)
+
+	// The caller keeps the value it passed in.
+	assert.Equal(t, []string{" Cat ", "CAT", "dog"}, original.Any)
+	assert.Equal(t, []string{"Archived"}, original.None)
 }

@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,15 +36,31 @@ func TestInfo(t *testing.T) {
 				assert.Equal(t, "/files/"+testFileUUID+"/", r.URL.Path)
 				assert.Equal(t, tt.wantQuery, r.URL.Query().Get("include"))
 
-				uctest.RespondJSON(t, w, Info{BasicFileInfo: BasicFileInfo{ID: testFileUUID}})
+				uctest.RespondJSON(t, w, Info{
+					BasicFileInfo: BasicFileInfo{ID: testFileUUID},
+					Tags:          []string{"cat", "animal"},
+				})
 			}), func(t *testing.T, srv *httptest.Server) {
 				svc := NewService(uctest.NewServerClient(srv))
 				info, err := svc.Info(context.Background(), testFileUUID, tt.params)
 				require.NoError(t, err)
 				assert.Equal(t, testFileUUID, info.ID)
+				assert.Equal(t, []string{"cat", "animal"}, info.Tags)
 			})
 		})
 	}
+}
+
+func TestInfoTagsJSON(t *testing.T) {
+	t.Parallel()
+
+	withoutTags, err := json.Marshal(Info{})
+	require.NoError(t, err)
+	assert.NotContains(t, string(withoutTags), `"tags"`)
+
+	withTags, err := json.Marshal(Info{Tags: []string{"cat", "animal"}})
+	require.NoError(t, err)
+	assert.Contains(t, string(withTags), `"tags":["cat","animal"]`)
 }
 
 func TestListParams_Include(t *testing.T) {
