@@ -8,7 +8,6 @@ import (
 
 	"github.com/uploadcare/uploadcare-go/v2/internal/codec"
 	"github.com/uploadcare/uploadcare-go/v2/internal/config"
-	"github.com/uploadcare/uploadcare-go/v2/internal/filetag"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
@@ -57,11 +56,9 @@ type signatureExpire struct {
 // EncodeReq implementes ucare.ReqEncoder
 func (d *FileParams) EncodeReq(req *http.Request) error {
 	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req.Context())()
-	tags, err := filetag.Normalize(d.Tags, filetag.MaxCount)
-	if err != nil {
+	if err := normalizeUploadTags(&d.Tags); err != nil {
 		return err
 	}
-	d.Tags = tags
 	return encodeDataToForm(d, req)
 }
 

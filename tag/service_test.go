@@ -3,6 +3,7 @@ package tag
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -89,6 +90,7 @@ func TestReplace(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	t.Parallel()
+	moreThanMaxTags := makeServiceTags(MaxCount + 1)
 
 	tests := []struct {
 		name       string
@@ -122,6 +124,20 @@ func TestUpdate(t *testing.T) {
 				Deleted: []string{},
 			},
 		},
+		{
+			name: "delete list can exceed file tag limit",
+			params: UpdateParams{
+				Delete: moreThanMaxTags,
+			},
+			wantBody: map[string][]string{
+				"delete": moreThanMaxTags,
+			},
+			wantResult: Result{
+				Tags:    []string{},
+				Added:   []string{},
+				Deleted: moreThanMaxTags[:MaxCount],
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,6 +160,14 @@ func TestUpdate(t *testing.T) {
 			})
 		})
 	}
+}
+
+func makeServiceTags(count int) []string {
+	tags := make([]string, count)
+	for i := range count {
+		tags[i] = fmt.Sprintf("tag%d", i)
+	}
+	return tags
 }
 
 func TestValidationShortCircuitsRequest(t *testing.T) {
@@ -179,6 +203,16 @@ func TestValidationShortCircuitsRequest(t *testing.T) {
 				return err
 			},
 			wantErr: ErrInvalidCharacters,
+		},
+		{
+			name: "update rejects too many added tags",
+			call: func(svc Service) error {
+				_, err := svc.Update(context.Background(), testFileUUID, UpdateParams{
+					Add: makeServiceTags(MaxCount + 1),
+				})
+				return err
+			},
+			wantErr: ErrTooMany,
 		},
 		{
 			name: "update rejects invalid deleted tag",

@@ -23,7 +23,8 @@ var (
 var validPattern = regexp.MustCompile(`^[a-z0-9._-]+$`)
 
 // Normalize returns a normalized, deduplicated copy of tags. A maxCount of
-// zero disables count validation; the returned slice is always non-nil.
+// zero disables count validation. On success the slice is never nil (a nil
+// input becomes empty). On error it is nil.
 func Normalize(tags []string, maxCount int) ([]string, error) {
 	for _, tag := range tags {
 		if strings.TrimSpace(tag) == "" {
@@ -39,17 +40,6 @@ func Normalize(tags []string, maxCount int) ([]string, error) {
 		if _, ok := seen[value]; ok {
 			continue
 		}
-		if length := utf8.RuneCountInString(value); length > MaxLength {
-			return nil, fmt.Errorf(
-				"%w: %d characters (maximum %d)",
-				ErrTooLong,
-				length,
-				MaxLength,
-			)
-		}
-		if !validPattern.MatchString(value) {
-			return nil, fmt.Errorf("%w: %q", ErrInvalidCharacters, value)
-		}
 		seen[value] = struct{}{}
 		normalized = append(normalized, value)
 	}
@@ -61,6 +51,20 @@ func Normalize(tags []string, maxCount int) ([]string, error) {
 			len(normalized),
 			maxCount,
 		)
+	}
+
+	for _, value := range normalized {
+		if length := utf8.RuneCountInString(value); length > MaxLength {
+			return nil, fmt.Errorf(
+				"%w: %d characters (maximum %d)",
+				ErrTooLong,
+				length,
+				MaxLength,
+			)
+		}
+		if !validPattern.MatchString(value) {
+			return nil, fmt.Errorf("%w: %q", ErrInvalidCharacters, value)
+		}
 	}
 
 	return normalized, nil

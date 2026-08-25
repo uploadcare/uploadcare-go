@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/uploadcare/uploadcare-go/v2/internal/filetag"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
@@ -51,11 +50,9 @@ type multipartAuthParams struct {
 // EncodeReq implements ucare.ReqEncoder
 func (d *MultipartParams) EncodeReq(req *http.Request) error {
 	d.PubKey, d.Signature, d.ExpiresAt = authFromContext(req.Context())()
-	tags, err := filetag.Normalize(d.Tags, filetag.MaxCount)
-	if err != nil {
+	if err := normalizeUploadTags(&d.Tags); err != nil {
 		return err
 	}
-	d.Tags = tags
 	return encodeDataToForm(d, req)
 }
 

@@ -57,16 +57,22 @@ func TestNormalize(t *testing.T) {
 			wantErr: ErrTooMany,
 		},
 		{
-			name:    "invalid characters reported before count",
-			input:   append(makeTags(MaxCount+1), "bad tag"),
-			max:     MaxCount,
-			wantErr: ErrInvalidCharacters,
+			name:  "duplicates_do_not_exceed_count",
+			input: append(makeTags(MaxCount), "TAG0"),
+			max:   MaxCount,
+			want:  makeTags(MaxCount),
 		},
 		{
-			name:    "too long reported before count",
+			name:    "count reported before invalid characters",
+			input:   append(makeTags(MaxCount+1), "bad tag"),
+			max:     MaxCount,
+			wantErr: ErrTooMany,
+		},
+		{
+			name:    "count reported before too long",
 			input:   append(makeTags(MaxCount+1), strings.Repeat("a", MaxLength+1)),
 			max:     MaxCount,
-			wantErr: ErrTooLong,
+			wantErr: ErrTooMany,
 		},
 		{
 			name:  "count_limit_disabled",
@@ -90,6 +96,7 @@ func TestNormalize(t *testing.T) {
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.True(t, errors.Is(err, tt.wantErr))
+				assert.Nil(t, got)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, got)

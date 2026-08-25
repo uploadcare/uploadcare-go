@@ -15,3 +15,12 @@ var (
 	ErrTagInvalidCharacters = filetag.ErrInvalidCharacters
 	ErrTagTooMany           = filetag.ErrTooMany
 )
+
+func normalizeUploadTags(tags *[]string) error {
+	normalized, err := filetag.Normalize(*tags, filetag.MaxCount)
+	if err != nil {
+		return err
+	}
+	*tags = normalized
+	return nil
+}

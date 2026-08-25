@@ -33,7 +33,7 @@ var (
 	ErrSearchBlankTagValue       = errors.New("search tag value must not be blank")
 	ErrSearchTagTooLong          = errors.New("search tag exceeds maximum length")
 	ErrSearchInvalidTagValue     = errors.New("search tag contains invalid characters")
-	ErrSearchTooManyTags         = errors.New("search tag operator accepts at most 50 tags")
+	ErrSearchTooManyTags         = fmt.Errorf("search tag operator accepts at most %d tags", filetag.MaxCount)
 	ErrSearchLimitOutOfRange     = errors.New("search limit must be between 1 and 100")
 	ErrSearchOffsetTooLarge      = errors.New("search offset plus limit must not exceed 1000")
 	ErrSearchTooManySortKeys     = errors.New("search sort accepts at most 4 keys")

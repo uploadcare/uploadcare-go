@@ -95,12 +95,14 @@ func (s service) Update(
 	if err = validateFileUUID(fileUUID); err != nil {
 		return
 	}
+	// Every unique tag in Add is present in the merged result, so the API's
+	// final MaxCount limit also bounds Add. Other merged-set overflows cannot
+	// be validated without knowing the file's current tags.
 	params.Add, err = filetag.Normalize(params.Add, filetag.MaxCount)
 	if err != nil {
 		return
 	}
-	// A file can contain at most MaxCount tags, but the API permits an
-	// arbitrary list of absent tags to be deleted.
+	// Delete has no request-level count limit; absent tags are no-ops.
 	params.Delete, err = filetag.Normalize(params.Delete, 0)
 	if err != nil {
 		return

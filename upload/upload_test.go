@@ -242,3 +242,26 @@ func TestUpload_InvalidTagsShortCircuitRequest(t *testing.T) {
 		assert.ErrorIs(t, err, ErrTagInvalidCharacters)
 	})
 }
+
+func TestNormalizeUploadTags(t *testing.T) {
+	t.Parallel()
+
+	t.Run("normalizes and assigns", func(t *testing.T) {
+		t.Parallel()
+		tags := []string{" Cat ", "ANIMAL", "cat"}
+
+		require.NoError(t, normalizeUploadTags(&tags))
+		assert.Equal(t, []string{"cat", "animal"}, tags)
+	})
+
+	t.Run("does not assign on error", func(t *testing.T) {
+		t.Parallel()
+		tags := []string{" Cat ", "bad tag"}
+		before := append([]string(nil), tags...)
+
+		err := normalizeUploadTags(&tags)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrTagInvalidCharacters)
+		assert.Equal(t, before, tags)
+	})
+}

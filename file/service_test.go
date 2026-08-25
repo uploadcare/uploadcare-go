@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -48,6 +49,18 @@ func TestInfo(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestInfoTagsJSON(t *testing.T) {
+	t.Parallel()
+
+	withoutTags, err := json.Marshal(Info{})
+	require.NoError(t, err)
+	assert.NotContains(t, string(withoutTags), `"tags"`)
+
+	withTags, err := json.Marshal(Info{Tags: []string{"cat", "animal"}})
+	require.NoError(t, err)
+	assert.Contains(t, string(withTags), `"tags":["cat","animal"]`)
 }
 
 func TestListParams_Include(t *testing.T) {

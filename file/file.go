@@ -135,8 +135,8 @@ type Info struct {
 	// Metadata is a user-defined key-value metadata for the file
 	Metadata map[string]string `json:"metadata"`
 
-	// Tags is the ordered list of tags associated with the file.
-	Tags []string `json:"tags"`
+	// Tags is present only when the file tags feature is enabled server-side.
+	Tags []string `json:"tags,omitempty"`
 
 	// AppData holds application-specific data from add-ons (e.g. recognition results).
 	// The structure varies per add-on, so values are raw JSON.
